@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/session.start.schema.json",
+  "title": "session:start",
+  "description": "Cliente -> servidor. Solo anfitrión. Pasa la sala de waiting a la primera pregunta (emite session:started y question:opened).",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[2-9A-HJ-NP-Z]{6}$",
+      "description": "Código de la sala (el mismo de la API REST).",
+      "examples": [
+        "K7P2QX"
+      ]
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "K7P2QX"
+    }
+  ]
+}

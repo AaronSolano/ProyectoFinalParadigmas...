@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/question-result.schema.json",
+  "title": "Resultado por participante",
+  "description": "Resultado de un participante en una pregunta cerrada. Un participante sin respuesta aparece con answered=false, correct=false y pointsAwarded=0.",
+  "type": "object",
+  "properties": {
+    "participantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "answered": {
+      "type": "boolean"
+    },
+    "correct": {
+      "type": "boolean"
+    },
+    "pointsAwarded": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "description": "1 por acierto, 0 por error o sin respuesta."
+    },
+    "totalScore": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "participantId",
+    "answered",
+    "correct",
+    "pointsAwarded",
+    "totalScore"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+      "answered": true,
+      "correct": true,
+      "pointsAwarded": 1,
+      "totalScore": 2
+    }
+  ]
+}

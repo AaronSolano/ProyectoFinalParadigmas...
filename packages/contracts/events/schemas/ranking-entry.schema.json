@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/ranking-entry.schema.json",
+  "title": "Entrada de clasificación",
+  "description": "Posición de un participante en la clasificación. Empates comparten posición.",
+  "type": "object",
+  "properties": {
+    "position": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "participantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "position",
+    "participantId",
+    "displayName",
+    "score"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "position": 1,
+      "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+      "displayName": "Ana",
+      "score": 3
+    }
+  ]
+}

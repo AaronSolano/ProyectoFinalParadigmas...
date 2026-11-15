@@ -1,0 +1,1221 @@
+openapi: 3.1.0
+info:
+  title: Kahoot API (ProfeLink)
+  version: 1.0.0
+  summary: API REST de cuestionarios, preguntas Verdadero/Falso, salas y resultados.
+  description: |
+    API del servicio de actividades (`kahoot-api`) de la plataforma de evaluaciones en vivo de ProfeLink.
+    Esta definicion es la fuente de verdad de los endpoints REST; ningun cliente ni implementacion
+    debe exponer o consumir endpoints que no esten aqui.
+
+    ## Canal en vivo (fuera de este documento)
+    El control de la partida (iniciar, pasar a la siguiente pregunta, cerrar una pregunta, responder,
+    recuperar estado) **no es REST**: se hace por eventos en vivo mediante **Socket.IO en el namespace `/game`**.
+    Los eventos, su autenticacion y la recuperacion de estado se documentan en `packages/contracts/events`.
+
+    ## Autenticacion
+    Salvo `GET /health` y `GET /images/{filename}`, todos los endpoints exigen
+    `Authorization: Bearer <JWT>`. El token es un JWT firmado con RS256 emitido por `auth-api`
+    (`aud=kahoot-api`, `sub` = id de perfil). `kahoot-api` valida la firma con la clave publica (JWKS) de `auth-api`.
+
+    ## Regla de confidencialidad de la respuesta correcta
+    **Ningun endpoint REST expone `correctAnswer` a participantes mientras la sala no haya terminado.**
+    Las preguntas del juego en vivo viajan por WebSocket (sin la respuesta correcta hasta que se cierra
+    cada pregunta). Los endpoints de `Question` que incluyen `correctAnswer` solo responden al propietario
+    del cuestionario. Los participantes de una sala nunca obtienen preguntas por REST.
+
+    ## Convenciones
+    - Base path `/api/v1`.
+    - Identificadores UUID v4. Fechas en ISO 8601 UTC.
+    - Todos los errores usan el esquema `Problem` con un `code` estable.
+    - Puntaje basico: 1 punto por respuesta correcta, 0 por incorrecta o ausente.
+  contact:
+    name: Equipo EIF400 - ProfeLink
+  license:
+    name: Uso academico
+    identifier: LicenseRef-Academic
+servers:
+  - url: http://localhost:3002/api/v1
+    description: Entorno local
+tags:
+  - name: Health
+    description: Estado del servicio.
+  - name: Quizzes
+    description: Cuestionarios del usuario autenticado (solo el propietario los modifica).
+  - name: Questions
+    description: Preguntas Verdadero/Falso de un cuestionario.
+  - name: Images
+    description: Imagenes de preguntas (carga autenticada, lectura publica).
+  - name: Sessions
+    description: Salas de juego (codigo, lobby, participantes y resultados).
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Estado del servicio
+      description: Verificacion de vida. No requiere autenticacion.
+      security: []
+      responses:
+        '200':
+          description: Servicio operativo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: kahoot-api
+                    version: 1.0.0
+                    timestamp: '2026-11-15T15:00:00.000Z'
+
+  /quizzes:
+    get:
+      operationId: listQuizzes
+      tags: [Quizzes]
+      summary: Listar mis cuestionarios
+      description: Devuelve unicamente los cuestionarios cuyo propietario es el usuario autenticado.
+      responses:
+        '200':
+          description: Lista de cuestionarios propios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quiz'
+              examples:
+                lista:
+                  value:
+                    - id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                      ownerId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                      title: Fundamentos de redes
+                      description: Repaso de la unidad 1
+                      questionCount: 10
+                      createdAt: '2026-11-10T14:00:00.000Z'
+                      updatedAt: '2026-11-12T09:30:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createQuiz
+      tags: [Quizzes]
+      summary: Crear cuestionario
+      description: Crea un cuestionario cuyo propietario es el usuario autenticado (`sub` del token).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizInput'
+            examples:
+              basico:
+                value:
+                  title: Fundamentos de redes
+                  description: Repaso de la unidad 1
+      responses:
+        '201':
+          description: Cuestionario creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+              examples:
+                creado:
+                  value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    ownerId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    title: Fundamentos de redes
+                    description: Repaso de la unidad 1
+                    questionCount: 0
+                    createdAt: '2026-11-10T14:00:00.000Z'
+                    updatedAt: '2026-11-10T14:00:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /quizzes/{quizId}:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    get:
+      operationId: getQuiz
+      tags: [Quizzes]
+      summary: Consultar un cuestionario
+      description: Solo el propietario puede consultar el cuestionario; otros usuarios reciben 403.
+      responses:
+        '200':
+          description: Cuestionario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+              examples:
+                quiz:
+                  value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    ownerId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    title: Fundamentos de redes
+                    description: Repaso de la unidad 1
+                    questionCount: 10
+                    createdAt: '2026-11-10T14:00:00.000Z'
+                    updatedAt: '2026-11-12T09:30:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateQuiz
+      tags: [Quizzes]
+      summary: Editar un cuestionario
+      description: |
+        Solo el propietario puede editar; otros reciben 403 sin modificar datos.
+        Las salas ya creadas conservan su copia (snapshot) original del cuestionario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizInput'
+            examples:
+              edicion:
+                value:
+                  title: Fundamentos de redes (v2)
+                  description: Repaso de las unidades 1 y 2
+      responses:
+        '200':
+          description: Cuestionario actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+              examples:
+                actualizado:
+                  value:
+                    id: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    ownerId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    title: Fundamentos de redes (v2)
+                    description: Repaso de las unidades 1 y 2
+                    questionCount: 10
+                    createdAt: '2026-11-10T14:00:00.000Z'
+                    updatedAt: '2026-11-15T10:00:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteQuiz
+      tags: [Quizzes]
+      summary: Eliminar un cuestionario
+      description: |
+        Solo el propietario puede eliminar. Elimina tambien sus preguntas e imagenes.
+        Las salas y resultados historicos ya generados se conservan (usan su propia copia).
+      responses:
+        '204':
+          description: Cuestionario eliminado.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /quizzes/{quizId}/questions:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    get:
+      operationId: listQuestions
+      tags: [Questions]
+      summary: Listar preguntas de un cuestionario
+      description: |
+        Solo el propietario. Incluye `correctAnswer`. Ordenadas por `position` ascendente.
+        Los participantes no pueden usar este endpoint (403): reciben las preguntas por WebSocket.
+      responses:
+        '200':
+          description: Preguntas del cuestionario.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+              examples:
+                lista:
+                  value:
+                    - id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                      quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                      statement: TCP es un protocolo orientado a conexion.
+                      correctAnswer: true
+                      imageUrl: null
+                      position: 1
+                      createdAt: '2026-11-10T14:05:00.000Z'
+                      updatedAt: '2026-11-10T14:05:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createQuestion
+      tags: [Questions]
+      summary: Crear pregunta
+      description: |
+        Agrega una pregunta Verdadero/Falso al cuestionario. Si no se indica `position`,
+        se agrega al final. La imagen se carga aparte con `PUT .../image`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionInput'
+            examples:
+              basica:
+                value:
+                  statement: TCP es un protocolo orientado a conexion.
+                  correctAnswer: true
+      responses:
+        '201':
+          description: Pregunta creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+              examples:
+                creada:
+                  value:
+                    id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    statement: TCP es un protocolo orientado a conexion.
+                    correctAnswer: true
+                    imageUrl: null
+                    position: 1
+                    createdAt: '2026-11-10T14:05:00.000Z'
+                    updatedAt: '2026-11-10T14:05:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /quizzes/{quizId}/questions/{questionId}:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+      - $ref: '#/components/parameters/QuestionId'
+    get:
+      operationId: getQuestion
+      tags: [Questions]
+      summary: Consultar una pregunta
+      description: Solo el propietario del cuestionario. Incluye `correctAnswer`.
+      responses:
+        '200':
+          description: Pregunta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+              examples:
+                pregunta:
+                  value:
+                    id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    statement: TCP es un protocolo orientado a conexion.
+                    correctAnswer: true
+                    imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
+                    position: 1
+                    createdAt: '2026-11-10T14:05:00.000Z'
+                    updatedAt: '2026-11-10T14:10:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: updateQuestion
+      tags: [Questions]
+      summary: Editar una pregunta
+      description: |
+        Solo el propietario. No altera la imagen (usar los endpoints de imagen).
+        No afecta salas ya creadas (conservan su copia).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionInput'
+            examples:
+              edicion:
+                value:
+                  statement: UDP es un protocolo orientado a conexion.
+                  correctAnswer: false
+                  position: 2
+      responses:
+        '200':
+          description: Pregunta actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+              examples:
+                actualizada:
+                  value:
+                    id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    statement: UDP es un protocolo orientado a conexion.
+                    correctAnswer: false
+                    imageUrl: null
+                    position: 2
+                    createdAt: '2026-11-10T14:05:00.000Z'
+                    updatedAt: '2026-11-15T10:05:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteQuestion
+      tags: [Questions]
+      summary: Eliminar una pregunta
+      description: Solo el propietario. Elimina tambien su imagen almacenada si existe.
+      responses:
+        '204':
+          description: Pregunta eliminada.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /quizzes/{quizId}/questions/{questionId}/image:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+      - $ref: '#/components/parameters/QuestionId'
+    put:
+      operationId: uploadQuestionImage
+      tags: [Images]
+      summary: Subir o reemplazar la imagen de una pregunta
+      description: |
+        Solo el propietario. Formatos permitidos: `image/png`, `image/jpeg`, `image/webp`.
+        Tamano maximo: 2 MiB (2 097 152 bytes). La imagen se almacena de forma persistente y
+        `imageUrl` pasa a ser una URL publica (ver `GET /images/{filename}`).
+        Si ya habia una imagen, se reemplaza.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo de imagen (png, jpeg o webp; maximo 2 MiB).
+            encoding:
+              file:
+                contentType: image/png, image/jpeg, image/webp
+      responses:
+        '200':
+          description: Imagen guardada; devuelve la pregunta actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+              examples:
+                conImagen:
+                  value:
+                    id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    statement: TCP es un protocolo orientado a conexion.
+                    correctAnswer: true
+                    imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
+                    position: 1
+                    createdAt: '2026-11-10T14:05:00.000Z'
+                    updatedAt: '2026-11-15T10:10:00.000Z'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+    delete:
+      operationId: deleteQuestionImage
+      tags: [Images]
+      summary: Quitar la imagen de una pregunta
+      description: Solo el propietario. Elimina el archivo almacenado y deja `imageUrl` en `null`.
+      responses:
+        '200':
+          description: Imagen eliminada; devuelve la pregunta actualizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+              examples:
+                sinImagen:
+                  value:
+                    id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    statement: TCP es un protocolo orientado a conexion.
+                    correctAnswer: true
+                    imageUrl: null
+                    position: 1
+                    createdAt: '2026-11-10T14:05:00.000Z'
+                    updatedAt: '2026-11-15T10:12:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /images/{filename}:
+    get:
+      operationId: getImage
+      tags: [Images]
+      summary: Obtener una imagen publica
+      description: |
+        Sirve una imagen de pregunta sin autenticacion, para que los participantes la vean desde
+        otros dispositivos. El nombre de archivo no es adivinable (UUID) y la imagen no contiene
+        informacion sobre la respuesta correcta.
+      security: []
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          description: Nombre del archivo con extension (por ejemplo `9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png`).
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9-]+\.(png|jpe?g|webp)$'
+          example: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
+      responses:
+        '200':
+          description: Contenido binario de la imagen.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /sessions:
+    get:
+      operationId: listSessions
+      tags: [Sessions]
+      summary: Listar las salas que organizo
+      description: Devuelve las salas cuyo anfitrion (`hostId`) es el usuario autenticado, de la mas reciente a la mas antigua.
+      responses:
+        '200':
+          description: Salas del anfitrion.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Session'
+              examples:
+                lista:
+                  value:
+                    - id: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                      code: K7M3QX
+                      quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                      hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                      status: finished
+                      questionTimeSeconds: 20
+                      participantCount: 12
+                      createdAt: '2026-11-15T14:00:00.000Z'
+                      startedAt: '2026-11-15T14:05:00.000Z'
+                      finishedAt: '2026-11-15T14:15:00.000Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createSession
+      tags: [Sessions]
+      summary: Crear una sala
+      description: |
+        Crea una sala en estado `waiting` a partir de un cuestionario **propio** y genera un codigo
+        unico de 6 caracteres (alfabeto sin `0`, `O`, `1`, `I`). Fija un snapshot estable del
+        cuestionario: ediciones posteriores del propietario no afectan la partida.
+        El inicio y el control de la partida se hacen por Socket.IO (namespace `/game`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInput'
+            examples:
+              conTiempo:
+                value:
+                  quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                  questionTimeSeconds: 30
+              porDefecto:
+                value:
+                  quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+      responses:
+        '201':
+          description: Sala creada en espera.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              examples:
+                creada:
+                  value:
+                    id: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                    code: K7M3QX
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    status: waiting
+                    questionTimeSeconds: 30
+                    participantCount: 0
+                    createdAt: '2026-11-15T14:00:00.000Z'
+                    startedAt: null
+                    finishedAt: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: El cuestionario no tiene preguntas y no puede usarse para una partida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                vacio:
+                  value:
+                    status: 409
+                    code: QUIZ_EMPTY
+                    message: El cuestionario no tiene preguntas.
+
+  /sessions/{code}:
+    parameters:
+      - $ref: '#/components/parameters/SessionCode'
+    get:
+      operationId: getSession
+      tags: [Sessions]
+      summary: Consultar una sala por codigo
+      description: |
+        Devuelve los datos de la sala. No incluye preguntas ni respuestas.
+        Util para validar un codigo antes de unirse. Si el codigo no existe responde 404 `ROOM_NOT_FOUND`.
+      responses:
+        '200':
+          description: Sala.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              examples:
+                enEspera:
+                  value:
+                    id: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                    code: K7M3QX
+                    quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                    hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+                    status: waiting
+                    questionTimeSeconds: 20
+                    participantCount: 3
+                    createdAt: '2026-11-15T14:00:00.000Z'
+                    startedAt: null
+                    finishedAt: null
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+
+  /sessions/{code}/join:
+    parameters:
+      - $ref: '#/components/parameters/SessionCode'
+    post:
+      operationId: joinSession
+      tags: [Sessions]
+      summary: Unirse a una sala
+      description: |
+        Registra al usuario autenticado como participante de una sala en estado `waiting`.
+        Es **idempotente**: si el usuario ya esta en la sala (en cualquier estado), devuelve su participante existente
+        sin duplicarlo. A un usuario nuevo, si la sala ya inicio o termino, responde 409 `ROOM_CLOSED`
+        (la reconexion durante la partida se hace por Socket.IO).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinInput'
+            examples:
+              conNombre:
+                value:
+                  displayName: Ana
+      responses:
+        '200':
+          description: Participante registrado (o ya existente).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+              examples:
+                participante:
+                  value:
+                    id: 5a1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f
+                    sessionId: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                    userId: 8d3b1e52-93f8-4a0e-b0a1-2b6a9d7c4e11
+                    displayName: Ana
+                    joinedAt: '2026-11-15T14:01:00.000Z'
+                    score: 0
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '409':
+          $ref: '#/components/responses/RoomClosed'
+
+  /sessions/{code}/participants:
+    parameters:
+      - $ref: '#/components/parameters/SessionCode'
+    get:
+      operationId: listSessionParticipants
+      tags: [Sessions]
+      summary: Listar participantes de una sala
+      description: |
+        Lobby de la sala. Accesible al anfitrion y a los participantes de esa sala; otros usuarios reciben 403.
+        Las salas son independientes: solo se listan participantes de la sala indicada.
+      responses:
+        '200':
+          description: Participantes de la sala.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Participant'
+              examples:
+                lobby:
+                  value:
+                    - id: 5a1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f
+                      sessionId: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                      userId: 8d3b1e52-93f8-4a0e-b0a1-2b6a9d7c4e11
+                      displayName: Ana
+                      joinedAt: '2026-11-15T14:01:00.000Z'
+                      score: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+
+  /sessions/{code}/results:
+    parameters:
+      - $ref: '#/components/parameters/SessionCode'
+    get:
+      operationId: getSessionResults
+      tags: [Sessions]
+      summary: Resultados finales de una sala
+      description: |
+        Clasificacion final persistida. Solo disponible cuando `status=finished`; si la sala no ha
+        terminado responde 409 `ROOM_NOT_FINISHED`. Accesible al anfitrion y a los participantes de esa
+        sala (incluye clientes externos que presenten un token valido y sean el anfitrion).
+        Otros usuarios reciben 403. Los resultados sobreviven a reinicios de los contenedores.
+        Esta respuesta no contiene `correctAnswer`.
+      responses:
+        '200':
+          description: Resultados de la sesion.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResults'
+              examples:
+                finales:
+                  value:
+                    sessionId: 1d4f5b0a-6e0c-4a3a-9d64-0f6a3f0b7c21
+                    code: K7M3QX
+                    quizTitle: Fundamentos de redes
+                    finishedAt: '2026-11-15T14:15:00.000Z'
+                    totalQuestions: 10
+                    ranking:
+                      - position: 1
+                        participantId: 5a1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f
+                        displayName: Ana
+                        score: 9
+                        correctAnswers: 9
+                      - position: 2
+                        participantId: 6b2f3e4d-5c6b-4d7e-9f80-ab1c2d3e4f50
+                        displayName: Luis
+                        score: 7
+                        correctAnswers: 7
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+        '409':
+          description: La sala aun no ha terminado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                noTermino:
+                  value:
+                    status: 409
+                    code: ROOM_NOT_FINISHED
+                    message: La sala aun no ha terminado; los resultados no estan disponibles.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT RS256 emitido por `auth-api` (`aud=kahoot-api`, `sub` = id de perfil).
+        Se envia en `Authorization: Bearer <token>`.
+
+  parameters:
+    QuizId:
+      name: quizId
+      in: path
+      required: true
+      description: Identificador del cuestionario.
+      schema:
+        type: string
+        format: uuid
+      example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+    QuestionId:
+      name: questionId
+      in: path
+      required: true
+      description: Identificador de la pregunta.
+      schema:
+        type: string
+        format: uuid
+      example: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
+    SessionCode:
+      name: code
+      in: path
+      required: true
+      description: Codigo de sala de 6 caracteres (sin 0, O, 1, I). No distingue mayusculas.
+      schema:
+        $ref: '#/components/schemas/SessionCode'
+      example: K7M3QX
+
+  responses:
+    BadRequest:
+      description: Solicitud invalida (validacion de campos).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            validacion:
+              value:
+                status: 400
+                code: VALIDATION_ERROR
+                message: Los datos enviados no son validos.
+                details:
+                  - field: title
+                    message: title no puede estar vacio
+    Unauthorized:
+      description: Token ausente, expirado o invalido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            sinToken:
+              value:
+                status: 401
+                code: UNAUTHORIZED
+                message: Token de acceso ausente o invalido.
+    Forbidden:
+      description: El usuario no tiene permiso sobre el recurso (por ejemplo, no es el propietario o anfitrion).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            ajeno:
+              value:
+                status: 403
+                code: FORBIDDEN
+                message: No tienes permiso para realizar esta accion.
+    NotFound:
+      description: El recurso no existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            noExiste:
+              value:
+                status: 404
+                code: NOT_FOUND
+                message: Recurso no encontrado.
+    RoomNotFound:
+      description: No existe una sala con ese codigo.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            codigoInvalido:
+              value:
+                status: 404
+                code: ROOM_NOT_FOUND
+                message: No existe una sala con ese codigo.
+    RoomClosed:
+      description: La sala ya inicio o termino y no admite nuevos participantes.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            cerrada:
+              value:
+                status: 409
+                code: ROOM_CLOSED
+                message: La sala ya no admite nuevos participantes.
+    PayloadTooLarge:
+      description: La imagen supera el tamano maximo de 2 MiB.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            grande:
+              value:
+                status: 413
+                code: IMAGE_TOO_LARGE
+                message: La imagen supera el maximo permitido de 2 MiB.
+    UnsupportedMediaType:
+      description: Formato de imagen no permitido (solo png, jpeg o webp).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            formato:
+              value:
+                status: 415
+                code: IMAGE_UNSUPPORTED
+                message: Formato de imagen no permitido. Use png, jpeg o webp.
+
+  schemas:
+    Problem:
+      type: object
+      description: Error comun de la API.
+      required: [status, code, message]
+      properties:
+        status:
+          type: integer
+          description: Codigo de estado HTTP.
+          example: 403
+        code:
+          type: string
+          description: |
+            Codigo estable de error. Valores definidos: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`,
+            `ROOM_NOT_FOUND`, `ROOM_CLOSED`, `ROOM_NOT_FINISHED`, `QUIZ_EMPTY`, `VALIDATION_ERROR`,
+            `IMAGE_TOO_LARGE`, `IMAGE_UNSUPPORTED`, `INTERNAL_ERROR`.
+          example: FORBIDDEN
+        message:
+          type: string
+          description: Mensaje legible para personas.
+          example: No tienes permiso para realizar esta accion.
+        details:
+          description: Informacion adicional opcional (por ejemplo, errores por campo).
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        service:
+          type: string
+          example: kahoot-api
+        version:
+          type: string
+          example: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+
+    Quiz:
+      type: object
+      required: [id, ownerId, title, description, questionCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+          description: Id de perfil del propietario (`sub` del token).
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        questionCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    QuizInput:
+      type: object
+      required: [title]
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+          default: ''
+
+    Question:
+      type: object
+      description: |
+        Pregunta Verdadero/Falso. Incluye `correctAnswer`, por lo que solo se devuelve al
+        propietario del cuestionario; nunca a participantes.
+      required: [id, quizId, statement, correctAnswer, imageUrl, position, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        quizId:
+          type: string
+          format: uuid
+        statement:
+          type: string
+          minLength: 1
+          maxLength: 500
+        correctAnswer:
+          type: boolean
+          description: "`true` = Verdadero, `false` = Falso."
+        imageUrl:
+          type: [string, 'null']
+          description: URL publica y absoluta de la imagen (se construye con `PUBLIC_API_URL`; ver `GET /images/{filename}`), accesible desde otros dispositivos, o `null` si no tiene.
+        position:
+          type: integer
+          minimum: 1
+          description: Posicion de la pregunta dentro del cuestionario (base 1).
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    QuestionInput:
+      type: object
+      required: [statement, correctAnswer]
+      additionalProperties: false
+      properties:
+        statement:
+          type: string
+          minLength: 1
+          maxLength: 500
+        correctAnswer:
+          type: boolean
+          description: "`true` = Verdadero, `false` = Falso."
+        position:
+          type: integer
+          minimum: 1
+          description: Posicion deseada. Si se omite al crear, se agrega al final.
+
+    SessionCode:
+      type: string
+      description: Codigo de sala de 6 caracteres en mayuscula, sin `0`, `O`, `1`, `I`.
+      pattern: '^[2-9A-HJ-NP-Z]{6}$'
+      minLength: 6
+      maxLength: 6
+      example: K7M3QX
+
+    SessionStatus:
+      type: string
+      enum: [waiting, in_progress, finished]
+      description: Estado de la sala (`waiting` = lobby, `in_progress` = partida en curso, `finished` = terminada).
+
+    Session:
+      type: object
+      required: [id, code, quizId, hostId, status, questionTimeSeconds, participantCount, createdAt, startedAt, finishedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          $ref: '#/components/schemas/SessionCode'
+        quizId:
+          type: string
+          format: uuid
+        hostId:
+          type: string
+          format: uuid
+          description: Id de perfil del anfitrion.
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+        questionTimeSeconds:
+          type: integer
+          minimum: 5
+          maximum: 120
+          description: Tiempo limite por pregunta, en segundos.
+        participantCount:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: [string, 'null']
+          format: date-time
+        finishedAt:
+          type: [string, 'null']
+          format: date-time
+
+    SessionInput:
+      type: object
+      required: [quizId]
+      additionalProperties: false
+      properties:
+        quizId:
+          type: string
+          format: uuid
+          description: Cuestionario propio a partir del cual se crea la sala.
+        questionTimeSeconds:
+          type: integer
+          minimum: 5
+          maximum: 120
+          default: 20
+          description: Tiempo limite por pregunta, en segundos.
+
+    JoinInput:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 40
+          description: Nombre a mostrar en la sala. Si se omite se usa el nombre del perfil.
+
+    Participant:
+      type: object
+      required: [id, sessionId, userId, displayName, joinedAt, score]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+          description: Id de perfil del usuario (`sub` del token).
+        displayName:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        score:
+          type: integer
+          minimum: 0
+          description: Puntaje acumulado (1 punto por respuesta correcta).
+
+    RankingEntry:
+      type: object
+      required: [position, participantId, displayName, score, correctAnswers]
+      properties:
+        position:
+          type: integer
+          minimum: 1
+        participantId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+        correctAnswers:
+          type: integer
+          minimum: 0
+
+    SessionResults:
+      type: object
+      required: [sessionId, code, quizTitle, finishedAt, totalQuestions, ranking]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        code:
+          $ref: '#/components/schemas/SessionCode'
+        quizTitle:
+          type: string
+        finishedAt:
+          type: string
+          format: date-time
+        totalQuestions:
+          type: integer
+          minimum: 0
+        ranking:
+          type: array
+          description: Clasificacion ordenada por `position` ascendente.
+          items:
+            $ref: '#/components/schemas/RankingEntry'

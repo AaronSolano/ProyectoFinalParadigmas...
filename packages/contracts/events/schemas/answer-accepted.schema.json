@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/answer-accepted.schema.json",
+  "title": "answer:accepted",
+  "description": "Servidor -> solo el emisor. Su respuesta quedó registrada. No revela si es correcta.",
+  "type": "object",
+  "properties": {
+    "questionIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Índice de la pregunta, base 0."
+    }
+  },
+  "required": [
+    "questionIndex"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "questionIndex": 0
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/answer-rejected.schema.json",
+  "title": "answer:rejected",
+  "description": "Servidor -> solo el emisor. Su respuesta no se registró y no suma puntos.",
+  "type": "object",
+  "properties": {
+    "questionIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Índice de la pregunta, base 0."
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "already_answered",
+        "late",
+        "closed",
+        "not_in_session",
+        "invalid_state"
+      ]
+    }
+  },
+  "required": [
+    "questionIndex",
+    "reason"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "questionIndex": 0,
+      "reason": "already_answered"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/state-sync.schema.json",
+  "title": "state_sync",
+  "description": "Servidor -> cliente (solo al socket que se une o reconecta). Instantánea completa del estado para que el cliente se reconstruya sin duplicar participante ni puntaje. Mientras la pregunta está abierta NO incluye correctAnswer.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[2-9A-HJ-NP-Z]{6}$",
+      "description": "Código de la sala (el mismo de la API REST).",
+      "examples": [
+        "K7P2QX"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "question_open",
+        "question_closed",
+        "finished"
+      ]
+    },
+    "isHost": {
+      "type": "boolean",
+      "description": "true si el usuario autenticado es el anfitrión de la sala."
+    },
+    "participantId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid",
+      "description": "Id del participante del usuario autenticado (null si es el anfitrión sin participar)."
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "$ref": "participant.schema.json"
+      }
+    },
+    "totalQuestions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currentQuestion": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "description": "Pregunta vigente tal como la ve un participante. NUNCA incluye correctAnswer.",
+          "properties": {
+            "questionIndex": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Índice de la pregunta, base 0."
+            },
+            "total": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "statement": {
+              "type": "string"
+            },
+            "imageUrl": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri"
+            },
+            "closesAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "questionIndex",
+            "total",
+            "statement",
+            "imageUrl",
+            "closesAt"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Pregunta vigente (status question_open o question_closed); null en waiting y finished."
+    },
+    "closesAt": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "format": "date-time"
+        }
+      ],
+      "description": "Cierre de la pregunta abierta; null si no hay pregunta abierta."
+    },
+    "serverTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Hora del servidor al emitir; el cliente calcula su desfase con ella."
+    },
+    "myScore": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "hasAnswered": {
+      "type": "boolean",
+      "description": "true si ya respondiste la pregunta vigente."
+    },
+    "lastClosed": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "question-closed.schema.json"
+        }
+      ],
+      "description": "Solo en status question_closed: el cierre de la pregunta vigente (aquí sí viaja correctAnswer)."
+    },
+    "ranking": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "ranking-entry.schema.json"
+          }
+        }
+      ],
+      "description": "Solo en status finished: clasificación final; null en otro caso."
+    }
+  },
+  "required": [
+    "code",
+    "status",
+    "isHost",
+    "participantId",
+    "participants",
+    "totalQuestions",
+    "currentQuestion",
+    "closesAt",
+    "serverTime",
+    "myScore",
+    "hasAnswered"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "K7P2QX",
+      "status": "question_open",
+      "isHost": false,
+      "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+      "participants": [
+        {
+          "id": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+          "displayName": "Ana"
+        },
+        {
+          "id": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
+          "displayName": "Beto"
+        }
+      ],
+      "totalQuestions": 5,
+      "currentQuestion": {
+        "questionIndex": 1,
+        "total": 5,
+        "statement": "El agua hierve a 100 °C al nivel del mar.",
+        "imageUrl": null,
+        "closesAt": "2026-11-15T15:00:30.000Z"
+      },
+      "closesAt": "2026-11-15T15:00:30.000Z",
+      "serverTime": "2026-11-15T15:00:12.345Z",
+      "myScore": 1,
+      "hasAnswered": false
+    }
+  ]
+}

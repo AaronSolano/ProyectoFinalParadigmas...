@@ -1,0 +1,418 @@
+openapi: 3.1.0
+info:
+  title: ProfeLink auth-api
+  version: 1.0.0
+  summary: Servicio de autenticación de la plataforma de evaluaciones en vivo.
+  description: |
+    API independiente (con su propia base de datos) que registra perfiles, inicia sesión y
+    emite tokens JWT firmados con RS256. El servicio `kahoot-api` valida esos tokens con la
+    clave pública publicada en `/.well-known/jwks.json`, sin acceder a la base de datos de
+    este servicio.
+
+    Todas las rutas cuelgan del prefijo `/api/v1`. Los errores usan el formato común `Problem`.
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Entorno local
+tags:
+  - name: Salud
+    description: Verificación de disponibilidad del servicio.
+  - name: Autenticación
+    description: Registro de perfiles e inicio de sesión.
+  - name: Perfil
+    description: Datos del perfil autenticado.
+  - name: Claves
+    description: Publicación de la clave pública de firma.
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Salud]
+      summary: Estado del servicio
+      description: Devuelve el estado del servicio. No requiere autenticación.
+      security: []
+      responses:
+        '200':
+          description: El servicio está disponible.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              examples:
+                ok:
+                  summary: Servicio disponible
+                  value:
+                    status: ok
+                    service: auth-api
+                    timestamp: '2026-11-15T14:30:00.000Z'
+  /auth/register:
+    post:
+      operationId: registerProfile
+      tags: [Autenticación]
+      summary: Registrar un perfil
+      description: |
+        Crea un perfil nuevo. La contraseña se almacena únicamente como hash.
+        Devuelve un token de acceso para que el cliente quede autenticado de inmediato.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              docente:
+                summary: Registro válido
+                value:
+                  email: ana.mora@example.com
+                  password: Clave2026seg
+                  displayName: Ana Mora
+      responses:
+        '201':
+          description: Perfil creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                creado:
+                  $ref: '#/components/examples/AuthResponseExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/EmailTaken'
+  /auth/login:
+    post:
+      operationId: login
+      tags: [Autenticación]
+      summary: Iniciar sesión
+      description: |
+        Valida las credenciales y emite un token de acceso. Ante credenciales incorrectas
+        responde siempre un 401 uniforme, sin revelar si el correo existe.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              docente:
+                summary: Credenciales válidas
+                value:
+                  email: ana.mora@example.com
+                  password: Clave2026seg
+      responses:
+        '200':
+          description: Inicio de sesión correcto.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                correcto:
+                  $ref: '#/components/examples/AuthResponseExample'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+  /auth/me:
+    get:
+      operationId: getCurrentProfile
+      tags: [Perfil]
+      summary: Perfil del usuario autenticado
+      description: Devuelve el perfil asociado al token Bearer presentado.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil del usuario autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+              examples:
+                perfil:
+                  $ref: '#/components/examples/ProfileExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /.well-known/jwks.json:
+    get:
+      operationId: getJwks
+      tags: [Claves]
+      summary: Conjunto de claves públicas (JWKS)
+      description: |
+        Publica la clave pública RS256 con la que se verifican los tokens emitidos.
+        `kahoot-api` la usa para validar tokens sin consultar la base de datos de este servicio.
+        Endpoint público.
+
+        Se sirve en la raíz del host (`/.well-known/jwks.json`), fuera del prefijo `/api/v1`.
+      servers:
+        - url: http://localhost:3001
+          description: Raíz del host local (sin prefijo /api/v1)
+      security: []
+      responses:
+        '200':
+          description: JWKS con la(s) clave(s) pública(s) vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+              examples:
+                jwks:
+                  summary: Una clave RSA de firma
+                  value:
+                    keys:
+                      - kty: RSA
+                        use: sig
+                        alg: RS256
+                        kid: auth-api-2026-01
+                        n: sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1WlUzewbgBHod5pcM9H95GQRV3JDXboIRROSBigeC5yjU1hGzHHyXss8UDprecbAYxknTcQkhslANGRUZmdTOQ5qTRsLAt6BTYuyvVRdhS8exSZEy_c4gs_7svlJJQ4H9_NxsiIoLwAEk7-Q3UXERGYw_75IDrGA84-lA_-Ct4eTlXHBIY2EaV7t7LjJaynVJCpkv4LKjTMAWpm8VUCuYpy0d3ScCuSAkb4nXWsjyR8Wgji_tCFqLBYJ8z0y3qL3V2T0OLOxNxmFTm3w2dWm6_ClBh6SdHT4OTp
+                        e: AQAB
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT firmado con **RS256** y emitido por `auth-api`. Se envía en la cabecera
+        `Authorization: Bearer <accessToken>`.
+
+        Claims del token:
+        - `iss`: `auth-api` (emisor).
+        - `aud`: `kahoot-api` (audiencia).
+        - `sub`: identificador (UUID) del perfil.
+        - `name`: nombre visible (`displayName`).
+        - `email`: correo del perfil.
+        - `exp`: expiración (segundos desde epoch).
+        - `iat`: emisión (segundos desde epoch).
+
+        La clave pública para verificar la firma se obtiene de `/.well-known/jwks.json`.
+  schemas:
+    Profile:
+      type: object
+      description: Perfil de usuario (docente o participante).
+      required: [id, email, displayName, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identificador único del perfil.
+          examples: ['7b0c1f7e-3c1a-4f55-9a3e-2d6f9a1b8c40']
+        email:
+          type: string
+          format: email
+          description: Correo electrónico (único).
+          examples: [ana.mora@example.com]
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 40
+          description: Nombre visible.
+          examples: [Ana Mora]
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del perfil (UTC).
+          examples: ['2026-11-15T14:30:00.000Z']
+    RegisterRequest:
+      type: object
+      required: [email, password, displayName]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Correo electrónico; debe ser único.
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          pattern: '^(?=.*[A-Za-z])(?=.*[0-9]).{8,128}$'
+          description: Contraseña de al menos 8 caracteres, con letras y números.
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 40
+          description: Nombre visible (2 a 40 caracteres).
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          maxLength: 128
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, profile]
+      properties:
+        accessToken:
+          type: string
+          description: JWT RS256 (ver `bearerAuth` para los claims).
+        tokenType:
+          type: string
+          const: Bearer
+          description: Tipo de token; siempre `Bearer`.
+        expiresIn:
+          type: integer
+          minimum: 1
+          description: Vigencia del token en segundos.
+          examples: [3600]
+        profile:
+          $ref: '#/components/schemas/Profile'
+    HealthStatus:
+      type: object
+      required: [status, service]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        service:
+          type: string
+          examples: [auth-api]
+        timestamp:
+          type: string
+          format: date-time
+    Jwk:
+      type: object
+      description: Clave pública RSA en formato JWK (RFC 7517).
+      required: [kty, use, alg, kid, n, e]
+      properties:
+        kty:
+          type: string
+          const: RSA
+        use:
+          type: string
+          const: sig
+        alg:
+          type: string
+          const: RS256
+        kid:
+          type: string
+          description: Identificador de la clave; coincide con el `kid` del encabezado del JWT.
+        n:
+          type: string
+          description: Módulo RSA en base64url.
+        e:
+          type: string
+          description: Exponente público RSA en base64url.
+    Jwks:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    Problem:
+      type: object
+      description: Formato de error común a todas las APIs.
+      required: [status, code, message]
+      properties:
+        status:
+          type: integer
+          description: Código de estado HTTP.
+        code:
+          type: string
+          description: |
+            Código estable y legible por máquina. Valores usados por este servicio:
+            `VALIDATION_ERROR`, `EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHORIZED`.
+        message:
+          type: string
+          description: Mensaje legible para personas.
+        details:
+          type: array
+          description: Detalles adicionales, por ejemplo errores por campo.
+          items:
+            $ref: '#/components/schemas/ProblemDetail'
+    ProblemDetail:
+      type: object
+      required: [message]
+      properties:
+        field:
+          type: string
+          description: Campo afectado, si aplica.
+        message:
+          type: string
+  responses:
+    ValidationError:
+      description: Los datos enviados no cumplen las reglas de validación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            validacion:
+              value:
+                status: 400
+                code: VALIDATION_ERROR
+                message: Los datos enviados no son válidos.
+                details:
+                  - field: password
+                    message: La contraseña debe tener al menos 8 caracteres, con letras y números.
+    Unauthorized:
+      description: Token ausente, inválido o expirado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            sinToken:
+              value:
+                status: 401
+                code: UNAUTHORIZED
+                message: Token de acceso ausente, inválido o expirado.
+    InvalidCredentials:
+      description: Credenciales incorrectas. Respuesta uniforme que no revela si el correo existe.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            credenciales:
+              value:
+                status: 401
+                code: INVALID_CREDENTIALS
+                message: Correo o contraseña incorrectos.
+    EmailTaken:
+      description: Ya existe un perfil con ese correo; no se crea otro.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            duplicado:
+              value:
+                status: 409
+                code: EMAIL_TAKEN
+                message: Ya existe un perfil registrado con ese correo.
+  examples:
+    ProfileExample:
+      summary: Perfil
+      value:
+        id: 7b0c1f7e-3c1a-4f55-9a3e-2d6f9a1b8c40
+        email: ana.mora@example.com
+        displayName: Ana Mora
+        createdAt: '2026-11-15T14:30:00.000Z'
+    AuthResponseExample:
+      summary: Token y perfil
+      value:
+        accessToken: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImF1dGgtYXBpLTIwMjYtMDEifQ.eyJpc3MiOiJhdXRoLWFwaSIsImF1ZCI6ImthaG9vdC1hcGkiLCJzdWIiOiI3YjBjMWY3ZS0zYzFhLTRmNTUtOWEzZS0yZDZmOWExYjhjNDAiLCJuYW1lIjoiQW5hIE1vcmEiLCJlbWFpbCI6ImFuYS5tb3JhQGV4YW1wbGUuY29tIiwiaWF0IjoxNzYzMjE5NDAwLCJleHAiOjE3NjMyMjMwMDB9.firma
+        tokenType: Bearer
+        expiresIn: 3600
+        profile:
+          id: 7b0c1f7e-3c1a-4f55-9a3e-2d6f9a1b8c40
+          email: ana.mora@example.com
+          displayName: Ana Mora
+          createdAt: '2026-11-15T14:30:00.000Z'

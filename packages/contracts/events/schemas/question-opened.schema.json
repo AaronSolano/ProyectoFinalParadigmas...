@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/question-opened.schema.json",
+  "title": "question:opened",
+  "description": "Servidor -> sala. Pregunta abierta. No incluye la respuesta correcta.",
+  "type": "object",
+  "properties": {
+    "questionIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Índice de la pregunta, base 0."
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "statement": {
+      "type": "string"
+    },
+    "imageUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "closesAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "serverTime": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "questionIndex",
+    "total",
+    "statement",
+    "imageUrl",
+    "closesAt",
+    "serverTime"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "questionIndex": 0,
+      "total": 5,
+      "statement": "Costa Rica no tiene ejército permanente.",
+      "imageUrl": "http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png",
+      "closesAt": "2026-11-15T15:00:30.000Z",
+      "serverTime": "2026-11-15T15:00:00.000Z"
+    }
+  ]
+}

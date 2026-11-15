@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/session.leave.schema.json",
+  "title": "session:leave",
+  "description": "Cliente -> servidor. El participante abandona la sala; el servidor emite participant:left y lo saca de la sala lógica.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[2-9A-HJ-NP-Z]{6}$",
+      "description": "Código de la sala (el mismo de la API REST).",
+      "examples": [
+        "K7P2QX"
+      ]
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "K7P2QX"
+    }
+  ]
+}

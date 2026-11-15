@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/question-closed.schema.json",
+  "title": "question:closed",
+  "description": "Servidor -> sala. La pregunta se cerró (por plazo o por el anfitrión). ÚNICO evento que lleva correctAnswer. results incluye a todos los participantes.",
+  "type": "object",
+  "properties": {
+    "questionIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Índice de la pregunta, base 0."
+    },
+    "correctAnswer": {
+      "type": "boolean",
+      "description": "true = Verdadero."
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "question-result.schema.json"
+      }
+    },
+    "ranking": {
+      "type": "array",
+      "items": {
+        "$ref": "ranking-entry.schema.json"
+      }
+    }
+  },
+  "required": [
+    "questionIndex",
+    "correctAnswer",
+    "results",
+    "ranking"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "questionIndex": 0,
+      "correctAnswer": true,
+      "results": [
+        {
+          "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+          "answered": true,
+          "correct": true,
+          "pointsAwarded": 1,
+          "totalScore": 1
+        },
+        {
+          "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
+          "answered": false,
+          "correct": false,
+          "pointsAwarded": 0,
+          "totalScore": 0
+        }
+      ],
+      "ranking": [
+        {
+          "position": 1,
+          "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+          "displayName": "Ana",
+          "score": 1
+        },
+        {
+          "position": 2,
+          "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
+          "displayName": "Beto",
+          "score": 0
+        }
+      ]
+    }
+  ]
+}

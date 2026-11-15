@@ -20,7 +20,18 @@ import type {
   StateSyncEvent,
 } from '../api/events';
 
-export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'unauthorized';
+export type ConnectionState =
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'reconnect_failed'
+  | 'unauthorized';
+
+export const RECONNECT_CONFIG = {
+  maxAttempts: 10,
+  baseDelayMs: 150,
+  maxDelayMs: 4000,
+};
 
 export interface GameLiveState {
   code: string;
@@ -135,7 +146,7 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
       reconnection: true,
       reconnectionDelay: 500,
       reconnectionDelayMax: 4000,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: RECONNECT_CONFIG.maxAttempts,
     });
     socketRef.current = socket;
 
@@ -144,7 +155,6 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
         return;
       }
       clearReconnectTimer();
-      serverDisconnectAttemptsRef.current = 0;
       setConnectionState('connected');
       socket.emit('session:join', { code: normalizedCode });
     });
@@ -153,18 +163,27 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
       if (disposed) {
         return;
       }
-      setConnectionState('reconnecting');
       if (reason === 'io server disconnect') {
         clearReconnectTimer();
+        if (serverDisconnectAttemptsRef.current >= RECONNECT_CONFIG.maxAttempts) {
+          setConnectionState('reconnect_failed');
+          return;
+        }
+        setConnectionState('reconnecting');
         const attempt = serverDisconnectAttemptsRef.current;
         serverDisconnectAttemptsRef.current += 1;
-        const delayMs = Math.min(4000, 150 * Math.pow(2, attempt));
+        const delayMs = Math.min(
+          RECONNECT_CONFIG.maxDelayMs,
+          RECONNECT_CONFIG.baseDelayMs * Math.pow(2, attempt),
+        );
         reconnectTimerRef.current = window.setTimeout(() => {
           reconnectTimerRef.current = null;
           if (!disposed && socketRef.current === socket) {
             socket.connect();
           }
         }, delayMs);
+      } else {
+        setConnectionState('reconnecting');
       }
     });
 
@@ -177,12 +196,24 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
         setConnectionState('unauthorized');
         setLiveState((prev) => ({ ...prev, lastError: 'UNAUTHORIZED' }));
         notifySessionExpired();
+      } else if (serverDisconnectAttemptsRef.current >= RECONNECT_CONFIG.maxAttempts) {
+        clearReconnectTimer();
+        setConnectionState('reconnect_failed');
       } else {
         setConnectionState('reconnecting');
       }
     });
 
+    socket.io.on('reconnect_failed', () => {
+      if (disposed) {
+        return;
+      }
+      clearReconnectTimer();
+      setConnectionState('reconnect_failed');
+    });
+
     socket.on('state_sync', (payload: StateSyncEvent) => {
+      serverDisconnectAttemptsRef.current = 0;
       setConnectionState('connected');
       setLiveState((prev) => applyStateSync(prev, payload, Date.now()));
     });
@@ -343,6 +374,20 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
     }, 350);
   }, []);
 
+  const retryReconnect = useCallback(() => {
+    const socket = socketRef.current;
+    if (!socket) {
+      return;
+    }
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    serverDisconnectAttemptsRef.current = 0;
+    setConnectionState('reconnecting');
+    socket.connect();
+  }, []);
+
   const clearError = useCallback(() => {
     setLiveState((prev) => ({ ...prev, lastError: null }));
   }, []);
@@ -356,6 +401,7 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
     submitAnswer,
     leaveSession,
     simulateReconnect,
+    retryReconnect,
     clearError,
   };
 }

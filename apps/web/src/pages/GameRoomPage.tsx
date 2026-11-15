@@ -28,6 +28,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     submitAnswer,
     leaveSession,
     simulateReconnect,
+    retryReconnect,
     clearError,
   } = useGameSocket(normalizedCode, token, roleHint === 'host');
 
@@ -51,6 +52,20 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
       {connectionState === 'reconnecting' && (
         <div className="reconnect-banner" role="status" data-testid="reconnect-banner">
           {t('game.reconnectingBanner')}
+        </div>
+      )}
+
+      {connectionState === 'reconnect_failed' && (
+        <div className="reconnect-banner" role="alert" data-testid="reconnect-failed-banner">
+          <span>{t('game.reconnectFailedBanner')}</span>{' '}
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            data-testid="btn-retry-reconnect"
+            onClick={retryReconnect}
+          >
+            {t('game.retryReconnectBtn')}
+          </button>
         </div>
       )}
 

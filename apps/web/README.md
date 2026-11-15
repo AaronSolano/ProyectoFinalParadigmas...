@@ -13,6 +13,10 @@ VITE_KAHOOT_API_URL=http://localhost:3002
 VITE_ENABLE_DEBUG_CONTROLS=false
 ```
 
+### Controles de depuración (`VITE_ENABLE_DEBUG_CONTROLS`)
+- **En producción normal:** debe mantenerse en `false` (su valor por defecto) para que los controles de prueba como el botón *Simular reconexión* permanezcan ocultos para los usuarios finales.
+- **Para la demostración en clase:** se debe construir la aplicación web con `VITE_ENABLE_DEBUG_CONTROLS=true` (por ejemplo, configurándola en las variables de entorno del proyecto en Vercel antes de compilar) a fin de habilitar el botón de simulación de reconexión durante la defensa.
+
 Para ejecutar contra el servidor de mocks (puertos `4011` y `4010`):
 
 ```bash

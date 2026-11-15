@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { io as ioClient } from 'socket.io-client';
 import i18n, { LANGUAGE_STORAGE_KEY, setAppLanguage } from '../i18n';
+import { es } from '../i18n/es';
+import { en } from '../i18n/en';
 import { App } from '../App';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
@@ -19,6 +21,7 @@ import {
   applyStateSync,
   computeClockOffsetMs,
   createInitialGameLiveState,
+  RECONNECT_CONFIG,
 } from '../realtime/useGameSocket';
 import { ApiProblemError, kahootApi, authApi } from '../api/client';
 // @ts-expect-error ESM mock server module
@@ -583,6 +586,119 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
         { timeout: 4000 },
       );
     } finally {
+      await mocks.close();
+    }
+  });
+
+  it('ajuste 3b: tras 10 intentos seguidos fallidos de io server disconnect muestra aviso con botón Reintentar (ES/EN) que reinicia el contador y reconecta', async () => {
+    const collectKeyPaths = (obj: Record<string, unknown>, prefix = ''): string[] =>
+      Object.keys(obj)
+        .sort()
+        .flatMap((key) => {
+          const val = obj[key];
+          const path = prefix ? `${prefix}.${key}` : key;
+          return val && typeof val === 'object'
+            ? collectKeyPaths(val as Record<string, unknown>, path)
+            : [path];
+        });
+
+    expect(collectKeyPaths(es)).toEqual(collectKeyPaths(en));
+
+    const prevBaseDelay = RECONNECT_CONFIG.baseDelayMs;
+    const prevMaxDelay = RECONNECT_CONFIG.maxDelayMs;
+    RECONNECT_CONFIG.baseDelayMs = 5;
+    RECONNECT_CONFIG.maxDelayMs = 10;
+
+    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
+    const kahootPort = mocks.kahootServer.address().port;
+    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
+
+    const hostToken = Buffer.from(
+      JSON.stringify({
+        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+        name: 'Ana Mora',
+        email: 'ana.mora@example.com',
+      }),
+    ).toString('base64url');
+    const jwt = `hdr.${hostToken}.sig`;
+
+    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        questionTimeSeconds: 20,
+      }),
+    });
+    const freshSession = (await createRes.json()) as { code: string };
+
+    saveAuthSession(jwt, {
+      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      email: 'ana.mora@example.com',
+      displayName: 'Ana Mora',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    let dropReconnects = false;
+    let disconnectCount = 0;
+    let firstServerSocket: any = null;
+    mocks.io.of('/game').on('connection', (sock: any) => {
+      if (!firstServerSocket) {
+        firstServerSocket = sock;
+      }
+      if (dropReconnects) {
+        disconnectCount += 1;
+        sock.disconnect(true);
+      }
+    });
+
+    try {
+      renderWithProviders(<App />, [`/host/${freshSession.code}`]);
+
+      await waitFor(() => {
+        expect(firstServerSocket).not.toBeNull();
+        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
+      });
+
+      // Provocar 10 desconexiones seguidas desde el servidor
+      dropReconnects = true;
+      firstServerSocket.disconnect(true);
+
+      const failedBanner = await screen.findByTestId(
+        'reconnect-failed-banner',
+        {},
+        { timeout: 4000 },
+      );
+      expect(failedBanner).toHaveTextContent('No se pudo reconectar a la partida.');
+      expect(screen.getByTestId('btn-retry-reconnect')).toHaveTextContent('Reintentar');
+      expect(disconnectCount).toBe(RECONNECT_CONFIG.maxAttempts);
+
+      // Verificar también en inglés
+      fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('reconnect-failed-banner')).toHaveTextContent(
+          'Could not reconnect to the game.',
+        );
+        expect(screen.getByTestId('btn-retry-reconnect')).toHaveTextContent('Retry');
+      });
+
+      // Al pulsar Reintentar, reinicia el contador y vuelve a conectar aplicando state_sync
+      dropReconnects = false;
+      fireEvent.click(screen.getByTestId('btn-retry-reconnect'));
+
+      await waitFor(
+        () => {
+          expect(screen.queryByTestId('reconnect-failed-banner')).not.toBeInTheDocument();
+          expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
+        },
+        { timeout: 4000 },
+      );
+    } finally {
+      RECONNECT_CONFIG.baseDelayMs = prevBaseDelay;
+      RECONNECT_CONFIG.maxDelayMs = prevMaxDelay;
       await mocks.close();
     }
   });

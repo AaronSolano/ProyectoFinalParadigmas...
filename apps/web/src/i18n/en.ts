@@ -103,6 +103,8 @@ export const en = {
       scoreLabel: '{{score}} pts',
       myScore: 'Your score: {{score}} pts',
       reconnectingBanner: 'Connection lost. Reconnecting to server...',
+      reconnectFailedBanner: 'Could not reconnect to the game.',
+      retryReconnectBtn: 'Retry',
       reconnectedNotice: 'State synchronized with server.',
       simulateDisconnectBtn: 'Simulate reconnect',
     },

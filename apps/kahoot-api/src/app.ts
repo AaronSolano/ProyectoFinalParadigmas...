@@ -7,6 +7,8 @@ import {
   Module,
   ValidationPipe,
 } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
+import { httpTelemetry } from "./telemetry";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
@@ -15,19 +17,28 @@ import { resolve } from "node:path";
 import { parse } from "yaml";
 import { DataSource } from "typeorm";
 import { Config } from "./config/config";
-import { Repository } from "./data/repository";
-import { KahootService } from "./application/service";
+import { QuizUseCases } from "./application/quiz-use-cases";
+import { SessionUseCases } from "./application/session-use-cases";
+import { PostgresQuizRepository } from "./data/quiz-repository";
+import { PostgresSessionRepository } from "./data/session-repository";
+import { PostgresUnitOfWork } from "./data/unit-of-work";
+import {
+  QuizRepository,
+  SessionRepository,
+  UnitOfWork,
+  Clock,
+  IdGenerator,
+} from "./domain/ports";
+import { randomInt, randomUUID } from "node:crypto";
 import { AuthGuard } from "./auth/auth";
 import {
   DiskImageStorage,
   ImageStorage,
   SupabaseImageStorage,
 } from "./modules/images/storage";
-import {
-  PublicController,
-  QuizzesController,
-  SessionsController,
-} from "./presentation/controllers";
+import { PublicController } from "./presentation/public.controller";
+import { QuizzesController } from "./presentation/quizzes.controller";
+import { SessionsController } from "./presentation/sessions.controller";
 import { Problem } from "./domain/problem";
 @Catch()
 class ProblemFilter implements ExceptionFilter {
@@ -74,11 +85,67 @@ export async function createApp(
           config.supabaseBucket,
         ));
   @Module({
+    imports: [
+      MulterModule.register({
+        limits: { fileSize: config.imageMaxBytes, files: 1 },
+      }),
+    ],
     controllers: [QuizzesController, SessionsController, PublicController],
     providers: [
+      { provide: "QuizRepository", useValue: new PostgresQuizRepository(db) },
       {
-        provide: KahootService,
-        useValue: new KahootService(new Repository(db), config, images),
+        provide: "SessionRepository",
+        useValue: new PostgresSessionRepository(db),
+      },
+      { provide: "UnitOfWork", useValue: new PostgresUnitOfWork(db) },
+      { provide: "Clock", useValue: { now: () => new Date() } },
+      {
+        provide: "Ids",
+        useValue: {
+          uuid: randomUUID,
+          roomCode: () =>
+            Array.from(
+              { length: 6 },
+              () =>
+                "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"[
+                  randomInt("23456789ABCDEFGHJKLMNPQRSTUVWXYZ".length)
+                ],
+            ).join(""),
+        },
+      },
+      {
+        provide: QuizUseCases,
+        inject: [
+          "QuizRepository",
+          "UnitOfWork",
+          "IMAGE_STORAGE",
+          "Clock",
+          "Ids",
+        ],
+        useFactory: (
+          repo: QuizRepository,
+          work: UnitOfWork,
+          images: ImageStorage,
+          clock: Clock,
+          ids: IdGenerator,
+        ) =>
+          new QuizUseCases(
+            repo,
+            work,
+            images,
+            clock,
+            ids,
+            config.imageMaxBytes,
+          ),
+      },
+      {
+        provide: SessionUseCases,
+        inject: ["SessionRepository", "UnitOfWork", "Ids"],
+        useFactory: (
+          repo: SessionRepository,
+          work: UnitOfWork,
+          ids: IdGenerator,
+        ) => new SessionUseCases(repo, work, ids, config.questionTime),
       },
       { provide: AuthGuard, useValue: new AuthGuard(config) },
       { provide: "IMAGE_STORAGE", useValue: images },
@@ -92,6 +159,7 @@ export async function createApp(
   });
   app.setGlobalPrefix("api/v1");
   app.enableCors({ origin: config.cors });
+  app.use(httpTelemetry);
   app.useGlobalFilters(new ProblemFilter());
   app.useGlobalPipes(
     new ValidationPipe({

@@ -14,6 +14,12 @@ Con PostgreSQL disponible, ejecutar `npm run migration:run` y después `npm star
 
 HTTP: `/api/v1/health`, `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/me`. JWKS se publica exclusivamente en `/.well-known/jwks.json`. Scalar: `/docs`. OpenAPI generado: `/docs/openapi-json`.
 
+## Capas y calidad estática
+
+`AppModule` declara los controladores y proveedores; `createApp(config, profiles)` permite sustituir el repositorio en pruebas sin redefinir el módulo. El controlador público recibe el puerto `Tokens`, incluido `jwks()`, y no conoce el adaptador RSA.
+
+`npm run lint` ejecuta ESLint y TypeScript. ESLint rechaza dependencias de dominio hacia aplicación, datos, presentación o frameworks; aplicación hacia datos, presentación o TypeORM; y presentación hacia datos. `test/architecture.spec.ts` comprueba la regla con el CLI real, incluidos imports de tipos y reexportaciones desde carpetas anidadas. `npm run format` aplica Prettier y `npm run format:check` verifica el formato.
+
 ## Verificación
 
 `npm test` cubre dominio, registro/login HTTP, JWT y JWKS independiente de la BD, validación, errores uniformes, documentación y exportación OTLP. Para activar la suite PostgreSQL se exige `AUTH_TEST_DATABASE_URL` apuntando a una **base de pruebas dedicada**: aplica migraciones, crea perfiles de prueba y verifica carrera de correo duplicado y persistencia al reconstruir servicio/conexión. No usar una base de producción.

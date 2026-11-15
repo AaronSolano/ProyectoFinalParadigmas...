@@ -19,7 +19,8 @@ async function main() {
             config.supabaseKey,
             config.supabaseBucket,
           );
-    await seedDemo(db, images, process.env.DEMO_PROFILE_ID);
+    const result = await seedDemo(db, images, process.env.DEMO_PROFILE_ID);
+    for (const warning of result.warnings) console.warn(warning);
     console.log("Cuestionario de demostracion preparado.");
   } finally {
     await db.destroy();

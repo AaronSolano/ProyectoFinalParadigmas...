@@ -41,6 +41,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     other: string,
     third: string,
     sign: (id: string, aud?: string, expired?: boolean) => Promise<string>;
+  let config: ReturnType<typeof loadConfig>;
   const ownerId = randomUUID(),
     otherId = randomUUID(),
     thirdId = randomUUID();
@@ -74,7 +75,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
       sign(thirdId),
     ]);
     root = await mkdtemp(join(tmpdir(), "kahoot-test-"));
-    const config = loadConfig({
+    config = loadConfig({
       KAHOOT_DATABASE_URL: process.env.TEST_DATABASE_URL,
       AUTH_BASE_URL: `http://127.0.0.1:${(jwks.address() as AddressInfo).port}`,
       PUBLIC_API_URL: "http://localhost:3002",
@@ -131,7 +132,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     valid("Session", body);
     return body;
   }
-  it("health, documentación y validación JWT por clave pública", async () => {
+  it("health, documentacion y validacion JWT por clave publica", async () => {
     await api().get("/api/v1/health").expect(200);
     await api().get("/docs").expect(200);
     await api().get("/api/v1/quizzes").expect(401);
@@ -286,7 +287,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
       .expect(200);
     valid("SessionResults", final.body);
   });
-  it("imagen pública persistente y snapshot conserva archivo original", async () => {
+  it("imagen publica persistente y snapshot conserva archivo original", async () => {
     const q = await quiz(),
       p = await question(q.id);
     const path = `/api/v1/quizzes/${q.id}/questions/${p.id}/image`;
@@ -307,11 +308,16 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     const uploaded = await api()
       .put(path)
       .set(auth())
-      .attach("file", png, "pixel.png")
+      .attach("file", png, "blob")
       .expect(200);
     valid("Question", uploaded.body);
     const url = new URL(uploaded.body.imageUrl).pathname;
-    await api().get(url).expect(200);
+    await api()
+      .get(url)
+      .expect(200)
+      .expect("Cache-Control", "public, max-age=31536000, immutable")
+      .expect("Cross-Origin-Resource-Policy", "cross-origin")
+      .expect("X-Content-Type-Options", "nosniff");
     await room(q.id);
     await api().delete(path).set(auth()).expect(200);
     await api().get(url).expect(200);
@@ -323,7 +329,26 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api().delete(path).set(auth()).expect(200);
     await api().get(new URL(second.body.imageUrl).pathname).expect(404);
   });
-  it("resultados persistidos separados y disponibles con otra conexi�n", async () => {
+  it("respeta IMAGE_MAX_BYTES en multer y conserva el error Problem", async () => {
+    const q = await quiz(),
+      p = await question(q.id);
+    const limited = await createApp({ ...config, imageMaxBytes: 64 }, db);
+    try {
+      const result = await request(limited.app.getHttpServer())
+        .put(`/api/v1/quizzes/${q.id}/questions/${p.id}/image`)
+        .set(auth())
+        .attach("file", Buffer.alloc(65), "foto")
+        .expect(413);
+      expect(result.body).toMatchObject({
+        status: 413,
+        code: "IMAGE_TOO_LARGE",
+      });
+      valid("Problem", result.body);
+    } finally {
+      await limited.app.close();
+    }
+  });
+  it("resultados persistidos separados y disponibles con otra conexion", async () => {
     const q = await quiz();
     await question(q.id);
     const a = await room(q.id),

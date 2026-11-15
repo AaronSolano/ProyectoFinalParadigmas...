@@ -1,0 +1,7 @@
+{
+  "authApiUrl": "http://localhost:3001",
+  "kahootApiUrl": "http://localhost:3002",
+  "email": "docente.demo@example.com",
+  "password": "",
+  "sessionCode": "K7M3QX"
+}

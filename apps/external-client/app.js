@@ -197,12 +197,11 @@ export async function fetchSessionAndResults(config, fetchImpl = globalThis.fetc
   };
 }
 
-export async function loadInitialConfig(fetchImpl = globalThis.fetch) {
+export async function loadInitialConfig(fetchImpl = globalThis.fetch, locationSearch = null) {
   const defaults = {
     authApiUrl: 'http://localhost:3001',
     kahootApiUrl: 'http://localhost:3002',
     email: 'docente.demo@example.com',
-    password: '',
     sessionCode: 'K7M3QX',
   };
 
@@ -220,21 +219,33 @@ export async function loadInitialConfig(fetchImpl = globalThis.fetch) {
     }
   }
 
-  const merged = { ...defaults, ...fileConfig };
+  const merged = {
+    authApiUrl: fileConfig.authApiUrl ?? defaults.authApiUrl,
+    kahootApiUrl: fileConfig.kahootApiUrl ?? defaults.kahootApiUrl,
+    email: fileConfig.email ?? defaults.email,
+    sessionCode: fileConfig.sessionCode ?? defaults.sessionCode,
+  };
 
-  if (typeof window !== 'undefined' && window.location?.search) {
-    const params = new URLSearchParams(window.location.search);
+  const rawSearch =
+    locationSearch !== null
+      ? locationSearch
+      : typeof window !== 'undefined' && window.location?.search
+        ? window.location.search
+        : '';
+
+  if (rawSearch) {
+    const params = new URLSearchParams(rawSearch);
     if (params.get('authApiUrl')) merged.authApiUrl = params.get('authApiUrl');
     if (params.get('kahootApiUrl')) merged.kahootApiUrl = params.get('kahootApiUrl');
     if (params.get('email')) merged.email = params.get('email');
-    if (params.get('password')) merged.password = params.get('password');
     if (params.get('code')) merged.sessionCode = params.get('code');
+    // Por seguridad, ?password= se ignora deliberadamente: la contraseña solo se ingresa en el formulario.
   }
 
   return merged;
 }
 
-function initBrowserApp() {
+export function initBrowserApp() {
   if (typeof document === 'undefined') {
     return;
   }
@@ -373,11 +384,8 @@ function initBrowserApp() {
     inputAuthUrl.value = cfg.authApiUrl || '';
     inputKahootUrl.value = cfg.kahootApiUrl || '';
     inputEmail.value = cfg.email || '';
-    inputPassword.value = cfg.password || '';
+    inputPassword.value = '';
     inputSessionCode.value = cfg.sessionCode || '';
-    if (cfg.password && cfg.sessionCode) {
-      void runQuery();
-    }
   });
 }
 

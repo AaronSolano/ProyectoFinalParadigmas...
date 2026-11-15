@@ -18,7 +18,6 @@ export async function resolveRuntimeConfig(env = process.env) {
     authApiUrl: 'http://localhost:3001',
     kahootApiUrl: 'http://localhost:3002',
     email: 'docente.demo@example.com',
-    password: '',
     sessionCode: 'K7M3QX',
   };
 
@@ -33,7 +32,6 @@ export async function resolveRuntimeConfig(env = process.env) {
     authApiUrl: env.EXTERNAL_AUTH_API_URL || env.VITE_AUTH_API_URL || fileConfig.authApiUrl,
     kahootApiUrl: env.EXTERNAL_KAHOOT_API_URL || env.VITE_KAHOOT_API_URL || fileConfig.kahootApiUrl,
     email: env.EXTERNAL_CLIENT_EMAIL || env.DEMO_EMAIL || fileConfig.email,
-    password: env.EXTERNAL_CLIENT_PASSWORD || env.DEMO_PASSWORD || fileConfig.password,
     sessionCode: env.EXTERNAL_CLIENT_SESSION_CODE || fileConfig.sessionCode,
   };
 }

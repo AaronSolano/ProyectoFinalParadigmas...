@@ -14,12 +14,20 @@ Se configura mediante `apps/external-client/config.json` (cuando se sirve como s
 EXTERNAL_AUTH_API_URL=http://localhost:3001
 EXTERNAL_KAHOOT_API_URL=http://localhost:3002
 EXTERNAL_CLIENT_EMAIL=docente.demo@example.com
-EXTERNAL_CLIENT_PASSWORD=tu_clave_demo
 EXTERNAL_CLIENT_SESSION_CODE=H9XQTX
 EXTERNAL_CLIENT_PORT=5174
 ```
 
-También permite indicar o modificar parámetros directamente en la interfaz o por query string (`?code=H9XQTX&authApiUrl=http://localhost:3001&kahootApiUrl=http://localhost:3002`).
+Por seguridad, `/config.js` y `config.json` **nunca** incluyen contraseñas (solo `authApiUrl`, `kahootApiUrl`, `email` y `sessionCode`), y el parámetro `?password=` en la URL se ignora por completo. La contraseña se escribe siempre en el formulario de la interfaz.
+
+### Configuración de CORS para consumo entre orígenes distintos
+Para consumir `auth-api` y `kahoot-api` desde el origen del cliente externo (por ejemplo `http://localhost:5174` o el dominio desplegado), ese origen **debe estar incluido en `CORS_ORIGINS` del `.env` del Compose** (separado por comas):
+
+```bash
+CORS_ORIGINS=http://localhost:8080,http://localhost:5174
+```
+
+Cualquier otro origen no listado en `CORS_ORIGINS` queda bloqueado por las APIs.
 
 ## Comandos
 
@@ -30,6 +38,6 @@ npm start -w @profelink/external-client
 # Verificar sintaxis e independencia (sin imports de APIs ni acceso a BD)
 npm run lint -w @profelink/external-client
 
-# Ejecutar pruebas automatizadas (1.1 consumo HTTP y 1.2 independencia)
+# Ejecutar pruebas automatizadas (1.1 consumo HTTP, seguridad de configuración y 1.2 independencia)
 npm test -w @profelink/external-client
 ```

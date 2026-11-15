@@ -7,7 +7,7 @@ import { NextFunction, Request, Response } from 'express';
 export function startTelemetry(endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
   if (!endpoint) return undefined;
   const base = endpoint.replace(/\/$/,'');
-  const sdk = new NodeSDK({serviceName:'auth-api',traceExporter:new OTLPTraceExporter({url:`${base}/v1/traces`,timeoutMillis:2000}),metricReader:new PeriodicExportingMetricReader({exporter:new OTLPMetricExporter({url:`${base}/v1/metrics`,timeoutMillis:2000}),exportIntervalMillis:10000})});
+  const sdk = new NodeSDK({serviceName:'auth-api',traceExporter:new OTLPTraceExporter({url:`${base}/v1/traces`,timeoutMillis:2000}),metricReaders:[new PeriodicExportingMetricReader({exporter:new OTLPMetricExporter({url:`${base}/v1/metrics`,timeoutMillis:2000}),exportIntervalMillis:10000})]});
   sdk.start(); return sdk;
 }
 export function httpTelemetry(req: Request, res: Response, next: NextFunction) {

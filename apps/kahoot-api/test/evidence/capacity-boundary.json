@@ -1,0 +1,31 @@
+{
+  "run": "0a8c7f71-3097-4f31-9395-51c02abdd493",
+  "date": "2026-11-15T22:45:55.653Z",
+  "environment": {
+    "platform": "linux",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logicalCpus": 16,
+    "ramBytes": 8170135552,
+    "node": "v22.23.5"
+  },
+  "thresholds": {
+    "maxP95Ms": 1000,
+    "maxErrorRate": 0.01,
+    "timeoutMs": 15000
+  },
+  "steps": [
+    {
+      "participants": 800,
+      "connected": 800,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 9054.769591000004,
+      "p95CloseMs": 1288.4831840000115,
+      "passed": false
+    }
+  ],
+  "maxVerifiedParticipants": 0,
+  "exitCode": 1
+}

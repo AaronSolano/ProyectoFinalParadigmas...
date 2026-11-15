@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-15T22:43:36.3801751Z",
+  "baseCommit": "aa109599ab0700905bb14e2adf9065d440ac74e7",
+  "lockfileSha256": "426A2BDBCEB1397D42A18DA9B6DC8126ACA1B700648625861D0F7BDC9F82AFAE",
+  "requestedSteps": [5, 50, 100, 200, 400],
+  "serverLimits": {
+    "memoryBytes": 536870912,
+    "nanoCpus": 500000000,
+    "memorySwapBytes": 536870912
+  },
+  "clientAndServerShareMachine": true,
+  "dockerResources": "16 CPUs, 8170135552 bytes, Docker Desktop",
+  "kahootImage": "sha256:4b638377fc97116b67e4bb757d43b51881db4a70ce6f5c1610076eb60121983f",
+  "serverCgroupBefore": {
+    "cpu": "usage_usec 4841507\nuser_usec 3920610\nsystem_usec 920896\nnice_usec 0\nnr_periods 183\nnr_throttled 52\nthrottled_usec 3412724\nnr_bursts 0\nburst_usec 0\n",
+    "memoryCurrent": "78258176\n"
+  },
+  "clientLimits": {
+    "nanoCpus": 0,
+    "memoryBytes": 0
+  },
+  "serverCgroupAfter": {
+    "cpu": "usage_usec 14220770\nuser_usec 11496573\nsystem_usec 2724196\nnice_usec 0\nnr_periods 415\nnr_throttled 224\nthrottled_usec 17214084\nnr_bursts 0\nburst_usec 0\n",
+    "memoryCurrent": "101130240\n",
+    "memoryPeak": "110415872\n"
+  },
+  "serverState": {
+    "oomKilled": false,
+    "restarts": 0,
+    "health": "healthy"
+  },
+  "testsPassed": 61,
+  "physicalHost": {
+    "ramBytes": 16869351424,
+    "os": "Microsoft Windows 11 Pro",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logicalCpus": 16
+  },
+  "postgresVersion": "psql (PostgreSQL) 17.12",
+  "extensionSteps": [800, 1600],
+  "boundaryClientLimits": {
+    "nanoCpus": 0,
+    "memoryBytes": 0
+  },
+  "serverCgroupAfterBoundary": {
+    "cpu": "usage_usec 49108756\nuser_usec 39289342\nsystem_usec 9819413\nnice_usec 0\nnr_periods 1342\nnr_throttled 851\nthrottled_usec 74812359\nnr_bursts 0\nburst_usec 0\n",
+    "memoryCurrent": "87650304\n",
+    "memoryPeak": "138731520\n"
+  },
+  "serverStateAfterBoundary": {
+    "oomKilled": false,
+    "restarts": 0,
+    "health": "healthy"
+  },
+  "observedServerLimits": {
+    "nanoCpus": 500000000,
+    "memoryBytes": 536870912,
+    "memorySwapBytes": 536870912
+  }
+}

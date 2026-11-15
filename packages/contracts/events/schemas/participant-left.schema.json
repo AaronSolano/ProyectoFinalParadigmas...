@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/participant-left.schema.json",
+  "title": "participant:left",
+  "description": "Servidor -> sala. Un participante abandonó la sala (session:leave). Una desconexión de red no lo emite: el participante sigue en la sala y puede reconectar.",
+  "type": "object",
+  "properties": {
+    "participantId": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "participantId"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12"
+    }
+  ]
+}

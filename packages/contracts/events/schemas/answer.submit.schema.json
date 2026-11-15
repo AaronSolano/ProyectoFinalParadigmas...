@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/answer.submit.schema.json",
+  "title": "answer:submit",
+  "description": "Cliente -> servidor. Envía la respuesta a la pregunta vigente. Una sola por participante y pregunta; se valida contra el reloj del servidor.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[2-9A-HJ-NP-Z]{6}$",
+      "description": "Código de la sala (el mismo de la API REST).",
+      "examples": [
+        "K7P2QX"
+      ]
+    },
+    "questionIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Índice de la pregunta, base 0."
+    },
+    "answer": {
+      "type": "boolean",
+      "description": "true = Verdadero, false = Falso."
+    }
+  },
+  "required": [
+    "code",
+    "questionIndex",
+    "answer"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "K7P2QX",
+      "questionIndex": 0,
+      "answer": true
+    }
+  ]
+}

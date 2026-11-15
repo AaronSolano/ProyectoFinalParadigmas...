@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/participant.schema.json",
+  "title": "Participante",
+  "description": "Participante de una sala.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identificador del participante en la sala."
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40
+    }
+  },
+  "required": [
+    "id",
+    "displayName"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+      "displayName": "Ana"
+    }
+  ]
+}

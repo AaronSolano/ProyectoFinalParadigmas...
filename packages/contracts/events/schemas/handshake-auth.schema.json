@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/handshake-auth.schema.json",
+  "title": "Autenticación del handshake",
+  "description": "Objeto `auth` que el cliente pasa al conectar a /game. Sin token válido (aud=kahoot-api) la conexión se rechaza con el error `unauthorized`.",
+  "type": "object",
+  "properties": {
+    "token": {
+      "type": "string",
+      "minLength": 1,
+      "description": "JWT emitido por auth-api con aud=kahoot-api."
+    }
+  },
+  "required": [
+    "token"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+  ]
+}

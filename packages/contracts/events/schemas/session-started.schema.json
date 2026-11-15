@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/session-started.schema.json",
+  "title": "session:started",
+  "description": "Servidor -> sala. La partida inició; sigue inmediatamente question:opened.",
+  "type": "object",
+  "properties": {
+    "totalQuestions": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "totalQuestions"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "totalQuestions": 5
+    }
+  ]
+}

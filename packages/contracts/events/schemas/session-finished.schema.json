@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/session-finished.schema.json",
+  "title": "session:finished",
+  "description": "Servidor -> sala. La partida terminó (tras cerrar la última pregunta); resultados ya persistidos.",
+  "type": "object",
+  "properties": {
+    "ranking": {
+      "type": "array",
+      "items": {
+        "$ref": "ranking-entry.schema.json"
+      }
+    }
+  },
+  "required": [
+    "ranking"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "ranking": [
+        {
+          "position": 1,
+          "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
+          "displayName": "Ana",
+          "score": 4
+        },
+        {
+          "position": 2,
+          "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
+          "displayName": "Beto",
+          "score": 2
+        }
+      ]
+    }
+  ]
+}

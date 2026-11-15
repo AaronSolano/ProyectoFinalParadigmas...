@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/session.join.schema.json",
+  "title": "session:join",
+  "description": "Cliente -> servidor. Une el socket a la sala \"session:<code>\" y provoca state_sync. Si la identidad ya era participante, se reasocia sin duplicarla.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "pattern": "^[2-9A-HJ-NP-Z]{6}$",
+      "description": "Código de la sala (el mismo de la API REST).",
+      "examples": [
+        "K7P2QX"
+      ]
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "K7P2QX"
+    }
+  ]
+}

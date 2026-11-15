@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/error.schema.json",
+  "title": "error",
+  "description": "Servidor -> cliente que causó el fallo. Error de un comando; no cierra la conexión.",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "enum": [
+        "FORBIDDEN",
+        "ROOM_NOT_FOUND",
+        "INVALID_PAYLOAD",
+        "INVALID_STATE",
+        "INTERNAL_ERROR"
+      ]
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "code": "FORBIDDEN",
+      "message": "Solo el anfitrión puede iniciar la partida."
+    }
+  ]
+}

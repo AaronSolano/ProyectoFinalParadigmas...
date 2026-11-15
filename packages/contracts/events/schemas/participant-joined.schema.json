@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://profelink.local/contracts/events/schemas/participant-joined.schema.json",
+  "title": "participant:joined",
+  "description": "Servidor -> sala. Un participante nuevo entró. No se emite en reconexiones de un participante ya existente.",
+  "type": "object",
+  "properties": {
+    "participant": {
+      "$ref": "participant.schema.json"
+    }
+  },
+  "required": [
+    "participant"
+  ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "participant": {
+        "id": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
+        "displayName": "Beto"
+      }
+    }
+  ]
+}

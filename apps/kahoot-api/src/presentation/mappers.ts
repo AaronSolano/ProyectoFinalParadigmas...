@@ -1,20 +1,50 @@
 import { Quiz, Question, Session, Participant } from "../domain/entities";
 export function quizView(q: Quiz) {
-  return { ...q };
+  return {
+    id: q.id,
+    ownerId: q.ownerId,
+    title: q.title,
+    description: q.description,
+    questionCount: q.questionCount,
+    createdAt: q.createdAt,
+    updatedAt: q.updatedAt,
+  };
 }
 export function questionView(q: Question, publicUrl: string) {
-  const { imageFilename, ...question } = q;
   return {
-    ...question,
-    imageUrl: imageFilename
-      ? `${publicUrl}/api/v1/images/${imageFilename}`
+    id: q.id,
+    quizId: q.quizId,
+    statement: q.statement,
+    correctAnswer: q.correctAnswer,
+    imageUrl: q.imageFilename
+      ? `${publicUrl}/api/v1/images/${q.imageFilename}`
       : null,
+    position: q.position,
+    createdAt: q.createdAt,
+    updatedAt: q.updatedAt,
   };
 }
 export function sessionView(s: Session) {
-  const { quizTitle: _quizTitle, ...session } = s;
-  return session;
+  return {
+    id: s.id,
+    code: s.code,
+    quizId: s.quizId,
+    hostId: s.hostId,
+    status: s.status,
+    questionTimeSeconds: s.questionTimeSeconds,
+    participantCount: s.participantCount,
+    createdAt: s.createdAt,
+    startedAt: s.startedAt,
+    finishedAt: s.finishedAt,
+  };
 }
 export function participantView(p: Participant) {
-  return { ...p };
+  return {
+    id: p.id,
+    sessionId: p.sessionId,
+    userId: p.userId,
+    displayName: p.displayName,
+    joinedAt: p.joinedAt,
+    score: p.score,
+  };
 }

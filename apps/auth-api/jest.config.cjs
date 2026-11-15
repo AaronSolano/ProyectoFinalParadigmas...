@@ -1,0 +1,1 @@
+module.exports = { testEnvironment: 'node', roots: ['<rootDir>/test'], testTimeout: 30000, transform: { '^.+\\.tsx?$': ['ts-jest', { tsconfig: { rootDir: '.', experimentalDecorators: true, emitDecoratorMetadata: true, esModuleInterop: true } }] } };

@@ -1,0 +1,19 @@
+{
+  "name": "profelink-kahoot",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Evaluaciones en vivo para ProfeLink (EIF400)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "spec:validate": "openspec validate --all"
+  }
+}

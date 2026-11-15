@@ -107,3 +107,23 @@ docker compose -p profelink-f7 -f test/compose.yaml --profile load down
 ```
 
 Configurar `LOAD_TIMEOUT_MS` (15000), `LOAD_MAX_P95_MS` (1000) y `LOAD_MAX_ERROR_RATE` (0.01) para ajustar los criterios. El Compose de pruebas utiliza bases e imágenes desechables y claves RSA efímeras; no es el despliegue de infraestructura. El informe verificado y sus límites están en [LOAD-VERIFICATION.md](./LOAD-VERIFICATION.md).
+
+## Métricas para paneles de juego — Codex, F6
+
+Todas usan el servicio `kahoot-api`. Los atributos nuevos tienen valores de una lista cerrada; no contienen códigos de sala, IDs, nombres ni tokens. Una sesión se considera activa desde `session:start` hasta finalizar, incluido el intervalo entre preguntas. Al arrancar, el valor se recupera desde PostgreSQL, tanto para preguntas abiertas como cerradas.
+
+| Nombre OTel                    | Tipo          | Unidad      | Atributos                                                                |
+| ------------------------------ | ------------- | ----------- | ------------------------------------------------------------------------ |
+| `game.sessions.active`         | Gauge         | `{session}` | Ninguno                                                                  |
+| `game.answers`                 | Counter       | `{answer}`  | `outcome`: `accepted`/`rejected`; `reason`: lista cerrada indicada abajo |
+| `game.question.close.duration` | Histogram     | `s`         | Ninguno                                                                  |
+| `game.live.rate_limited`       | Counter       | `{socket}`  | Ninguno                                                                  |
+| `game.connections.active`      | UpDownCounter | `1`         | Ninguno                                                                  |
+| `game.events`                  | Counter       | `1`         | `game.event`, `game.outcome`                                             |
+| `game.event.duration`          | Histogram     | `s`         | `game.event`, `game.outcome`                                             |
+
+`game.answers` cuenta respuestas aceptadas/rechazadas y errores de comandos `answer:submit`. Las aceptadas usan `reason=none`. Las rechazadas usan `already_answered`, `late`, `closed`, `not_in_session`, `invalid_state`, `invalid_payload`, `room_not_found`, `internal_error` u `other` para cualquier razón no reconocida. Los paquetes descartados por el límite de flujo no cuentan como respuestas procesadas.
+
+`game.question.close.duration` mide desde `closesAt` hasta que el servidor publica `question:closed`, después del commit, incluyendo espera en la cola y persistencia. Un cierre manual anterior al plazo se registra como 0, nunca negativo. No mide el tiempo de recepción en cada navegador. `game.live.rate_limited` cuenta una vez cada socket desconectado por exceso repetido; no cuenta cada paquete descartado.
+
+Pruebas: `game-telemetry.spec.ts` verifica exportación OTLP real, valores, unidades y atributos; `game-metrics.spec.ts` verifica recuperación, inicio/fin y medición después de publicar; `live.spec.ts` verifica el contador al desconectar un emisor que inunda la sala y el conteo de respuestas de otro participante.

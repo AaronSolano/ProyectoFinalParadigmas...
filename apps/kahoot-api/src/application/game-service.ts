@@ -1,4 +1,5 @@
 import { GameStore, GameTransaction } from "../domain/ports/game-store";
+import { GameMetrics, noGameMetrics } from "../domain/ports/game-metrics";
 import {
   Clock,
   systemClock,
@@ -30,6 +31,7 @@ export class GameService {
     private readonly store: GameStore,
     private readonly publicUrl: string,
     private readonly clock: Clock = systemClock,
+    private readonly metrics: GameMetrics = noGameMetrics,
   ) {}
   private serial<T>(code: string, work: () => Promise<T>): Promise<T> {
     const previous = this.pending.get(code) ?? Promise.resolve();
@@ -178,7 +180,11 @@ export class GameService {
           next = control === "start" ? 0 : (s.currentIndex ?? -1) + 1;
         const target = transition(s.status, control, next < questions.length);
         if (target === "question_closed")
-          return { closed: await this.closeQuestion(tx), deadline: null };
+          return {
+            closed: await this.closeQuestion(tx),
+            closedDeadline: s.closesAt!,
+            deadline: null,
+          };
         if (target === "finished") {
           const ranking = rank(
             (await tx.participants()).map((p) => ({
@@ -208,14 +214,22 @@ export class GameService {
         };
       });
       this.cancelTimer(code);
-      if (result.started)
+      if (result.started) {
+        this.metrics.sessionStarted();
         this.events.room(code, "session:started", result.started);
+      }
       if (result.opened)
         this.events.room(code, "question:opened", result.opened);
-      if (result.closed)
+      if (result.closed) {
         this.events.room(code, "question:closed", result.closed);
-      if (result.finished)
+        this.metrics.questionClosed(
+          Math.max(0, (this.clock.now() - result.closedDeadline!) / 1000),
+        );
+      }
+      if (result.finished) {
+        this.metrics.sessionFinished();
         this.events.room(code, "session:finished", result.finished);
+      }
       if (result.deadline !== null) this.schedule(code, result.deadline);
     });
   }
@@ -321,16 +335,24 @@ export class GameService {
         if (tx.session.status !== "question_open") return {};
         if (this.clock.now() < tx.session.closesAt!)
           return { deadline: tx.session.closesAt! };
-        return { closed: await this.closeQuestion(tx) };
+        return {
+          closed: await this.closeQuestion(tx),
+          closedDeadline: tx.session.closesAt!,
+        };
       });
       this.cancelTimer(code);
-      if (result.closed)
+      if (result.closed) {
         this.events.room(code, "question:closed", result.closed);
+        this.metrics.questionClosed(
+          Math.max(0, (this.clock.now() - result.closedDeadline!) / 1000),
+        );
+      }
       if (result.deadline !== undefined) this.schedule(code, result.deadline);
     });
   }
   async recover() {
     this.stopped = false;
+    this.metrics.sessionsRecovered(await this.store.activeSessionCount());
     for (const room of await this.store.openSessions()) {
       if (room.closesAt <= this.clock.now()) await this.expire(room.code);
       else this.schedule(room.code, room.closesAt);

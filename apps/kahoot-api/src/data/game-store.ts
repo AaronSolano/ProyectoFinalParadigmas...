@@ -49,6 +49,15 @@ export class PostgresGameStore implements GameStore {
       closesAt: new Date(r.question_closes_at).getTime(),
     }));
   }
+  async activeSessionCount(): Promise<number> {
+    return Number(
+      (
+        await this.db.query(
+          "SELECT count(*) FROM sessions WHERE status='in_progress'",
+        )
+      )[0].count,
+    );
+  }
 }
 class PostgresGameTransaction implements GameTransaction {
   constructor(

@@ -1,0 +1,9 @@
+extends:
+  - recommended
+
+# Reglas desactivadas a proposito:
+# - no-server-example.com: los servidores son localhost en el contrato (la URL real viene de la configuracion).
+# - operation-4xx-response: /health y JWKS publicos no tienen errores de cliente documentables.
+rules:
+  no-server-example.com: off
+  operation-4xx-response: off

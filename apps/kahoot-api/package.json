@@ -8,7 +8,8 @@
     "start": "node dist/main.js",
     "dev": "tsx src/main.ts",
     "test": "node --experimental-vm-modules -e \"require('jest').run(['--runInBand'])\"",
-    "migration:run": "tsx src/data/migrate.ts"
+    "migration:run": "tsx src/data/migrate.ts",
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.10",

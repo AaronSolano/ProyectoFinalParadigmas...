@@ -25,3 +25,7 @@ El borrado de un cuestionario es l贸gico para mantener el `quizId` de salas e hi
 La generaci贸n evita reutilizar c贸digos hist贸ricos: las consultas de resultados solo identifican una sala por c贸digo. La base conserva el 铆ndice 煤nico de c贸digos activos previsto en el modelo. El estado y los resultados se leen exclusivamente de PostgreSQL.
 
 El orquestador debe actualizar el lockfile ra铆z y el seguimiento OpenSpec, que est谩n fuera de la propiedad de Codex. No se han cambiado contratos ni archivos de infraestructura.
+
+## Seed de demostraci髇 (fase 6)
+
+Ejecutar `npm run seed` despu閟 del seed de auth. `DEMO_PROFILE_ID` debe coincidir con el perfil de auth; por defecto es `00000000-0000-4000-8000-000000000001`. El script aplica migraciones, crea una pregunta con imagen PNG y admite ejecuciones repetidas o concurrentes sin duplicar ni sobrescribir las ediciones del usuario. No consulta la base de autenticaci髇. La integraci髇 con Compose queda a cargo de infraestructura.

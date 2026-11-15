@@ -18,8 +18,8 @@
 
 ## 4. Integración
 
-- [ ] 4.1 (Antigravity) Conectar con las APIs reales y verificar una partida completa en dos navegadores
+- [x] 4.1 (Antigravity) Conectar con las APIs reales y verificar una partida completa en dos navegadores
 
 ## Evidencia de cierre
 
-Implementación de `apps/web` (tareas 1.1 a 3.5) realizada por Antigravity y fusionada en `main` (PR #16), con ajustes adicionales de cierre de sesión ante 401, control de depuración y reconexión con backoff en PR #20. Se verificaron `npm run lint`, `npm test` y `npm run build`, así como una partida completa entre anfitrión y participante en escritorio y viewport móvil (`360x640`) contra el servidor HTTP + Socket.IO de contratos (`apps/web/mocks/mock-server.mjs`). La tarea 4.1 sigue pendiente (`[ ]`) hasta probar una partida completa en dos navegadores contra las instancias reales de `auth-api` y `kahoot-api`.
+Implementación de `apps/web` (tareas 1.1 a 4.1) realizada por Antigravity y fusionada en `main` (PR #16 y PR #20). Se verificaron `npm run lint`, `npm test` (12/12 pruebas pasando) y `npm run build`. Tras fusionarse la Fase 4 (PR #18), se ejecutó la tarea 4.1 levantando `postgres`, `auth-api` y `kahoot-api` reales en Docker Compose con el seed de demostración (`docente.demo@example.com`, cuestionario *"Programación y paradigmas"* de 5 preguntas y 2 imágenes PNG servidas por `/api/v1/images/`). Se completó una partida real de principio a fin entre anfitrión en escritorio (`1280x800`) y participante en viewport móvil (`360x640`, sin scroll horizontal y botones `>= 56px`) en la sala `H9XQTX` (y verificación visual adicional en `Z74HSS`), incluyendo carga de imágenes reales (`00000000-0000-4000-8000-000000000010.png` y `00000000-0000-4000-8000-000000000011.png`), simulación de reconexión con `state_sync` sin duplicar participante ni alterar puntaje, cierre de las 5 preguntas (`5/5` aciertos, `5 pts`) y persistencia de resultados verificada en `GET /api/v1/sessions/H9XQTX/results`. No se encontraron discrepancias entre `apps/web` y los contratos REST/WebSocket de `auth-api` y `kahoot-api`.

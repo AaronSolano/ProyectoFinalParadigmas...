@@ -5,16 +5,26 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NextFunction, Request, Response } from "express";
 
-export function startTelemetry(endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
+export function startTelemetry(
+  endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+) {
   if (!endpoint) return undefined;
   const base = endpoint.replace(/\/$/, "");
   const sdk = new NodeSDK({
     serviceName: "kahoot-api",
-    traceExporter: new OTLPTraceExporter({ url: `${base}/v1/traces`, timeoutMillis: 2000 }),
-    metricReaders: [new PeriodicExportingMetricReader({
-      exporter: new OTLPMetricExporter({ url: `${base}/v1/metrics`, timeoutMillis: 2000 }),
-      exportIntervalMillis: 10000,
-    })],
+    traceExporter: new OTLPTraceExporter({
+      url: `${base}/v1/traces`,
+      timeoutMillis: 2000,
+    }),
+    metricReaders: [
+      new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({
+          url: `${base}/v1/metrics`,
+          timeoutMillis: 2000,
+        }),
+        exportIntervalMillis: 10000,
+      }),
+    ],
   });
   sdk.start();
   return sdk;
@@ -36,7 +46,8 @@ export function httpTelemetry(req: Request, res: Response, next: NextFunction) {
     span.end();
     const meter = metrics.getMeter("kahoot-api");
     meter.createCounter("http.server.requests").add(1, attributes);
-    meter.createHistogram("http.server.duration", { unit: "s" })
+    meter
+      .createHistogram("http.server.duration", { unit: "s" })
       .record((performance.now() - started) / 1000, attributes);
   });
   next();

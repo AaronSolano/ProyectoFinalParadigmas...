@@ -312,7 +312,9 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
       .expect(200);
     valid("Question", uploaded.body);
     const url = new URL(uploaded.body.imageUrl).pathname;
-    await api().get(url).expect(200)
+    await api()
+      .get(url)
+      .expect(200)
       .expect("Cache-Control", "public, max-age=31536000, immutable")
       .expect("Cross-Origin-Resource-Policy", "cross-origin")
       .expect("X-Content-Type-Options", "nosniff");
@@ -328,13 +330,19 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api().get(new URL(second.body.imageUrl).pathname).expect(404);
   });
   it("respeta IMAGE_MAX_BYTES en multer y conserva el error Problem", async () => {
-    const q = await quiz(), p = await question(q.id);
+    const q = await quiz(),
+      p = await question(q.id);
     const limited = await createApp({ ...config, imageMaxBytes: 64 }, db);
     try {
       const result = await request(limited.app.getHttpServer())
         .put(`/api/v1/quizzes/${q.id}/questions/${p.id}/image`)
-        .set(auth()).attach("file", Buffer.alloc(65), "foto").expect(413);
-      expect(result.body).toMatchObject({ status: 413, code: "IMAGE_TOO_LARGE" });
+        .set(auth())
+        .attach("file", Buffer.alloc(65), "foto")
+        .expect(413);
+      expect(result.body).toMatchObject({
+        status: 413,
+        code: "IMAGE_TOO_LARGE",
+      });
       valid("Problem", result.body);
     } finally {
       await limited.app.close();

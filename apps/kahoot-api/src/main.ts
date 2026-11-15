@@ -11,7 +11,10 @@ async function main() {
   await app.listen(config.port, "0.0.0.0");
   for (const signal of ["SIGINT", "SIGTERM"] as const)
     process.once(signal, () => {
-      void app.close().then(() => db.destroy()).finally(() => telemetry?.shutdown().catch(() => undefined));
+      void app
+        .close()
+        .then(() => db.destroy())
+        .finally(() => telemetry?.shutdown().catch(() => undefined));
     });
 }
 void main().catch((error) => {

@@ -76,7 +76,11 @@ export async function createApp(
           config.supabaseBucket,
         ));
   @Module({
-    imports: [MulterModule.register({ limits: { fileSize: config.imageMaxBytes, files: 1 } })],
+    imports: [
+      MulterModule.register({
+        limits: { fileSize: config.imageMaxBytes, files: 1 },
+      }),
+    ],
     controllers: [QuizzesController, SessionsController, PublicController],
     providers: [
       {

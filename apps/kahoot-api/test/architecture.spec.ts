@@ -49,7 +49,7 @@ describe("reglas ejecutables de capas", () => {
       ),
     ).toBe(true);
   });
-  it("permite consumir puertos desde aplicaci�n", () => {
+  it("permite consumir puertos desde aplicaciï¿½n", () => {
     const result = spawnSync(
       process.execPath,
       [

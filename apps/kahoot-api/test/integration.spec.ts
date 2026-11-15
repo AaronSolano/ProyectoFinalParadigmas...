@@ -131,7 +131,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     valid("Session", body);
     return body;
   }
-  it("health, documentación y validación JWT por clave pública", async () => {
+  it("health, documentaciÃ³n y validaciÃ³n JWT por clave pÃºblica", async () => {
     await api().get("/api/v1/health").expect(200);
     await api().get("/docs").expect(200);
     await api().get("/api/v1/quizzes").expect(401);
@@ -286,7 +286,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
       .expect(200);
     valid("SessionResults", final.body);
   });
-  it("imagen pública persistente y snapshot conserva archivo original", async () => {
+  it("imagen pÃºblica persistente y snapshot conserva archivo original", async () => {
     const q = await quiz(),
       p = await question(q.id);
     const path = `/api/v1/quizzes/${q.id}/questions/${p.id}/image`;
@@ -323,7 +323,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api().delete(path).set(auth()).expect(200);
     await api().get(new URL(second.body.imageUrl).pathname).expect(404);
   });
-  it("resultados persistidos separados y disponibles con otra conexi�n", async () => {
+  it("resultados persistidos separados y disponibles con otra conexiï¿½n", async () => {
     const q = await quiz();
     await question(q.id);
     const a = await room(q.id),

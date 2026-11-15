@@ -7,10 +7,7 @@ import {
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Config } from "../config/config";
 import { Problem } from "../domain/problem";
-export interface Identity {
-  id: string;
-  name: string;
-}
+export { Identity } from "../domain/entities";
 @Injectable()
 export class AuthGuard implements CanActivate {
   private readonly keys;

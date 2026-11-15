@@ -29,4 +29,5 @@ export interface GameStore {
     work: (tx: GameTransaction) => Promise<T>,
   ): Promise<T>;
   openSessions(): Promise<{ code: string; closesAt: number }[]>;
+  activeSessionCount(): Promise<number>;
 }

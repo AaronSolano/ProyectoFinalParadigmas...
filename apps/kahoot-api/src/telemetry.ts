@@ -4,6 +4,57 @@ import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NextFunction, Request, Response } from "express";
+import { GameMetrics } from "./domain/ports/game-metrics";
+
+let activeSessions = 0;
+function setActiveSessions(count: number) {
+  activeSessions = Math.max(0, count);
+  metrics
+    .getMeter("kahoot-api")
+    .createGauge("game.sessions.active", { unit: "{session}" })
+    .record(activeSessions);
+}
+export const gameMetrics: GameMetrics = {
+  sessionsRecovered: setActiveSessions,
+  sessionStarted: () => setActiveSessions(activeSessions + 1),
+  sessionFinished: () => setActiveSessions(activeSessions - 1),
+  questionClosed: (seconds) =>
+    metrics
+      .getMeter("kahoot-api")
+      .createHistogram("game.question.close.duration", { unit: "s" })
+      .record(Math.max(0, seconds)),
+};
+const answerReasons = new Set([
+  "already_answered",
+  "late",
+  "closed",
+  "not_in_session",
+  "invalid_state",
+  "invalid_payload",
+  "room_not_found",
+  "internal_error",
+]);
+export function recordAnswer(
+  outcome: "accepted" | "rejected",
+  reason: string = "none",
+) {
+  const boundedReason =
+    outcome === "accepted"
+      ? "none"
+      : answerReasons.has(reason)
+        ? reason
+        : "other";
+  metrics
+    .getMeter("kahoot-api")
+    .createCounter("game.answers", { unit: "{answer}" })
+    .add(1, { outcome, reason: boundedReason });
+}
+export function recordLiveRateLimited() {
+  metrics
+    .getMeter("kahoot-api")
+    .createCounter("game.live.rate_limited", { unit: "{socket}" })
+    .add(1);
+}
 
 export function startTelemetry(
   endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT,

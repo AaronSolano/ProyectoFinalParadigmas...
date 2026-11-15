@@ -9,7 +9,7 @@ import {
 } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { apiReference } from "@scalar/nestjs-api-reference";
+
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse } from "yaml";
@@ -34,33 +34,29 @@ class ProblemFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse();
     if (error instanceof Problem)
-      return res
-        .status(error.status)
-        .json({
-          status: error.status,
-          code: error.code,
-          message: error.message,
-        });
-    const status = error instanceof HttpException ? error.getStatus() : 500;
-    return res
-      .status(status)
-      .json({
-        status,
-        code:
-          status === 413
-            ? "IMAGE_TOO_LARGE"
-            : status === 400
-              ? "VALIDATION_ERROR"
-              : status === 404
-                ? "NOT_FOUND"
-                : "INTERNAL_ERROR",
-        message:
-          status === 500
-            ? "Error interno del servicio."
-            : status === 413
-              ? "La imagen supera el maximo permitido."
-              : "Solicitud invalida.",
+      return res.status(error.status).json({
+        status: error.status,
+        code: error.code,
+        message: error.message,
       });
+    const status = error instanceof HttpException ? error.getStatus() : 500;
+    return res.status(status).json({
+      status,
+      code:
+        status === 413
+          ? "IMAGE_TOO_LARGE"
+          : status === 400
+            ? "VALIDATION_ERROR"
+            : status === 404
+              ? "NOT_FOUND"
+              : "INTERNAL_ERROR",
+      message:
+        status === 500
+          ? "Error interno del servicio."
+          : status === 413
+            ? "La imagen supera el maximo permitido."
+            : "Solicitud invalida.",
+    });
   }
 }
 export async function createApp(
@@ -146,6 +142,9 @@ export async function createApp(
       throw new Error(`Contrato no implementado: ${path}`);
   if (Object.keys(actual).length !== Object.keys(expected).length)
     throw new Error("Rutas no declaradas");
+  const { apiReference } = await (new Function(
+    "return import('@scalar/nestjs-api-reference')",
+  )() as Promise<typeof import("@scalar/nestjs-api-reference")>);
   app.use("/docs", apiReference({ content: contract }));
   await app.init();
   return { app, document: contract, generated };

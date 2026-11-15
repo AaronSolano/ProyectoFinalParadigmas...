@@ -127,3 +127,28 @@ Todas usan el servicio `kahoot-api`. Los atributos nuevos tienen valores de una 
 `game.question.close.duration` mide desde `closesAt` hasta que el servidor publica `question:closed`, después del commit, incluyendo espera en la cola y persistencia. Un cierre manual anterior al plazo se registra como 0, nunca negativo. No mide el tiempo de recepción en cada navegador. `game.live.rate_limited` cuenta una vez cada socket desconectado por exceso repetido; no cuenta cada paquete descartado.
 
 Pruebas: `game-telemetry.spec.ts` verifica exportación OTLP real, valores, unidades y atributos; `game-metrics.spec.ts` verifica recuperación, inicio/fin y medición después de publicar; `live.spec.ts` verifica el contador al desconectar un emisor que inunda la sala y el conteo de respuestas de otro participante.
+
+## Registros estructurados
+
+Cada solicitud HTTP emite una línea JSON a stdout, sin requerir OpenTelemetry ni un colector. Se registra al terminar la respuesta; una conexión cerrada antes de completarla se registra una sola vez con estado 499. No se serializan cuerpos, cabeceras, cookies, errores, URLs ni consultas. No se registran correos, contraseñas, tokens, IP ni nombres de participantes.
+
+| Campo | Contenido |
+| --- | --- |
+| `ts` | Instante UTC en formato ISO 8601 |
+| `level` | `info` para <400, `warn` para 4xx, `error` para 5xx |
+| `service` | Nombre fijo de la API |
+| `method` | Método HTTP conocido; `OTHER` para otros |
+| `route` | Plantilla de Express (por ejemplo `/api/v1/quizzes/:quizId`); `unmatched` si no hay ruta, incluso en middleware de documentación |
+| `status` | Estado HTTP; 499 si el cliente interrumpe la respuesta |
+| `duration_ms` | Tiempo transcurrido desde la entrada hasta terminar o cerrar la respuesta, en milisegundos |
+| `requestId` | UUID nuevo generado por el servidor por solicitud; no se copia de cabeceras del cliente |
+
+El canal `/game` emite una línea por evento entrante procesado (también si falla la validación) y por paquete descartado por el control de flujo. Los eventos desconocidos se registran como `unknown`, sin conservar su nombre original. Son registros del procesamiento en el servidor, no una confirmación de recepción en el cliente. No contienen código de sala, ids, contenido de respuestas ni mensajes de error.
+
+| Campo del canal en vivo | Contenido |
+| --- | --- |
+| `ts` | Instante UTC ISO 8601 |
+| `level` | `info` para `ok`/`ignored`; `warn` para los demás resultados |
+| `service` | `kahoot-api` |
+| `event` | `session:join`, `session:leave`, `session:start`, `question:next`, `question:close`, `answer:submit` o `unknown` |
+| `outcome` | `ok`, `rejected`, `error`, `rate_limited` o `ignored` |

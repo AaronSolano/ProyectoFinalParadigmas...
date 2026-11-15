@@ -16,6 +16,24 @@ if (-not (Test-Path -LiteralPath ".env")) {
   $env:POSTGRES_PASSWORD = "x"; $env:DEMO_PASSWORD = "x"; $env:GRAFANA_ADMIN_PASSWORD = "x"
 }
 
+# Mismo nombre de proyecto que usa start.ps1 (profelink-<carpeta>), salvo que .env ya lo fije.
+function Get-Slug([string]$Text) {
+  $s = ($Text.ToLowerInvariant() -replace "[^a-z0-9]", "-") -replace "-+", "-"
+  return $s.Trim("-")
+}
+$fromEnv = ""
+if (Test-Path -LiteralPath ".env") {
+  $line = Get-Content -LiteralPath ".env" | Where-Object { $_ -match "^COMPOSE_PROJECT_NAME=.+" } | Select-Object -First 1
+  if ($line) { $fromEnv = $line.Substring("COMPOSE_PROJECT_NAME=".Length) }
+}
+if ($fromEnv -ne "") {
+  $env:COMPOSE_PROJECT_NAME = $fromEnv
+} else {
+  $slug = Get-Slug (Split-Path -Leaf $PSScriptRoot)
+  $env:COMPOSE_PROJECT_NAME = if ($slug) { "profelink-$slug" } else { "profelink" }
+}
+Write-Host "Proyecto Compose: $($env:COMPOSE_PROJECT_NAME)"
+
 $compose = @("compose", "-f", "compose.yaml", "--profile", "observability", "--profile", "seed")
 if ($Purge) {
   $answer = Read-Host 'Esto borrara TODOS los datos (base de datos, imagenes, claves). Escriba "borrar" para continuar'

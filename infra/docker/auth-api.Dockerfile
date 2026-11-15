@@ -21,7 +21,7 @@ RUN npm run build -w @profelink/auth-api
 
 # Solo dependencias de produccion.
 FROM manifests AS prod-deps
-RUN npm ci --omit=dev --workspace=@profelink/auth-api
+RUN npm ci --omit=dev --omit=optional --omit=peer --workspace=@profelink/auth-api
 
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production

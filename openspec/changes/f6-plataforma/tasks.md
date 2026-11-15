@@ -38,3 +38,12 @@ Verificado en Docker Desktop (Windows) con los scripts del repositorio, partiend
 - **Scripts (5.1):** `start/stop` en Bash y PowerShell; se corrigieron tres fallos encontrados al ejecutarlos (purga sin .env, arranque con datos previos sin .env y `docker volume inspect` bajo PowerShell 5.1).
 
 Limitaciones conocidas: 2.2 y 5.2 siguen abiertas (imagenes de Docker Hub); `auth-api` y `kahoot-api` no escriben registros de solicitudes, por lo que en Loki solo se ven los de nginx, PostgreSQL y la infraestructura (pendiente de un ajuste de las APIs); Alloy monta el socket de Docker en solo lectura (aceptable en desarrollo, a evitar en un servidor publico); no se probo en Linux ni macOS.
+
+## Evidencia adicional de Claude Code - aislamiento entre copias del repositorio
+
+Al revisar los PR 23 a 26 se detecto que el nombre de proyecto fijo `profelink` hacia que dos copias del repositorio en la misma maquina se recrearan los contenedores sobre los mismos volumenes (otra contrasena de PostgreSQL y `auth-api` en bucle de reinicios). Correccion verificada el 15 de noviembre de 2026:
+
+- Cada copia usa su proyecto `profelink-<carpeta>` (`COMPOSE_PROJECT_NAME` en `.env`); las imagenes locales se llaman `<proyecto>-<servicio>:local`; el filtro de Alloy usa ese nombre. Se elimino cualquier adopcion del proyecto historico `profelink` para no tocar pilas ajenas.
+- Prueba con dos copias a la vez (una iniciada con `start.sh` y otra con `start.ps1`): proyectos, volumenes e imagenes distintos; contrasenas distintas (el login de una con la clave de la otra devuelve 401); el Loki de una pila no recoge los registros de la otra; `stop.ps1 -Purge` de una no afecta a la otra (4 contenedores sanos y login correcto) y `stop.sh --purge` de la segunda deja 0 contenedores y 0 volumenes. Las pilas de otros proyectos en la misma maquina quedaron identicas (mismos contenedores, ids y fechas de creacion).
+- Metricas de la Fase 4 (PR 25) en Prometheus tras una partida de carga: `game_sessions_active`, `game_answers_total{outcome}`, `game_question_close_duration_seconds` y `game_live_rate_limited_total`; el panel de Grafana tiene ahora 19 paneles.
+- No se ejecuto la ruta de actualizacion de un `.env` antiguo sin `COMPOSE_PROJECT_NAME` con datos en el proyecto `profelink` (por diseno pasa a `profelink-<carpeta>` sin tocar el historico).

@@ -60,17 +60,34 @@ function Set-EnvValue([string]$Key, [string]$Value) {
   [System.IO.File]::WriteAllText((Join-Path $PWD ".env"), (($lines -join "`n") + "`n"), $Utf8NoBom)
 }
 
+# Cada copia del repositorio usa su propio proyecto de Compose (profelink-<carpeta>), de modo que dos copias
+# en la misma maquina no se pisan los contenedores, los volumenes ni las imagenes.
+function Get-Slug([string]$Text) {
+  $s = ($Text.ToLowerInvariant() -replace "[^a-z0-9]", "-") -replace "-+", "-"
+  return $s.Trim("-")
+}
+$slug = Get-Slug (Split-Path -Leaf $PSScriptRoot)
+$ProjectDefault = if ($slug) { "profelink-$slug" } else { "profelink" }
+
+# "volume ls" no escribe errores si el volumen no existe (con "inspect" PowerShell 5.1 abortaria).
+function Test-Volume([string]$Name) {
+  $found = docker volume ls -q --filter "name=^$Name$"
+  return [bool]$found
+}
+
 if (-not (Test-Path -LiteralPath ".env")) {
-  # "volume ls" no escribe errores si el volumen no existe (con "inspect" PowerShell 5.1 abortaria).
-  $previousData = docker volume ls -q --filter "name=^profelink_pgdata$"
-  if ($previousData) {
-    throw ("Existen datos de una ejecucion anterior (volumen profelink_pgdata) pero falta el archivo .env. " +
+  if (Test-Volume "$($ProjectDefault)_pgdata") {
+    throw ("Existen datos de una ejecucion anterior de este proyecto (volumen $($ProjectDefault)_pgdata) pero falta el archivo .env. " +
       "Sin el .env original la contrasena de la base de datos no coincide. Restaure el .env anterior o borre los datos " +
-      "con .stop.ps1 -Purge y vuelva a ejecutar .start.ps1.")
+      "con .\stop.ps1 -Purge y vuelva a ejecutar .\start.ps1.")
   }
   Copy-Item -LiteralPath ".env.example" -Destination ".env"
   Write-Host "Se creo .env desde .env.example"
 }
+
+# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre profelink-<carpeta>.
+if ((Get-EnvValue "COMPOSE_PROJECT_NAME") -eq "") { Set-EnvValue "COMPOSE_PROJECT_NAME" $ProjectDefault }
+$env:COMPOSE_PROJECT_NAME = Get-EnvValue "COMPOSE_PROJECT_NAME"
 
 $pg = Get-EnvValue "POSTGRES_PASSWORD"
 if ($pg -eq "" -or $pg -eq "cambiar_esto") { Set-EnvValue "POSTGRES_PASSWORD" (New-RandomHex) }
@@ -119,6 +136,7 @@ if ($LASTEXITCODE -ne 0) { throw "Fallo el seed de kahoot-api." }
 
 Write-Host ""
 Write-Host "ProfeLink Kahoot esta en marcha."
+Write-Host "  Proyecto Compose: $($env:COMPOSE_PROJECT_NAME)"
 Write-Host "  Aplicacion:      $(Get-EnvValue 'PUBLIC_URL')"
 Write-Host "  Usuario demo:    $(Get-EnvValue 'DEMO_EMAIL')"
 Write-Host "  Contrasena demo: $(Get-EnvValue 'DEMO_PASSWORD')   (guardada en .env)"

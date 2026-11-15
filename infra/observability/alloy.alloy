@@ -1,10 +1,11 @@
-// Recoge los registros (stdout/stderr) de los contenedores de este proyecto de Compose y los envia a Loki.
+// Recoge los registros (stdout/stderr) de los contenedores de ESTE proyecto de Compose (nombre en la variable
+// COMPOSE_PROJECT_NAME) y los envia a Loki.
 
 discovery.docker "contenedores" {
   host = "unix:///var/run/docker.sock"
   filter {
     name   = "label"
-    values = ["com.docker.compose.project=profelink"]
+    values = ["com.docker.compose.project=" + sys.env("COMPOSE_PROJECT_NAME")]
   }
 }
 

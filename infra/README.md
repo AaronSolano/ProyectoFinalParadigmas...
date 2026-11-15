@@ -61,6 +61,26 @@ flowchart LR
 
 PostgreSQL no se publica fuera de la red interna de Compose.
 
+## Varias copias del repositorio en la misma máquina
+
+Cada copia usa su **propio proyecto de Compose**, `profelink-<nombre de la carpeta>`, que `start.sh` / `start.ps1` guardan en `.env` como `COMPOSE_PROJECT_NAME`. Así dos copias (por ejemplo dos carpetas de trabajo, o la de un compañero y la tuya) **no se pisan** los contenedores, los volúmenes ni las imágenes.
+
+- Los volúmenes se llaman `<proyecto>_pgdata`, `<proyecto>_auth_keys`, etc., y las imágenes construidas en local `<proyecto>-<servicio>:local`.
+- Si dos copias corren **a la vez**, cada una necesita puertos distintos y su propia `PUBLIC_URL`: `WEB_PORT`, `AUTH_PORT`, `KAHOOT_PORT` y `GRAFANA_PORT` en su `.env`.
+- Un `.env` anterior que no tenga `COMPOSE_PROJECT_NAME` pasa a usar `profelink-<carpeta>`. Los datos que pudiera haber en el proyecto histórico `profelink` **no se migran ni se tocan**; si ya no se necesitan: `docker compose -p profelink down -v`.
+- `./stop.sh` y `.\stop.ps1` muestran el proyecto que están deteniendo.
+
+## Consumir las APIs desde otro origen (CORS)
+
+La web usa un solo origen y no necesita CORS. Un cliente en **otro origen** (por ejemplo `apps/external-client` en `http://localhost:5174`) llama directamente a las APIs publicadas en los puertos 3001 y 3002, y el navegador solo lo permite si su origen está en `CORS_ORIGINS`:
+
+```bash
+# .env  (incluir también PUBLIC_URL)
+CORS_ORIGINS=http://localhost:8080,http://localhost:5174
+```
+
+Cualquier origen que no esté en la lista queda bloqueado. Después de cambiarlo, reiniciar con `./start.sh`.
+
 ## Jugar desde otros dispositivos
 
 1. Iniciar con `./start.sh --lan` (o `-Lan`), o fijar `PUBLIC_URL=http://IP_DE_LA_MAQUINA:8080` en `.env` y reiniciar.
@@ -77,7 +97,7 @@ Con `--observability` hay tres señales, todas en Grafana (`http://localhost:300
 | **Trazas** | Igual, del Collector a Tempo | *Explore → Tempo* |
 | **Registros** | Alloy lee la salida estándar de los contenedores del proyecto y la envía a Loki | Panel **ProfeLink - Resumen** (errores, volumen y registros recientes) y *Explore → Loki*, con la etiqueta `service` (`auth-api`, `kahoot-api`, `web`, `postgres`…) |
 
-El panel **ProfeLink - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, y los paneles de registros.
+El panel **ProfeLink - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, salas activas, respuestas aceptadas y rechazadas (con la razón), latencia P95 de cierre de pregunta, desconexiones por control de flujo y los paneles de registros.
 
 Sin el perfil, la variable de OTLP queda vacía y las APIs no exportan nada.
 
@@ -112,4 +132,6 @@ Los nombres son `${DOCKERHUB_USER}/profelink-auth-api`, `profelink-kahoot-api` y
 - **`POSTGRES_PASSWORD` o `DEMO_PASSWORD` vacíos:** usar `start.sh`/`start.ps1`, que los generan.
 - **Cambié `PUBLIC_URL` y las imágenes no cargan:** reiniciar con `./start.sh` para que se recreen los contenedores con la nueva URL.
 - **Empezar de cero:** `./stop.sh --purge` y `./start.sh`.
+- **`auth-api` reinicia con `password authentication failed`:** los volúmenes existentes tienen otra contraseña de PostgreSQL, normalmente de una copia anterior con el mismo proyecto. Ejecutar `./stop.sh --purge` y `./start.sh` (borra los datos de este proyecto).
+- **Otro proyecto ya usa los puertos:** cambiar `WEB_PORT`, `AUTH_PORT`, `KAHOOT_PORT` y `GRAFANA_PORT` en `.env`.
 - **Ver registros:** `docker compose logs -f kahoot-api`.

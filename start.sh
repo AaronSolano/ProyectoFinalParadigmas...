@@ -50,9 +50,16 @@ set_env() { # set_env CLAVE VALOR  (agrega la clave si no existe)
   cat "$tmp" > .env; rm -f "$tmp"
 }
 
+# Cada copia del repositorio usa su propio proyecto de Compose (profelink-<carpeta>), de modo que dos copias
+# en la misma maquina no se pisan los contenedores, los volumenes ni las imagenes.
+slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//'; }
+PROJECT_DEFAULT="profelink-$(slug "$(basename "$PWD")")"
+PROJECT_DEFAULT="${PROJECT_DEFAULT%-}"
+volume_exists() { [ -n "$(docker volume ls -q --filter "name=^$1$")" ]; }
+
 if [ ! -f .env ]; then
-  if docker volume inspect profelink_pgdata >/dev/null 2>&1; then
-    echo "Existen datos de una ejecucion anterior (volumen profelink_pgdata) pero falta el archivo .env." >&2
+  if volume_exists "${PROJECT_DEFAULT}_pgdata"; then
+    echo "Existen datos de una ejecucion anterior de este proyecto (volumen ${PROJECT_DEFAULT}_pgdata) pero falta el archivo .env." >&2
     echo "Sin el .env original la contrasena de la base de datos no coincide. Opciones:" >&2
     echo "  - Restaurar el .env anterior, o" >&2
     echo "  - Borrar los datos anteriores con ./stop.sh --purge y volver a ejecutar ./start.sh" >&2
@@ -61,6 +68,10 @@ if [ ! -f .env ]; then
   cp .env.example .env
   echo "Se creo .env desde .env.example"
 fi
+
+# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre profelink-<carpeta>.
+[ -n "$(get_env COMPOSE_PROJECT_NAME)" ] || set_env COMPOSE_PROJECT_NAME "$PROJECT_DEFAULT"
+export COMPOSE_PROJECT_NAME="$(get_env COMPOSE_PROJECT_NAME)"
 
 [ "$(get_env POSTGRES_PASSWORD)" = "cambiar_esto" ] || [ -z "$(get_env POSTGRES_PASSWORD)" ] && set_env POSTGRES_PASSWORD "$(random_hex)"
 [ "$(get_env GRAFANA_ADMIN_PASSWORD)" = "cambiar_esto" ] || [ -z "$(get_env GRAFANA_ADMIN_PASSWORD)" ] && set_env GRAFANA_ADMIN_PASSWORD "$(random_hex)"
@@ -101,6 +112,7 @@ echo "Cargando datos de demostracion (idempotente)..."
 
 echo
 echo "ProfeLink Kahoot esta en marcha."
+echo "  Proyecto Compose: ${COMPOSE_PROJECT_NAME}"
 echo "  Aplicacion:      $(get_env PUBLIC_URL)"
 echo "  Usuario demo:    $(get_env DEMO_EMAIL)"
 echo "  Contrasena demo: $(get_env DEMO_PASSWORD)   (guardada en .env)"

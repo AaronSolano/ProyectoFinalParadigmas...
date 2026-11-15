@@ -52,10 +52,10 @@ Estados (`status`): `waiting`, `question_open`, `question_closed`, `finished`.
 ```mermaid
 stateDiagram-v2
     [*] --> waiting: sala creada
-    waiting --> question_open: session:start (anfitrión)
-    question_open --> question_closed: vence closesAt / question:close (anfitrión)
-    question_closed --> question_open: question:next (anfitrión) y quedan preguntas
-    question_closed --> finished: question:next (anfitrión) y no quedan preguntas
+    waiting --> question_open: session#58;start (anfitrión)
+    question_open --> question_closed: vence closesAt o question#58;close (anfitrión)
+    question_closed --> question_open: question#58;next (anfitrión) y quedan preguntas
+    question_closed --> finished: question#58;next (anfitrión) y no quedan preguntas
     finished --> [*]
 ```
 
@@ -281,14 +281,14 @@ sequenceDiagram
     autonumber
     participant P as Participante
     participant S as kahoot-api /game
-    Note over P,S: Pregunta 1 abierta; P ya sumó 1 punto
+    Note over P,S: Pregunta 1 abierta. P ya sumó 1 punto
     P--xS: se pierde la conexión
     Note over P: Socket.IO reintenta automáticamente
     P->>S: connect (auth.token)
     alt token válido
         S-->>P: connect OK
         P->>S: session:join {code}
-        Note over S: reasocia por identidad; sin participante nuevo ni cambio de puntaje
+        Note over S: reasocia por identidad, sin participante nuevo ni cambio de puntaje
         S-->>P: state_sync {status question_open, currentQuestion sin correctAnswer, closesAt, serverTime, myScore 1, hasAnswered}
         Note over P: cuenta regresiva = closesAt - serverTime
         opt hasAnswered = false y aún hay tiempo

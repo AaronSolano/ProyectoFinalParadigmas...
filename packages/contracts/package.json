@@ -1,10 +1,37 @@
 {
   "name": "@profelink/contracts",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Contratos compartidos: OpenAPI, eventos en vivo y tipos",
+  "type": "module",
   "files": [
     "openapi",
-    "events"
-  ]
+    "events",
+    "src"
+  ],
+  "exports": {
+    "./auth-api": {
+      "types": "./src/generated/auth-api.d.ts"
+    },
+    "./kahoot-api": {
+      "types": "./src/generated/kahoot-api.d.ts"
+    }
+  },
+  "scripts": {
+    "lint": "npm run lint:openapi && npm run validate:events",
+    "lint:openapi": "redocly lint openapi/auth-api.yaml openapi/kahoot-api.yaml",
+    "validate:events": "node scripts/validate-events.mjs",
+    "gen:types": "openapi-typescript openapi/auth-api.yaml -o src/generated/auth-api.d.ts && openapi-typescript openapi/kahoot-api.yaml -o src/generated/kahoot-api.d.ts",
+    "check:types": "node scripts/check-types.mjs",
+    "verify:contract": "node scripts/verify-contract.mjs",
+    "test": "node --test scripts/verify-contract.test.mjs",
+    "build": "npm run check:types"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "openapi-typescript": "^7.4.0",
+    "yaml": "^2.6.0"
+  }
 }

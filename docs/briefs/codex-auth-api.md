@@ -54,7 +54,7 @@ Usa los nombres de `.env.example`: `AUTH_PORT`, `AUTH_DATABASE_URL`, `DATABASE_S
 3. Registro con validación y hash; pruebas unitarias (correo duplicado, contraseña débil, hash distinto del texto plano).
 4. Login con JWT; 401 uniforme.
 5. JWKS público; prueba de integración que **valida un token usando solo la clave pública**, sin acceso a la base.
-6. OpenAPI/Scalar publicado en `/docs` (o ruta equivalente) y **prueba que compara el documento generado con `packages/contracts/openapi/auth-api.yaml`** (mismas rutas y métodos).
+6. OpenAPI/Scalar publicado en `/docs` (o ruta equivalente) y **prueba que compara el documento generado con `packages/contracts/openapi/auth-api.yaml`** (mismas rutas y métodos). Reutiliza `compare()` de `packages/contracts/scripts/verify-contract.mjs` o ejecuta `node packages/contracts/scripts/verify-contract.mjs auth-api <openapi.json>` (falla si hay un endpoint no declarado). Los tipos del contrato están en `@profelink/contracts/auth-api`.
 7. OpenTelemetry: trazas y métricas HTTP al colector (si no hay colector, no debe fallar).
 
 ## Definición de terminado

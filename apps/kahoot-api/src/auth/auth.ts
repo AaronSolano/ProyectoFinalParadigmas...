@@ -7,6 +7,7 @@ import {
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { Config } from "../config/config";
 import { Problem } from "../domain/problem";
+import { Identity } from "../domain/entities";
 export { Identity } from "../domain/entities";
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -19,11 +20,19 @@ export class AuthGuard implements CanActivate {
   }
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
+    const header = req.headers.authorization;
+    if (typeof header !== "string" || !/^Bearer \S+$/.test(header))
+      throw new Problem(
+        401,
+        "UNAUTHORIZED",
+        "Token de acceso ausente o invalido.",
+      );
+    req.identity = await this.authenticate(header.slice(7));
+    return true;
+  }
+  async authenticate(token: string): Promise<Identity> {
     try {
-      const header = req.headers.authorization;
-      if (typeof header !== "string" || !/^Bearer \S+$/.test(header))
-        throw new Error();
-      const { payload } = await jwtVerify(header.slice(7), this.keys, {
+      const { payload } = await jwtVerify(token, this.keys, {
         issuer: this.config.issuer,
         audience: this.config.audience,
         algorithms: ["RS256"],
@@ -39,8 +48,7 @@ export class AuthGuard implements CanActivate {
         payload.name.length > 40
       )
         throw new Error();
-      req.identity = { id: payload.sub, name: payload.name };
-      return true;
+      return { id: payload.sub, name: payload.name };
     } catch {
       throw new Problem(
         401,

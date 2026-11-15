@@ -14,6 +14,8 @@ export interface Config {
   supabaseBucket: string;
   questionTime: number;
   cors: string[];
+  runMigrations: boolean;
+  liveMaxEventsPerSecond: number;
 }
 export function loadConfig(env = process.env): Config {
   const required = (key: string) => {
@@ -34,6 +36,11 @@ export function loadConfig(env = process.env): Config {
     return value.replace(/\/$/, "");
   };
   const storage = env.IMAGE_STORAGE ?? "disk";
+  if (
+    env.RUN_MIGRATIONS !== undefined &&
+    !["true", "false"].includes(env.RUN_MIGRATIONS)
+  )
+    throw new Error("RUN_MIGRATIONS invalido");
   if (!["disk", "supabase"].includes(storage))
     throw new Error("IMAGE_STORAGE invalido");
   return {
@@ -52,5 +59,7 @@ export function loadConfig(env = process.env): Config {
     supabaseBucket: env.SUPABASE_BUCKET ?? "question-images",
     questionTime: integer("QUESTION_TIME_SECONDS", 20, 5, 120),
     cors: (env.CORS_ORIGINS ?? "http://localhost:5173").split(","),
+    runMigrations: env.RUN_MIGRATIONS !== "false",
+    liveMaxEventsPerSecond: integer("LIVE_MAX_EVENTS_PER_SECOND", 20, 1, 10000),
   };
 }

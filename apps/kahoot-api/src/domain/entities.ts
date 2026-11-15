@@ -39,6 +39,7 @@ export interface SessionQuestion {
   imageFilename: string | null;
 }
 export interface Participant {
+  active?: boolean;
   id: string;
   sessionId: string;
   userId: string;

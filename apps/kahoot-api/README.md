@@ -1,6 +1,6 @@
 # Kahoot API — aporte Codex, fase 3
 
-API NestJS con TypeScript estricto, PostgreSQL y migraciones TypeORM. Implementa el contrato REST de `packages/contracts/openapi/kahoot-api.yaml`. El juego Socket.IO corresponde a la fase 4.
+API NestJS con TypeScript estricto, PostgreSQL y migraciones TypeORM. Implementa el contrato REST de `packages/contracts/openapi/kahoot-api.yaml`. El canal Socket.IO de fase 4 implementa los contratos de `packages/contracts/events/`.
 
 ## Ejecutar
 
@@ -47,3 +47,44 @@ Los archivos `assets/demo/decision.png` y `assets/demo/pila.png` son ilustracion
 `IMAGE_MAX_BYTES` configura el límite de Multer y de validación (entre 1 y 2097152 bytes, máximo del contrato). El formato se reconoce por contenido PNG/JPEG/WebP, sin exigir extensión al nombre del cliente. Las imágenes públicas incorporan caché inmutable de un año, `Cross-Origin-Resource-Policy: cross-origin` y `nosniff`.
 
 Las suites se ejecutan en procesos separados para aislar los proveedores globales OpenTelemetry y el cargador ESM de Scalar. El lockfile raíz requiere regeneración del orquestador por las nuevas dependencias OpenTelemetry.
+
+## Juego en vivo — aporte Codex, fase 4
+
+El namespace `/game` valida `auth: { token }` por JWKS y usa `session:<code>` para aislar partidas. Los seis comandos y diez eventos de salida conservan los esquemas canónicos; Ajv también valida las entradas en ejecución. `CORS_ORIGINS` se aplica a HTTP y Socket.IO.
+
+Las reglas puras están en `src/domain/game.ts`; los casos de uso, colas por sala y temporizadores en `src/application/game-service.ts`; el puerto de persistencia en `src/domain/ports/game-store.ts`; PostgreSQL en `src/data/game-store.ts`; el gateway NestJS en `src/presentation/game-gateway.ts`. La aplicación no importa Socket.IO. El anfitrión entra como anfitrión sin crear un participante; puede participar si antes ingresa por REST.
+
+Al arrancar, `main.ts` aplica las migraciones antes de recuperar partidas y escuchar conexiones. `RUN_MIGRATIONS=true` es el valor predeterminado; usar `false` si las aplica un proceso externo. La ejecución mantiene un bloqueo asesor de PostgreSQL en la misma conexión que las migraciones para serializar arranques simultáneos, incluida la creación de la tabla de historial. La migración incremental agrega `answers`, `sessions.game_state`, el cierre persistido y el estado de participación. Conserva el estado REST `in_progress`, distinguiendo internamente `question_open` y `question_closed`. El plazo se conserva en PostgreSQL durante el cierre para reconstruir la última pregunta; `state_sync.closesAt` es `null` al cerrar. No se cambia el contrato REST ni los eventos.
+
+`npm run build` copia los JSON Schemas canónicos a `dist/schemas` y el OpenAPI a `dist/openapi`. El código compilado carga primero estos archivos empaquetados. La lectura desde `packages/contracts` solo está permitida en desarrollo o pruebas; en producción un bundle incompleto falla al arrancar. Para desplegar, conservar el directorio `dist` completo junto con las dependencias y los assets de demostración.
+
+`LIVE_MAX_EVENTS_PER_SECOND=20` limita los eventos entrantes por socket en una ventana deslizante de un segundo, antes de validar payloads o acceder a la base. El exceso se descarta y tres excesos consecutivos desconectan solo ese socket. Los eventos no reconocidos también consumen presupuesto. No se agregan eventos ni códigos de error al contrato y los demás sockets de la sala siguen funcionando.
+
+Cada comando bloquea la fila de sesión dentro de una transacción. La restricción única y `ON CONFLICT DO NOTHING` impiden respuestas duplicadas. Se puntúa al cerrar; estado, respuestas puntuadas y puntajes se confirman juntos. Los eventos se publican después del commit. Al finalizar se guarda la clasificación en la misma transacción que marca la sesión terminada. Al reiniciar, los plazos vencidos se cierran y los restantes se reprograman. Una falla temporal del temporizador se reintenta cada segundo. Se requiere una sola instancia del servicio, como establece el diseño.
+
+El ingreso REST también avisa al lobby; el posterior ingreso Socket.IO no duplica el aviso ni el participante. Una desconexión de red no elimina participación. `session:leave` oculta al participante del lobby, conservando identidad, respuestas y resultados; salir de una pestaña mantiene las otras pestañas conectadas.
+
+### Verificación local
+
+Desde `apps/kahoot-api`, instalar con `npm install --workspaces=false` y ejecutar:
+
+```powershell
+$env:TEST_DATABASE_URL='postgresql://usuario:clave@localhost:5432/kahoot_test'
+npm run lint
+npm run build
+npm test
+```
+
+Configurar una base PostgreSQL dedicada. Las suites truncan datos: nunca configurar una base con datos reales. La prueba de arranque crea y elimina una base temporal; el usuario de pruebas necesita permiso `CREATEDB`. Sin `TEST_DATABASE_URL`, las integraciones PostgreSQL quedan omitidas. El runner ejecuta cada suite en un proceso separado para aislar ESM/Scalar y los proveedores globales de OpenTelemetry. La infraestructura de pruebas pertenece a la rama F7 (PR #19); la infraestructura final corresponde a F6.
+
+Las pruebas adicionales de revisión están en `packaged-app.spec.ts` (app compilada sin `packages/`), `startup-migrations.spec.ts` (base vacía, desactivación y arranque concurrente) y `live-event-budget.spec.ts`/`live.spec.ts` (presupuesto e inundación aislada).
+
+Verificación de los ajustes del PR #18: `npm run lint`, `npm run build` y `npm test` aprobados con PostgreSQL real. **61 pruebas aprobadas: las 56 anteriores y 5 nuevas**, sin suites PostgreSQL omitidas. La app compilada arranca desde un directorio temporal sin `packages/`; dos arranques concurrentes crean las tablas en una base vacía antes de escuchar; un emisor que inunda la sala es desconectado y otro participante completa su respuesta y puntaje normalmente.
+
+Resultado del 15 de noviembre de 2026: **56 pruebas aprobadas** con PostgreSQL real, incluida una partida completa con dos salas, imagen, respuestas correctas/incorrectas/ausentes, empates, permisos, esquemas, reconexión, primeras respuestas concurrentes y reinicios antes/después del plazo. También se verificaron por separado las **30 pruebas de auth-api**, con `AUTH_TEST_DATABASE_URL` en una base dedicada. Lint y compilación de ambas APIs aprobados. CI omitido por instrucción del usuario.
+
+Las 12 tareas de F4 quedan verificadas por las suites `game-domain.spec.ts` (1.1–1.3), `live.spec.ts` (2.1–4.2, 5.1) y las integraciones REST existentes. Por solicitud expresa del usuario, el cambio está archivado en `openspec/changes/archive/2026-11-15-f4-tiempo-real/`, con sus dos especificaciones sincronizadas y el plan actualizado. El archivo documenta el trabajo realizado; revisión y merge del PR siguen pendientes. El orquestador debe actualizar el lockfile raíz para las nuevas dependencias.
+
+### OpenTelemetry
+
+`OTEL_EXPORTER_OTLP_ENDPOINT` activa la exportación HTTP OTLP de trazas y métricas con `service.name=kahoot-api`. Se exportan `http.server.requests`, `http.server.duration`, `game.connections.active`, `game.events` y `game.event.duration`. Las etiquetas usan rutas y nombres de eventos; no incluyen códigos de sala, tokens, correos, nombres ni respuestas. Sin endpoint se usan los proveedores sin exportador. Las pruebas `telemetry.spec.ts` y `game-telemetry.spec.ts` comprueban exportación real contra un receptor HTTP local y ausencia de datos sensibles. La configuración de Collector y Grafana pertenece a infraestructura.

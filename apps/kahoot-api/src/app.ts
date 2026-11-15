@@ -12,7 +12,7 @@ import { httpTelemetry } from "./telemetry";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse } from "yaml";
 import { DataSource } from "typeorm";
@@ -40,6 +40,12 @@ import { PublicController } from "./presentation/public.controller";
 import { QuizzesController } from "./presentation/quizzes.controller";
 import { SessionsController } from "./presentation/sessions.controller";
 import { Problem } from "./domain/problem";
+import { IoAdapter } from "@nestjs/platform-socket.io";
+import { ServerOptions } from "socket.io";
+import { GameService } from "./application/game-service";
+import { PostgresGameStore } from "./data/game-store";
+import { GameGateway } from "./presentation/game-gateway";
+import { Clock as GameClock } from "./domain/game";
 @Catch()
 class ProblemFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost) {
@@ -74,7 +80,13 @@ export async function createApp(
   config: Config,
   db: DataSource,
   storage?: ImageStorage,
+  gameClock?: GameClock,
 ) {
+  const game = new GameService(
+    new PostgresGameStore(db),
+    config.publicUrl,
+    gameClock,
+  );
   const images =
     storage ??
     (config.storage === "disk"
@@ -92,6 +104,8 @@ export async function createApp(
     ],
     controllers: [QuizzesController, SessionsController, PublicController],
     providers: [
+      { provide: GameService, useValue: game },
+      GameGateway,
       { provide: "QuizRepository", useValue: new PostgresQuizRepository(db) },
       {
         provide: "SessionRepository",
@@ -145,7 +159,7 @@ export async function createApp(
           repo: SessionRepository,
           work: UnitOfWork,
           ids: IdGenerator,
-        ) => new SessionUseCases(repo, work, ids, config.questionTime),
+        ) => new SessionUseCases(repo, work, ids, config.questionTime, game),
       },
       { provide: AuthGuard, useValue: new AuthGuard(config) },
       { provide: "IMAGE_STORAGE", useValue: images },
@@ -158,6 +172,16 @@ export async function createApp(
     abortOnError: false,
   });
   app.setGlobalPrefix("api/v1");
+  class ConfiguredIoAdapter extends IoAdapter {
+    createIOServer(port: number, options?: ServerOptions) {
+      return super.createIOServer(port, {
+        ...options,
+        cors: { origin: config.cors },
+        maxHttpBufferSize: 16384,
+      });
+    }
+  }
+  app.useWebSocketAdapter(new ConfiguredIoAdapter(app));
   app.enableCors({ origin: config.cors });
   app.use(httpTelemetry);
   app.useGlobalFilters(new ProblemFilter());
@@ -182,9 +206,19 @@ export async function createApp(
       .addBearerAuth()
       .build(),
   );
+  const bundledContract = resolve(__dirname, "openapi/kahoot-api.yaml");
+  const development =
+    process.env.NODE_ENV === "development" ||
+    process.env.NODE_ENV === "test" ||
+    (process.env.NODE_ENV === undefined && /[/\\]src$/.test(__dirname));
   const contract = parse(
     readFileSync(
-      resolve(__dirname, "../../../packages/contracts/openapi/kahoot-api.yaml"),
+      existsSync(bundledContract) || !development
+        ? bundledContract
+        : resolve(
+            __dirname,
+            "../../../packages/contracts/openapi/kahoot-api.yaml",
+          ),
       "utf8",
     ),
   );
@@ -215,5 +249,6 @@ export async function createApp(
   )() as Promise<typeof import("@scalar/nestjs-api-reference")>);
   app.use("/docs", apiReference({ content: contract }));
   await app.init();
-  return { app, document: contract, generated };
+  if (db.isInitialized) await game.recover();
+  return { app, game, document: contract, generated };
 }

@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
+import { getAppEnv } from '../config/env';
 import { useGameSocket } from '../realtime/useGameSocket';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
@@ -17,6 +18,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   const { token } = useAuth();
 
   const normalizedCode = code.trim().toUpperCase();
+  const { enableDebugControls } = getAppEnv();
   const {
     liveState,
     connectionState,
@@ -26,6 +28,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     submitAnswer,
     leaveSession,
     simulateReconnect,
+    retryReconnect,
     clearError,
   } = useGameSocket(normalizedCode, token, roleHint === 'host');
 
@@ -52,6 +55,20 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
         </div>
       )}
 
+      {connectionState === 'reconnect_failed' && (
+        <div className="reconnect-banner" role="alert" data-testid="reconnect-failed-banner">
+          <span>{t('game.reconnectFailedBanner')}</span>{' '}
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm"
+            data-testid="btn-retry-reconnect"
+            onClick={retryReconnect}
+          >
+            {t('game.retryReconnectBtn')}
+          </button>
+        </div>
+      )}
+
       <ErrorBanner error={liveState.lastError} onDismiss={clearError} />
 
       <header className="game-header card">
@@ -68,14 +85,16 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
               {t('game.myScore', { score: liveState.myScore })}
             </span>
           )}
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            data-testid="btn-simulate-reconnect"
-            onClick={simulateReconnect}
-          >
-            {t('game.simulateDisconnectBtn')}
-          </button>
+          {enableDebugControls && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm"
+              data-testid="btn-simulate-reconnect"
+              onClick={simulateReconnect}
+            >
+              {t('game.simulateDisconnectBtn')}
+            </button>
+          )}
           {!isHost && (
             <button
               type="button"

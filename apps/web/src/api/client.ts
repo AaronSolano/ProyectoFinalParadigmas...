@@ -1,7 +1,7 @@
 import type { components as AuthComponents } from './generated/auth-api';
 import type { components as KahootComponents } from './generated/kahoot-api';
 import { getAppEnv } from '../config/env';
-import { getStoredToken } from '../auth/storage';
+import { getStoredToken, notifySessionExpired } from '../auth/storage';
 
 export type Profile = AuthComponents['schemas']['Profile'];
 export type RegisterRequest = AuthComponents['schemas']['RegisterRequest'];
@@ -84,10 +84,16 @@ async function requestJson<T>(
   }
 
   if (!response.ok) {
+    if (response.status === 401 && requiresAuth) {
+      notifySessionExpired();
+    }
+
     const problem = (data ?? {}) as Partial<KahootProblem>;
     const fallbackCode =
       response.status === 401
-        ? 'UNAUTHORIZED'
+        ? requiresAuth
+          ? 'SESSION_EXPIRED'
+          : 'UNAUTHORIZED'
         : response.status === 403
           ? 'FORBIDDEN'
           : response.status === 404

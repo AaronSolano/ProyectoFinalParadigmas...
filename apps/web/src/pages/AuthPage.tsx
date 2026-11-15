@@ -10,7 +10,7 @@ interface AuthPageProps {
 
 export function AuthPage({ mode }: AuthPageProps) {
   const { t } = useTranslation();
-  const { login, register } = useAuth();
+  const { login, register, sessionExpired, clearSessionExpired } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -22,6 +22,7 @@ export function AuthPage({ mode }: AuthPageProps) {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    clearSessionExpired();
     setSubmitting(true);
     try {
       if (mode === 'register') {
@@ -44,13 +45,21 @@ export function AuthPage({ mode }: AuthPageProps) {
     }
   };
 
+  const displayedError = error ?? (sessionExpired ? 'SESSION_EXPIRED' : null);
+
   return (
     <section className="card auth-card" aria-labelledby="auth-heading">
       <h1 id="auth-heading" className="card__title">
         {mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}
       </h1>
 
-      <ErrorBanner error={error} onDismiss={() => setError(null)} />
+      <ErrorBanner
+        error={displayedError}
+        onDismiss={() => {
+          setError(null);
+          clearSessionExpired();
+        }}
+      />
 
       <form onSubmit={handleSubmit} className="form-stack">
         {mode === 'register' && (

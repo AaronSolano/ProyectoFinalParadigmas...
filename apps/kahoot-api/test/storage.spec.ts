@@ -65,12 +65,14 @@ describe.each(["disk", "supabase"])("ImageStorage %s", (kind) => {
   });
 });
 describe("validacion de imágenes y dominio de permisos", () => {
-  it("rechaza contenido falso, extensión discordante y exceso", () => {
+  it("valida el contenido sin depender del nombre y rechaza exceso", () => {
     expect(() => validateImage(Buffer.from("text"), "x.png", 100)).toThrow();
     expect(() => validateImage(Buffer.alloc(101), "x.png", 100)).toThrow();
     const jpeg = Buffer.from([255, 216, 255, 224]);
     expect(validateImage(jpeg, "x.jpeg", 100).type).toBe("image/jpeg");
-    expect(() => validateImage(jpeg, "x.png", 100)).toThrow();
+    for (const name of ["blob", "foto", "x.png"]) {
+      expect(validateImage(jpeg, name, 100).extension).toBe("jpg");
+    }
   });
   it("permite solamente propietario", () => {
     expect(() => requireOwner("a", "a")).not.toThrow();

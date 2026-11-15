@@ -7,6 +7,8 @@ import {
   Module,
   ValidationPipe,
 } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
+import { httpTelemetry } from "./telemetry";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
@@ -74,6 +76,7 @@ export async function createApp(
           config.supabaseBucket,
         ));
   @Module({
+    imports: [MulterModule.register({ limits: { fileSize: config.imageMaxBytes, files: 1 } })],
     controllers: [QuizzesController, SessionsController, PublicController],
     providers: [
       {
@@ -92,6 +95,7 @@ export async function createApp(
   });
   app.setGlobalPrefix("api/v1");
   app.enableCors({ origin: config.cors });
+  app.use(httpTelemetry);
   app.useGlobalFilters(new ProblemFilter());
   app.useGlobalPipes(
     new ValidationPipe({

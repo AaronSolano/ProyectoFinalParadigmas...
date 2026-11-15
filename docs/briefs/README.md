@@ -7,6 +7,7 @@ Cada brief es autocontenido: se le entrega tal cual al agente indicado.
 | [codex-auth-api.md](codex-auth-api.md) | Codex | 2 | `apps/auth-api` | `feat/f2-codex` |
 | [codex-kahoot-api.md](codex-kahoot-api.md) | Codex | 3 y 4 | `apps/kahoot-api` | `feat/f3-codex`, `feat/f4-codex` |
 | [antigravity-web.md](antigravity-web.md) | Antigravity | 5 | `apps/web` | `feat/f5-antigravity` |
+| [codex-ajustes-f2-f3.md](codex-ajustes-f2-f3.md) | Codex | ajustes a 2 y 3 (antes de la 4) | `apps/auth-api`, `apps/kahoot-api` | `feat/ajustes-arquitectura-codex`, `feat/ajustes-funcionales-codex` |
 
 ## Cómo lanzarlos en paralelo
 1. Partir de `main` actualizado (contiene los contratos de la Fase 1).

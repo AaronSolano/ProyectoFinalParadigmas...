@@ -88,3 +88,22 @@ Las 12 tareas de F4 quedan verificadas por las suites `game-domain.spec.ts` (1.1
 ### OpenTelemetry
 
 `OTEL_EXPORTER_OTLP_ENDPOINT` activa la exportación HTTP OTLP de trazas y métricas con `service.name=kahoot-api`. Se exportan `http.server.requests`, `http.server.duration`, `game.connections.active`, `game.events` y `game.event.duration`. Las etiquetas usan rutas y nombres de eventos; no incluyen códigos de sala, tokens, correos, nombres ni respuestas. Sin endpoint se usan los proveedores sin exportador. Las pruebas `telemetry.spec.ts` y `game-telemetry.spec.ts` comprueban exportación real contra un receptor HTTP local y ausencia de datos sensibles. La configuración de Collector y Grafana pertenece a infraestructura.
+
+## Carga reproducible — aporte Codex, fase 7
+
+`scripts/load.mjs` usa clientes Socket.IO simulados con perfiles registrados por la API real. Valida los eventos contra los esquemas, el puntaje y los resultados persistidos. Aumenta la concurrencia por pasos, mide percentiles de respuesta y cierre y se detiene con salida 1 si supera los umbrales. Emite un informe JSON con el hardware y el máximo verificado. Crea cuentas, cuestionario y salas de prueba; usar un entorno dedicado.
+
+Los cuatro archivos de infraestructura de pruebas pertenecen exclusivamente a F7: `test/Dockerfile`, `test/compose.yaml`, `test/init-dbs.sql` y `test/start-auth.cjs`. El Dockerfile usa una imagen fijada por digest y `npm ci` con el lockfile raíz. Antes de construirlo, el orquestador debe regenerar ese lockfile tras fusionar F4; mientras no coincida con los manifiestos, `npm ci` debe rechazar la construcción. El lockfile no se modifica en estas ramas. La infraestructura final permanece a cargo de F6.
+
+Desde `apps/kahoot-api`, con dependencias de desarrollo instaladas:
+
+```powershell
+docker compose -p profelink-f4 -f test/compose.yaml --profile load up -d --build --wait
+$env:AUTH_BASE_URL='http://127.0.0.1:55435'
+$env:KAHOOT_BASE_URL='http://127.0.0.1:55436'
+$env:LOAD_STEPS='5,10,25'
+npm run load
+docker compose -p profelink-f4 -f test/compose.yaml --profile load down
+```
+
+Configurar `LOAD_TIMEOUT_MS` (15000), `LOAD_MAX_P95_MS` (1000) y `LOAD_MAX_ERROR_RATE` (0.01) para ajustar los criterios. El Compose de pruebas utiliza bases e imágenes desechables y claves RSA efímeras; no es el despliegue de infraestructura. El informe verificado y sus límites están en [LOAD-VERIFICATION.md](./LOAD-VERIFICATION.md).

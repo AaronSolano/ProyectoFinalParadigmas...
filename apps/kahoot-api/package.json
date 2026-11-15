@@ -9,6 +9,7 @@
     "dev": "tsx src/main.ts",
     "test": "node scripts/test.cjs",
     "test:integration": "node scripts/test.cjs test/integration.spec.ts test/live.spec.ts",
+    "load": "node scripts/load.mjs",
     "migration:run": "tsx src/data/migrate.ts",
     "seed": "tsx src/seed.ts",
     "format": "prettier --write .",

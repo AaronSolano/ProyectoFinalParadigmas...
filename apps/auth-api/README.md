@@ -23,3 +23,9 @@ Ejemplo PowerShell: `$env:AUTH_TEST_DATABASE_URL='postgresql://postgres:password
 `OTEL_EXPORTER_OTLP_ENDPOINT` activa trazas y métricas HTTP OTLP (`/v1/traces`, `/v1/metrics`) con nombre de servicio `auth-api`. Sin endpoint no se inicia exportador. Un colector temporalmente desconectado no impide servir HTTP. No se registran contraseñas, tokens ni correos en atributos de telemetría.
 
 Las tareas verificadas se informan al orquestador: este paquete no modifica los artefactos OpenSpec ni los contratos compartidos.
+
+## Datos de demostración (fase 6)
+
+Después de las migraciones ejecutar `npm run seed` (código compilado: `npm run seed:production`). Configurar `DEMO_PASSWORD` explícitamente, con letras, números y al menos 8 caracteres. Opcionales: `DEMO_PROFILE_ID` (por defecto `00000000-0000-4000-8000-000000000001`), `DEMO_EMAIL` (`docente.demo@example.com`), `DEMO_DISPLAY_NAME` (`Docente demo`). El seed de kahoot debe usar el mismo `DEMO_PROFILE_ID` para el propietario del cuestionario de demostración.
+
+La segunda ejecución conserva identidad y hash originales; no reinicia contraseñas. Un correo o UUID ocupado por otra identidad produce un error claro. No se necesitan claves JWT para ejecutar migraciones o seed. El arranque Compose lo coordina infraestructura invocando migraciones y seed antes de `npm start`.

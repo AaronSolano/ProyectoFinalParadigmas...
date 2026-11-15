@@ -1,0 +1,32 @@
+// Recoge los registros (stdout/stderr) de los contenedores de este proyecto de Compose y los envia a Loki.
+
+discovery.docker "contenedores" {
+  host = "unix:///var/run/docker.sock"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=profelink"]
+  }
+}
+
+discovery.relabel "contenedores" {
+  targets = discovery.docker.contenedores.targets
+
+  // Etiqueta "service" = nombre del servicio de Compose (auth-api, kahoot-api, web, postgres...).
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "contenedores" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.contenedores.targets
+  relabel_rules = discovery.relabel.contenedores.rules
+  forward_to    = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

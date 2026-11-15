@@ -1,0 +1,21 @@
+schema: spec-driven
+
+context: |
+  Proyecto: plataforma de evaluaciones en vivo tipo Kahoot (Verdadero/Falso) para ProfeLink, curso EIF400.
+  Monorepo npm: apps/auth-api, apps/kahoot-api (NestJS, N-Capas), apps/web (React + Vite),
+  apps/external-client, packages/contracts, infra/, docs/.
+  Tiempo real: WebSocket (Socket.IO) en kahoot-api. Base: PostgreSQL (Compose local, Supabase desplegado).
+  Despliegue: Vercel (web), Supabase (BD), Render (APIs desde imagenes de Docker Hub). Modo portatil con Docker Compose.
+  Observabilidad: OpenTelemetry + Grafana. UI en español e ingles.
+  El servidor es la unica fuente de tiempo, estado y puntaje. Idioma de los documentos: español.
+
+rules:
+  proposal:
+    - Incluir seccion de alcance y lo que queda fuera.
+  specs:
+    - Describir comportamiento observable, sin nombres de clases ni librerias.
+  design:
+    - Justificar el estilo de arquitectura y la organizacion interna (N-Capas).
+  tasks:
+    - Cada tarea indica como se verifica.
+    - Indicar el agente responsable segun AGENTS.md cuando aplique.

@@ -1,0 +1,10 @@
+{
+  "name": "@profelink/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Contratos compartidos: OpenAPI, eventos en vivo y tipos",
+  "files": [
+    "openapi",
+    "events"
+  ]
+}

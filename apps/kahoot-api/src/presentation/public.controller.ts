@@ -1,7 +1,7 @@
-import { Inject, Controller, Get, Param, Res } from '@nestjs/common';
-import { Response } from 'express';
-import { ImageStorage } from '../domain/ports';
-import { imageType } from '../domain/images';
+import { Inject, Controller, Get, Param, Res } from "@nestjs/common";
+import { Response } from "express";
+import { ImageStorage } from "../domain/ports";
+import { imageType } from "../domain/images";
 @Controller()
 export class PublicController {
   constructor(@Inject("IMAGE_STORAGE") private readonly images: ImageStorage) {}

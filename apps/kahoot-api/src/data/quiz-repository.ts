@@ -1,23 +1,87 @@
-import { SqlAdapter, Row } from './sql-adapter';
-import { QuizRepository } from '../domain/ports';
-import { QuizInput, QuestionInput } from '../domain/inputs';
-import { quizFromRow, questionFromRow } from './mappers';
-export class PostgresQuizRepository extends SqlAdapter implements QuizRepository {
- private async quiz(row: Row) { return quizFromRow(row, await this.rawCountQuestions(row.id)); }
- async findById(id: string, lock = false) { const row = await this.rawQuiz(id,lock); return row ? this.quiz(row) : undefined; }
- async findQuestion(quizId: string,id: string) { const row = await this.rawQuestion(quizId,id); return row ? questionFromRow(row) : undefined; }
- async listQuestions(id: string) { return (await this.rawQuestions(id)).map(questionFromRow); }
- async listOwned(ownerId: string) { return Promise.all((await this.rawListOwnedQuizzes([ownerId])).map(r=>this.quiz(r))); }
- async create(ownerId: string,input: QuizInput) { return this.quiz((await this.rawInsertQuiz([ownerId,input.title,input.description ?? '']))[0]); }
- async update(id: string,input: QuizInput) { return this.quiz((await this.rawUpdateQuiz([id,input.title,input.description ?? '']))[0]); }
- async remove(id: string) { await this.rawDeleteQuizQuestions([id]); await this.rawSoftDeleteQuiz([id]); }
- async createQuestion(id: string,quizId: string,input: QuestionInput,position: number) { await this.rawInsertQuestion([id,quizId,input.statement,input.correctAnswer,position]); }
- async updateQuestion(id: string,input: QuestionInput) { await this.rawUpdateQuestionContent([id,input.statement,input.correctAnswer]); }
- async setQuestionPosition(id: string,position: number) { await this.rawSetQuestionPosition([id,position]); }
- async removeQuestion(id: string,quizId: string,position: number) { await this.rawDeleteQuestion([id]); await this.rawCompactQuestionPositions([quizId,position]); }
- async touch(id: string,at: Date) { await this.rawTouchQuiz([id,at]); }
- async setImage(id: string,name: string | null) { return questionFromRow((await this.rawUpdateQuestionImage([id,name]))[0]); }
- imageReferenced(name: string) { return this.rawImageReferenced(name); }
+import { SqlAdapter, Row } from "./sql-adapter";
+import { QuizRepository } from "../domain/ports";
+import { QuizInput, QuestionInput } from "../domain/inputs";
+import { quizFromRow, questionFromRow } from "./mappers";
+export class PostgresQuizRepository
+  extends SqlAdapter
+  implements QuizRepository
+{
+  private async quiz(row: Row) {
+    return quizFromRow(row, await this.rawCountQuestions(row.id));
+  }
+  async findById(id: string, lock = false) {
+    const row = await this.rawQuiz(id, lock);
+    return row ? this.quiz(row) : undefined;
+  }
+  async findQuestion(quizId: string, id: string) {
+    const row = await this.rawQuestion(quizId, id);
+    return row ? questionFromRow(row) : undefined;
+  }
+  async listQuestions(id: string) {
+    return (await this.rawQuestions(id)).map(questionFromRow);
+  }
+  async listOwned(ownerId: string) {
+    return Promise.all(
+      (await this.rawListOwnedQuizzes([ownerId])).map((r) => this.quiz(r)),
+    );
+  }
+  async create(ownerId: string, input: QuizInput) {
+    return this.quiz(
+      (
+        await this.rawInsertQuiz([
+          ownerId,
+          input.title,
+          input.description ?? "",
+        ])
+      )[0],
+    );
+  }
+  async update(id: string, input: QuizInput) {
+    return this.quiz(
+      (await this.rawUpdateQuiz([id, input.title, input.description ?? ""]))[0],
+    );
+  }
+  async remove(id: string) {
+    await this.rawDeleteQuizQuestions([id]);
+    await this.rawSoftDeleteQuiz([id]);
+  }
+  async createQuestion(
+    id: string,
+    quizId: string,
+    input: QuestionInput,
+    position: number,
+  ) {
+    await this.rawInsertQuestion([
+      id,
+      quizId,
+      input.statement,
+      input.correctAnswer,
+      position,
+    ]);
+  }
+  async updateQuestion(id: string, input: QuestionInput) {
+    await this.rawUpdateQuestionContent([
+      id,
+      input.statement,
+      input.correctAnswer,
+    ]);
+  }
+  async setQuestionPosition(id: string, position: number) {
+    await this.rawSetQuestionPosition([id, position]);
+  }
+  async removeQuestion(id: string, quizId: string, position: number) {
+    await this.rawDeleteQuestion([id]);
+    await this.rawCompactQuestionPositions([quizId, position]);
+  }
+  async touch(id: string, at: Date) {
+    await this.rawTouchQuiz([id, at]);
+  }
+  async setImage(id: string, name: string | null) {
+    return questionFromRow((await this.rawUpdateQuestionImage([id, name]))[0]);
+  }
+  imageReferenced(name: string) {
+    return this.rawImageReferenced(name);
+  }
 
   private async rawQuiz(id: string, lock = false): Promise<Row | undefined> {
     return (
@@ -27,7 +91,10 @@ export class PostgresQuizRepository extends SqlAdapter implements QuizRepository
       )
     )[0];
   }
-  private async rawQuestion(quizId: string, id: string): Promise<Row | undefined> {
+  private async rawQuestion(
+    quizId: string,
+    id: string,
+  ): Promise<Row | undefined> {
     return (
       await this.query("SELECT * FROM questions WHERE quiz_id=$1 AND id=$2", [
         quizId,
@@ -68,10 +135,7 @@ export class PostgresQuizRepository extends SqlAdapter implements QuizRepository
     );
   }
   private rawTouchQuiz(params: unknown[]): Promise<Row[]> {
-    return this.query(
-      "UPDATE quizzes SET updated_at=$2 WHERE id=$1",
-      params,
-    );
+    return this.query("UPDATE quizzes SET updated_at=$2 WHERE id=$1", params);
   }
   private rawCompactQuestionPositions(params: unknown[]): Promise<Row[]> {
     return this.query(
@@ -123,4 +187,5 @@ export class PostgresQuizRepository extends SqlAdapter implements QuizRepository
       "SELECT * FROM quizzes WHERE owner_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC",
       params,
     );
-  }}
+  }
+}

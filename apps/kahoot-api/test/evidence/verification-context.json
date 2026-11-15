@@ -1,0 +1,13 @@
+{
+  "baseCommit": "299d4637ff417ab7877a5b81d4929a17f2e74da3",
+  "lockfileSha256": "426A2BDBCEB1397D42A18DA9B6DC8126ACA1B700648625861D0F7BDC9F82AFAE",
+  "authImage": "sha256:fa7c411f201ee94514532ded806c0da9b17402660713316e21030623370e477f",
+  "kahootImage": "sha256:9d52ca9d59d9f68acd8553f209482b59e76b7f2bcfad2a6728c19d396f84a928",
+  "dockerResources": "16 CPUs, 8170139648 bytes, Docker Desktop",
+  "install": "npm ci --workspaces --include-workspace-root",
+  "kahootTests": 61,
+  "authTests": 30,
+  "postgresSuitesSkipped": 0,
+  "authUid": 1000,
+  "kahootUid": 1000
+}

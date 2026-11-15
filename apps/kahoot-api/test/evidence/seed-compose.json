@@ -1,0 +1,22 @@
+{
+  "date": "2026-11-15T22:07:19.4463397Z",
+  "freshDatabases": ["auth_seed_check", "kahoot_seed_check"],
+  "runs": 2,
+  "profiles": 1,
+  "quizzes": 1,
+  "questions": 5,
+  "images": [
+    {
+      "httpStatus": 200,
+      "bytes": 11853,
+      "filename": "00000000-0000-4000-8000-000000000010.png"
+    },
+    {
+      "httpStatus": 200,
+      "bytes": 16407,
+      "filename": "00000000-0000-4000-8000-000000000011.png"
+    }
+  ],
+  "secondRunUnchanged": true,
+  "passwordSource": "ephemeral test environment"
+}

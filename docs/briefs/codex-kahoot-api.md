@@ -41,7 +41,7 @@ Prefijo `/api/v1`, puerto `KAHOOT_PORT` (3002).
 4. Imágenes: puerto `ImageStorage` con adaptador de disco (`IMAGE_STORAGE_PATH`) y adaptador de Supabase Storage (`SUPABASE_*`). Valida **el tipo real por contenido (magic bytes)**, no solo la extensión: PNG/JPEG/WebP, máximo `IMAGE_MAX_BYTES` (2 MiB) → 415 `IMAGE_UNSUPPORTED` / 413 `IMAGE_TOO_LARGE`. Sirve públicamente `GET /api/v1/images/{filename}`; `imageUrl` en las respuestas es **absoluta** y se construye con `PUBLIC_API_URL`.
 5. Salas: `POST /sessions` genera código de 6 caracteres `^[2-9A-HJ-NP-Z]{6}$` único entre salas activas (reintento ante colisión) y **guarda un snapshot** del cuestionario en `session_questions`; sin preguntas → 409 `QUIZ_EMPTY`. `join` idempotente. `participants` y `results` con las reglas de acceso del contrato.
 6. Ninguna respuesta REST expone `correctAnswer` a participantes antes de terminar la sala.
-7. OpenAPI/Scalar en `/docs` y **prueba que compara el documento generado con `kahoot-api.yaml`** (rutas, métodos, códigos).
+7. OpenAPI/Scalar en `/docs` y **prueba que compara el documento generado con `kahoot-api.yaml`** (rutas, métodos, códigos). Reutiliza `compare()` de `packages/contracts/scripts/verify-contract.mjs` o ejecuta `node packages/contracts/scripts/verify-contract.mjs kahoot-api <openapi.json>` (falla si hay un endpoint no declarado). Los tipos del contrato están en `@profelink/contracts/kahoot-api`.
 
 ## Fase 4 — juego en vivo (contrato: `events/README.md` + schemas)
 - Gateway Socket.IO en `/game`. El handshake exige `auth: { token }`; sin token válido → `connect_error` con `unauthorized`.

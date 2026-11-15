@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { io as ioClient } from 'socket.io-client';
 import i18n, { LANGUAGE_STORAGE_KEY, setAppLanguage } from '../i18n';
+import { App } from '../App';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
 import { CountdownTimer, computeRemainingSeconds } from '../components/CountdownTimer';
@@ -48,6 +49,11 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
     clearAuthSession();
     setAppLanguage('es');
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('1.1 cambia el idioma entre español e inglés y conserva la preferencia en localStorage', async () => {
@@ -409,6 +415,174 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
     } finally {
       hostSocket.disconnect();
       partSocket.disconnect();
+      await mocks.close();
+    }
+  });
+
+  it('ajuste 1: un 401 en una llamada REST autenticada limpia el token y redirige a /login con aviso de sesión expirada (ES y EN)', async () => {
+    saveAuthSession('expired-jwt-token', {
+      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      email: 'ana.mora@example.com',
+      displayName: 'Ana Mora',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          status: 401,
+          code: 'UNAUTHORIZED',
+          message: 'Token inválido o vencido',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+
+    renderWithProviders(<App />, ['/quizzes']);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Iniciar sesión/i })).toBeInTheDocument();
+    });
+    expect(getStoredToken()).toBeNull();
+    expect(window.sessionStorage.getItem('profelink_auth_token')).toBeNull();
+    expect(screen.getByTestId('error-banner')).toHaveTextContent(
+      'Tu sesión expiró, inicia sesión de nuevo.',
+    );
+
+    // Verificar traducción al inglés del aviso
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } });
+    await waitFor(() => {
+      expect(screen.getByTestId('error-banner')).toHaveTextContent(
+        'Your session expired, please log in again.',
+      );
+    });
+  });
+
+  it('ajuste 2: oculta el botón de simular reconexión por defecto y lo muestra cuando VITE_ENABLE_DEBUG_CONTROLS=true', () => {
+    saveAuthSession('mock-jwt', {
+      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      email: 'ana.mora@example.com',
+      displayName: 'Ana Mora',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    const firstRender = renderWithProviders(
+      <Routes>
+        <Route path="/host/:code" element={<GameRoomPage roleHint="host" />} />
+      </Routes>,
+      ['/host/K7M3QX'],
+    );
+    expect(screen.queryByTestId('btn-simulate-reconnect')).not.toBeInTheDocument();
+    firstRender.unmount();
+
+    vi.stubEnv('VITE_ENABLE_DEBUG_CONTROLS', 'true');
+    renderWithProviders(
+      <Routes>
+        <Route path="/host/:code" element={<GameRoomPage roleHint="host" />} />
+      </Routes>,
+      ['/host/K7M3QX'],
+    );
+    expect(screen.getByTestId('btn-simulate-reconnect')).toBeInTheDocument();
+  });
+
+  it('ajuste 3: ante io server disconnect reconecta con retraso y vuelve a aplicar state_sync', async () => {
+    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
+    const kahootPort = mocks.kahootServer.address().port;
+    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
+
+    const hostToken = Buffer.from(
+      JSON.stringify({
+        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+        name: 'Ana Mora',
+        email: 'ana.mora@example.com',
+      }),
+    ).toString('base64url');
+    const jwt = `hdr.${hostToken}.sig`;
+
+    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${jwt}`,
+      },
+      body: JSON.stringify({
+        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        questionTimeSeconds: 20,
+      }),
+    });
+    const freshSession = (await createRes.json()) as { code: string };
+
+    saveAuthSession(jwt, {
+      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      email: 'ana.mora@example.com',
+      displayName: 'Ana Mora',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    let serverConnectionCount = 0;
+    let firstServerSocket: any = null;
+    let stateSyncEmitted = 0;
+    mocks.io.of('/game').on('connection', (sock: any) => {
+      serverConnectionCount += 1;
+      if (serverConnectionCount === 1) {
+        firstServerSocket = sock;
+      }
+      sock.on('session:join', () => {
+        stateSyncEmitted += 1;
+      });
+    });
+
+    try {
+      renderWithProviders(<App />, [`/host/${freshSession.code}`]);
+
+      await waitFor(() => {
+        expect(serverConnectionCount).toBe(1);
+        expect(stateSyncEmitted).toBe(1);
+        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
+      });
+
+      // El servidor desconecta al cliente (produce motivo 'io server disconnect' en el cliente)
+      firstServerSocket.disconnect(true);
+
+      expect(await screen.findByTestId('reconnect-banner')).toBeInTheDocument();
+
+      await waitFor(
+        () => {
+          expect(serverConnectionCount).toBe(2);
+          expect(stateSyncEmitted).toBe(2);
+          expect(screen.queryByTestId('reconnect-banner')).not.toBeInTheDocument();
+          expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
+        },
+        { timeout: 4000 },
+      );
+
+      // Si una reconexión falla con unauthorized, limpia el token y redirige a /login
+      let rejectNext = true;
+      mocks.io.of('/game').use((_socket: any, next: (err?: Error) => void) => {
+        if (rejectNext) {
+          rejectNext = false;
+          next(new Error('unauthorized'));
+          return;
+        }
+        next();
+      });
+
+      const sockets = await mocks.io.of('/game').fetchSockets();
+      for (const s of sockets) {
+        s.disconnect(true);
+      }
+
+      await waitFor(
+        () => {
+          expect(getStoredToken()).toBeNull();
+          expect(screen.getByRole('heading', { name: /Iniciar sesión/i })).toBeInTheDocument();
+          expect(screen.getByTestId('error-banner')).toHaveTextContent(
+            'Tu sesión expiró, inicia sesión de nuevo.',
+          );
+        },
+        { timeout: 4000 },
+      );
+    } finally {
       await mocks.close();
     }
   });

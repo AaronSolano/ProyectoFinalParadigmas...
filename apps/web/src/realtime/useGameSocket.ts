@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { getAppEnv } from '../config/env';
+import { notifySessionExpired } from '../auth/storage';
 import type {
   AnswerAcceptedEvent,
   AnswerRejectedEvent,
@@ -105,6 +106,8 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
   );
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting');
   const socketRef = useRef<Socket | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const serverDisconnectAttemptsRef = useRef<number>(0);
 
   useEffect(() => {
     const normalizedCode = code.trim().toUpperCase();
@@ -118,6 +121,14 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
       return;
     }
 
+    let disposed = false;
+    const clearReconnectTimer = () => {
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    };
+
     const { kahootApiUrl } = getAppEnv();
     const socket = io(`${kahootApiUrl}/game`, {
       auth: { token },
@@ -129,18 +140,43 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
     socketRef.current = socket;
 
     socket.on('connect', () => {
+      if (disposed) {
+        return;
+      }
+      clearReconnectTimer();
+      serverDisconnectAttemptsRef.current = 0;
       setConnectionState('connected');
       socket.emit('session:join', { code: normalizedCode });
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason: string) => {
+      if (disposed) {
+        return;
+      }
       setConnectionState('reconnecting');
+      if (reason === 'io server disconnect') {
+        clearReconnectTimer();
+        const attempt = serverDisconnectAttemptsRef.current;
+        serverDisconnectAttemptsRef.current += 1;
+        const delayMs = Math.min(4000, 150 * Math.pow(2, attempt));
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          if (!disposed && socketRef.current === socket) {
+            socket.connect();
+          }
+        }, delayMs);
+      }
     });
 
     socket.on('connect_error', (err: Error) => {
+      if (disposed) {
+        return;
+      }
       if (err?.message === 'unauthorized') {
+        clearReconnectTimer();
         setConnectionState('unauthorized');
         setLiveState((prev) => ({ ...prev, lastError: 'UNAUTHORIZED' }));
+        notifySessionExpired();
       } else {
         setConnectionState('reconnecting');
       }
@@ -259,6 +295,8 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
     });
 
     return () => {
+      disposed = true;
+      clearReconnectTimer();
       socket.disconnect();
       socketRef.current = null;
     };

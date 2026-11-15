@@ -9,6 +9,8 @@ Configuradas exclusivamente mediante variables Vite (`VITE_*`):
 ```bash
 VITE_AUTH_API_URL=http://localhost:3001
 VITE_KAHOOT_API_URL=http://localhost:3002
+# Opcional: mostrar controles de depuración en sala (ej. simular reconexión)
+VITE_ENABLE_DEBUG_CONTROLS=false
 ```
 
 Para ejecutar contra el servidor de mocks (puertos `4011` y `4010`):

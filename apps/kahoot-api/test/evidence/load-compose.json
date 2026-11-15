@@ -1,0 +1,50 @@
+{
+  "run": "d6dc1047-8153-48fe-a1f5-cf6677973b45",
+  "date": "2026-11-15T22:05:43.210Z",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logicalCpus": 16,
+    "ramBytes": 16869351424,
+    "node": "v24.19.0"
+  },
+  "thresholds": {
+    "maxP95Ms": 1000,
+    "maxErrorRate": 0.01,
+    "timeoutMs": 15000
+  },
+  "steps": [
+    {
+      "participants": 5,
+      "connected": 5,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 26.76800000000003,
+      "p95CloseMs": 13.131599999999935,
+      "passed": true
+    },
+    {
+      "participants": 10,
+      "connected": 10,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 19.58400000000006,
+      "p95CloseMs": 10.139200000000073,
+      "passed": true
+    },
+    {
+      "participants": 25,
+      "connected": 25,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 48.87069999999994,
+      "p95CloseMs": 22.201000000000022,
+      "passed": true
+    }
+  ],
+  "maxVerifiedParticipants": 25
+}

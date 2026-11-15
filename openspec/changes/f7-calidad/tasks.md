@@ -19,8 +19,8 @@
 
 ## Avance verificado de Codex — 15 de noviembre de 2026
 
-Tareas 1.1 y 3.1 completadas. La base F4 aprobó 56 pruebas de kahoot-api y 30 de auth-api con PostgreSQL real habilitado, ESLint, comprobación de tipos y compilación de ambas APIs. Se omite la comprobación CI por instrucción expresa del usuario; no se certifica CI verde.
+Tareas 1.1 y 3.1 completadas. Revalidación sobre `main` en `299d463`: las imágenes construyeron con `npm ci` y el lockfile actualizado, sin modificarlo. Se aprobaron 61 pruebas de kahoot-api y 30 de auth-api dentro de contenedores con esas dependencias y PostgreSQL real, sin suites de BD omitidas. Lint, tipos, build y formato de kahoot-api aprobados. Se omite la comprobación CI por instrucción expresa del usuario; no se certifica CI verde.
 
-El script de carga se verificó contra auth-api, kahoot-api y PostgreSQL en Docker Compose, con pasos de 5, 10 y 25 participantes, sin errores ni payloads inválidos. Con 25 participantes, P95 de cierre de 17,49 ms. Se comprobó además la salida 1 al superar el umbral configurado. Es el máximo probado en esa corrida, no la capacidad máxima del sistema. Informe y hardware: apps/kahoot-api/LOAD-VERIFICATION.md. Implementación presentada en el PR #19; revisión y merge siguen pendientes.
+El script de carga se verificó contra auth-api, kahoot-api y PostgreSQL en Docker Compose, con pasos de 5, 10 y 25 participantes, sin errores ni payloads inválidos. Con 25 participantes, P95 de cierre de 22,20 ms. Se comprobó además la salida 1 al superar el umbral configurado. Es el máximo probado en esa corrida, no la capacidad máxima del sistema. Informe, hardware y reportes JSON: apps/kahoot-api/LOAD-VERIFICATION.md y apps/kahoot-api/test/evidence/. Implementación presentada en el PR #19; revisión y merge siguen pendientes.
 
 F7 permanece activa: no se dan por realizadas las pruebas de frontend/e2e ni la evidencia formal del equipo en docs/evidencia/.

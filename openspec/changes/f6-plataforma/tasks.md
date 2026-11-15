@@ -11,7 +11,9 @@
 
 ## 3. Datos de demostración
 
-- [ ] 3.1 (Codex) Crear el seed idempotente con usuario y cuestionario de prueba con imagen y verificar con un arranque desde cero y una segunda ejecución
+- [x] 3.1 (Codex) Crear el seed idempotente con usuario y cuestionario de prueba con imagen y verificar con un arranque desde cero y una segunda ejecución
+
+Evidencia de Codex para 3.1 (15 de noviembre de 2026): imágenes construidas con `npm ci` y el lockfile de `main` en `299d463`; migraciones y seeds compilados ejecutados sobre dos bases nuevas de PostgreSQL en Compose, dos veces cada uno. Se conservaron 1 perfil, 1 cuestionario, 5 preguntas y 2 imágenes, sin cambios de filas en la segunda ejecución. Ambas imágenes se consultaron por HTTP con estado 200. Reportes: `apps/kahoot-api/LOAD-VERIFICATION.md` y `apps/kahoot-api/test/evidence/seed-compose.json`. F6 continúa activa con las tareas de infraestructura de su responsable pendientes.
 
 ## 4. Observabilidad
 

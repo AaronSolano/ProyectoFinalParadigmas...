@@ -1,0 +1,30 @@
+{
+  "run": "4d93aa7c-a0b4-4a0a-ba8c-1eb82e122c47",
+  "date": "2026-11-15T22:05:45.096Z",
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logicalCpus": 16,
+    "ramBytes": 16869351424,
+    "node": "v24.19.0"
+  },
+  "thresholds": {
+    "maxP95Ms": 0.001,
+    "maxErrorRate": 0.01,
+    "timeoutMs": 15000
+  },
+  "steps": [
+    {
+      "participants": 2,
+      "connected": 2,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 4.567000000000007,
+      "p95CloseMs": 4.623700000000042,
+      "passed": false
+    }
+  ],
+  "maxVerifiedParticipants": 0
+}

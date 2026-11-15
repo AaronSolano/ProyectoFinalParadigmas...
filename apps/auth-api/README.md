@@ -35,3 +35,7 @@ Las tareas verificadas se informan al orquestador: este paquete no modifica los 
 Después de las migraciones ejecutar `npm run seed` (código compilado: `npm run seed:production`). Configurar `DEMO_PASSWORD` explícitamente, con letras, números y al menos 8 caracteres. Opcionales: `DEMO_PROFILE_ID` (por defecto `00000000-0000-4000-8000-000000000001`), `DEMO_EMAIL` (`docente.demo@example.com`), `DEMO_DISPLAY_NAME` (`Docente demo`). El seed de kahoot debe usar el mismo `DEMO_PROFILE_ID` para el propietario del cuestionario de demostración.
 
 La segunda ejecución conserva identidad y hash originales; no reinicia contraseñas. Un correo o UUID ocupado por otra identidad produce un error claro. No se necesitan claves JWT para ejecutar migraciones o seed. El arranque Compose lo coordina infraestructura invocando migraciones y seed antes de `npm start`.
+
+## Migraciones al arrancar
+
+`RUN_MIGRATIONS` vale `true` por defecto. Antes de escuchar HTTP se aplican las migraciones pendientes bajo un bloqueo asesor de PostgreSQL, incluida la creación de la tabla de migraciones; dos instancias pueden arrancar simultáneamente sobre una base vacía. Usa `RUN_MIGRATIONS=false` si el despliegue ejecuta las migraciones por separado. Las claves JWT se proporcionan mediante la configuración del despliegue.

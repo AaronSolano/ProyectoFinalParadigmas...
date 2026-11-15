@@ -16,3 +16,6 @@ cpSync(
   resolve(__dirname, "../../../packages/contracts/openapi/kahoot-api.yaml"),
   resolve(output, "openapi/kahoot-api.yaml"),
 );
+cpSync(resolve(__dirname, "../assets"), resolve(output, "assets"), {
+  recursive: true,
+});

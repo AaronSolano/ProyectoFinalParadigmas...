@@ -1,0 +1,13 @@
+{
+  "lastPassingStep": 400,
+  "firstFailingStep": 800,
+  "failureReason": "p95CloseMs exceeds 1000 ms",
+  "lastPassingP95CloseMs": 379.75922400000127,
+  "firstFailingP95CloseMs": 1288.4831840000115,
+  "firstFailingErrorRate": 0,
+  "notExecuted": [1600],
+  "serverCpu": 0.5,
+  "serverMemoryBytes": 536870912,
+  "clientAndServerShareMachine": true,
+  "applicationCodeChanged": false
+}

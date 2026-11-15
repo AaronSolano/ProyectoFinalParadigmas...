@@ -11,7 +11,9 @@
     "test:integration": "node --experimental-vm-modules scripts/test.cjs test/postgres.spec.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data/data-source.ts",
-    "keys:generate": "node scripts/generate-keys.cjs"
+    "keys:generate": "node scripts/generate-keys.cjs",
+    "seed": "tsx src/data/seed.ts",
+    "seed:production": "node dist/data/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.0",

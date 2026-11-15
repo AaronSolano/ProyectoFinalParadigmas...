@@ -1,0 +1,17 @@
+# Variante para construir las imagenes en esta maquina en lugar de descargarlas de Docker Hub:
+#   docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait
+services:
+  auth-api:
+    build:
+      context: .
+      dockerfile: infra/docker/auth-api.Dockerfile
+  kahoot-api:
+    build:
+      context: .
+      dockerfile: infra/docker/kahoot-api.Dockerfile
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        VITE_ENABLE_DEBUG_CONTROLS: ${VITE_ENABLE_DEBUG_CONTROLS:-false}

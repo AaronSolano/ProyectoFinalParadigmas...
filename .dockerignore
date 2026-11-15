@@ -1,0 +1,35 @@
+# Control de versiones y herramientas
+.git
+.github
+.claude
+.agents
+.vscode
+.idea
+
+# Dependencias y compilados (se instalan y construyen dentro de la imagen)
+node_modules
+**/node_modules
+**/dist
+**/coverage
+
+# Secretos y configuracion local: nunca entran al contexto de construccion
+.env
+.env.*
+!.env.example
+
+# Documentacion y especificaciones (no se usan en tiempo de ejecucion)
+docs
+openspec
+*.md
+!apps/**/README.md
+
+# Pruebas, mocks y evidencia
+apps/*/test
+apps/web/mocks
+**/*.spec.ts
+**/*.test.tsx
+
+# Datos locales
+data
+uploads
+*.log

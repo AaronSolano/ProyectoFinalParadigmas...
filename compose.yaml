@@ -1,0 +1,221 @@
+# ProfeLink Kahoot: solucion completa con Docker Compose.
+#
+#   Iniciar con imagenes publicadas en Docker Hub:   docker compose up -d --wait
+#   Construir las imagenes en esta maquina:          docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait
+#   Con observabilidad (Grafana):                     agregar --profile observability
+#   Detener (conserva los datos):                     docker compose down
+#   Detener y BORRAR los datos:                       docker compose down -v
+#
+# Lo normal es usar ./start.sh o .\start.ps1, que preparan el archivo .env.
+name: profelink
+
+x-api-common: &api-common
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kahoot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env (use start.sh o start.ps1)}
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-dbs.sql:/docker-entrypoint-initdb.d/10-init-dbs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  auth-api:
+    <<: *api-common
+    image: ${DOCKERHUB_USER:-profelink}/profelink-auth-api:${IMAGE_TAG:-latest}
+    environment:
+      AUTH_PORT: 3001
+      AUTH_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/auth
+      DATABASE_SSL: "false"
+      RUN_MIGRATIONS: "true"
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      JWT_KEY_ID: ${JWT_KEY_ID:-auth-key-1}
+      JWT_ISSUER: ${JWT_ISSUER:-auth-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-kahoot-api}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_URL:-http://localhost:8080}}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    volumes:
+      - auth_keys:/keys
+    ports:
+      - "${API_BIND:-127.0.0.1}:${AUTH_PORT:-3001}:3001"
+
+  kahoot-api:
+    <<: *api-common
+    image: ${DOCKERHUB_USER:-profelink}/profelink-kahoot-api:${IMAGE_TAG:-latest}
+    environment:
+      KAHOOT_PORT: 3002
+      KAHOOT_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/kahoot
+      DATABASE_SSL: "false"
+      RUN_MIGRATIONS: "true"
+      AUTH_BASE_URL: http://auth-api:3001
+      JWT_ISSUER: ${JWT_ISSUER:-auth-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-kahoot-api}
+      PUBLIC_API_URL: ${PUBLIC_URL:-http://localhost:8080}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_URL:-http://localhost:8080}}
+      QUESTION_TIME_SECONDS: ${QUESTION_TIME_SECONDS:-20}
+      IMAGE_STORAGE: disk
+      IMAGE_STORAGE_PATH: /data/images
+      IMAGE_MAX_BYTES: ${IMAGE_MAX_BYTES:-2097152}
+      LIVE_MAX_EVENTS_PER_SECOND: ${LIVE_MAX_EVENTS_PER_SECOND:-20}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    volumes:
+      - kahoot_images:/data/images
+    ports:
+      - "${API_BIND:-127.0.0.1}:${KAHOOT_PORT:-3002}:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-api:
+        condition: service_healthy
+
+  web:
+    restart: unless-stopped
+    image: ${DOCKERHUB_USER:-profelink}/profelink-web:${IMAGE_TAG:-latest}
+    depends_on:
+      auth-api:
+        condition: service_healthy
+      kahoot-api:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8080}:8080"
+
+  # Datos de demostracion (idempotentes: se pueden repetir sin duplicar ni pisar ediciones).
+  # Perfil "seed": no arrancan con "up" (terminan al acabar y harian fallar --wait).
+  # start.sh / start.ps1 los ejecutan con: docker compose run --rm seed-auth seed-kahoot
+  seed-auth:
+    profiles: [seed]
+    image: ${DOCKERHUB_USER:-profelink}/profelink-auth-api:${IMAGE_TAG:-latest}
+    restart: "no"
+    command: ["node", "dist/data/seed.js"]
+    environment:
+      AUTH_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/auth
+      DATABASE_SSL: "false"
+      DEMO_PROFILE_ID: ${DEMO_PROFILE_ID:-00000000-0000-4000-8000-000000000001}
+      DEMO_EMAIL: ${DEMO_EMAIL:-docente.demo@example.com}
+      DEMO_DISPLAY_NAME: ${DEMO_DISPLAY_NAME:-Docente demo}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Define DEMO_PASSWORD en .env (use start.sh o start.ps1)}
+    depends_on:
+      auth-api:
+        condition: service_healthy
+
+  seed-kahoot:
+    profiles: [seed]
+    image: ${DOCKERHUB_USER:-profelink}/profelink-kahoot-api:${IMAGE_TAG:-latest}
+    restart: "no"
+    command: ["node", "dist/seed.js"]
+    environment:
+      KAHOOT_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/kahoot
+      DATABASE_SSL: "false"
+      AUTH_BASE_URL: http://auth-api:3001
+      PUBLIC_API_URL: ${PUBLIC_URL:-http://localhost:8080}
+      IMAGE_STORAGE: disk
+      IMAGE_STORAGE_PATH: /data/images
+      DEMO_PROFILE_ID: ${DEMO_PROFILE_ID:-00000000-0000-4000-8000-000000000001}
+    volumes:
+      - kahoot_images:/data/images
+    depends_on:
+      kahoot-api:
+        condition: service_healthy
+
+  # ---- Observabilidad (opcional): docker compose --profile observability up -d ----
+  # Las APIs envian trazas y metricas por OTLP al Collector (OTEL_EXPORTER_OTLP_ENDPOINT).
+  otel-collector:
+    profiles: [observability]
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./infra/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    depends_on:
+      - tempo
+
+  tempo:
+    profiles: [observability]
+    image: grafana/tempo:2.6.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infra/observability/tempo.yaml:/etc/tempo.yaml:ro
+
+  # Registros: Alloy lee los logs de los contenedores del proyecto (via el socket de Docker, solo lectura) y los envia a Loki.
+  loki:
+    profiles: [observability]
+    image: grafana/loki:3.2.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./infra/observability/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+
+  alloy:
+    profiles: [observability]
+    image: grafana/alloy:v1.4.3
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./infra/observability/alloy.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - otel-collector
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:11.3.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Define GRAFANA_ADMIN_PASSWORD en .env (use start.sh o start.ps1)}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/profelink-overview.json
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "${API_BIND:-127.0.0.1}:${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+volumes:
+  pgdata:
+  auth_keys:
+  kahoot_images:
+  prometheus_data:
+  loki_data:
+  grafana_data:

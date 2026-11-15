@@ -12,8 +12,20 @@ const PASSWORDS = Symbol('PasswordHasher');
   controllers: [AuthController, PublicController],
   providers: [
     { provide: PASSWORDS, useClass: ArgonPasswords },
-    { provide: TOKENS, inject: [SETTINGS], useFactory: (settings: Settings): Tokens => new RsaTokens(settings) },
-    { provide: AuthService, inject: [PROFILES, PASSWORDS, TOKENS], useFactory: (repository: Profiles, passwords: PasswordHasher, tokens: Tokens) => new AuthService(repository, passwords, tokens) },
+    {
+      provide: TOKENS,
+      inject: [SETTINGS],
+      useFactory: (settings: Settings): Tokens => new RsaTokens(settings),
+    },
+    {
+      provide: AuthService,
+      inject: [PROFILES, PASSWORDS, TOKENS],
+      useFactory: (
+        repository: Profiles,
+        passwords: PasswordHasher,
+        tokens: Tokens,
+      ) => new AuthService(repository, passwords, tokens),
+    },
   ],
 })
 export class AppModule {

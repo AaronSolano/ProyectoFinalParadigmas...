@@ -4,24 +4,49 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NextFunction, Request, Response } from 'express';
-export function startTelemetry(endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
+export function startTelemetry(
+  endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+) {
   if (!endpoint) return undefined;
-  const base = endpoint.replace(/\/$/,'');
-  const sdk = new NodeSDK({serviceName:'auth-api',traceExporter:new OTLPTraceExporter({url:`${base}/v1/traces`,timeoutMillis:2000}),metricReaders:[new PeriodicExportingMetricReader({exporter:new OTLPMetricExporter({url:`${base}/v1/metrics`,timeoutMillis:2000}),exportIntervalMillis:10000})]});
-  sdk.start(); return sdk;
+  const base = endpoint.replace(/\/$/, '');
+  const sdk = new NodeSDK({
+    serviceName: 'auth-api',
+    traceExporter: new OTLPTraceExporter({
+      url: `${base}/v1/traces`,
+      timeoutMillis: 2000,
+    }),
+    metricReaders: [
+      new PeriodicExportingMetricReader({
+        exporter: new OTLPMetricExporter({
+          url: `${base}/v1/metrics`,
+          timeoutMillis: 2000,
+        }),
+        exportIntervalMillis: 10000,
+      }),
+    ],
+  });
+  sdk.start();
+  return sdk;
 }
 export function httpTelemetry(req: Request, res: Response, next: NextFunction) {
   const started = performance.now();
   const span = trace.getTracer('auth-api').startSpan(`HTTP ${req.method}`);
-  res.once('finish',()=>{
+  res.once('finish', () => {
     const route = req.route?.path ?? 'unmatched';
-    const attributes = {'http.request.method':req.method,'http.route':String(route),'http.response.status_code':res.statusCode};
-    span.updateName(`${req.method} ${route}`); span.setAttributes(attributes);
-    if (res.statusCode >= 500) span.setStatus({code:SpanStatusCode.ERROR});
+    const attributes = {
+      'http.request.method': req.method,
+      'http.route': String(route),
+      'http.response.status_code': res.statusCode,
+    };
+    span.updateName(`${req.method} ${route}`);
+    span.setAttributes(attributes);
+    if (res.statusCode >= 500) span.setStatus({ code: SpanStatusCode.ERROR });
     span.end();
     const meter = metrics.getMeter('auth-api');
-    meter.createCounter('http.server.requests').add(1,attributes);
-    meter.createHistogram('http.server.duration',{unit:'s'}).record((performance.now()-started)/1000,attributes);
+    meter.createCounter('http.server.requests').add(1, attributes);
+    meter
+      .createHistogram('http.server.duration', { unit: 's' })
+      .record((performance.now() - started) / 1000, attributes);
   });
   next();
 }

@@ -1,4 +1,3 @@
-import { extname } from "node:path";
 import { Problem } from "./problem";
 export function safeFilename(name: string): void {
   if (!/^[A-Za-z0-9-]+\.(png|jpe?g|webp)$/.test(name))
@@ -13,7 +12,7 @@ export function imageType(name: string): string {
 }
 export function validateImage(
   bytes: Buffer,
-  name: string,
+  _name: string,
   max: number,
 ): { extension: string; type: string } {
   if (bytes.length > max)
@@ -43,8 +42,7 @@ export function validateImage(
     ["VP8 ", "VP8L", "VP8X"].includes(bytes.toString("ascii", 12, 16))
   )
     extension = "webp";
-  const supplied = extname(name).toLowerCase().slice(1).replace("jpeg", "jpg");
-  if (!extension || supplied !== extension)
+  if (!extension)
     throw new Problem(
       415,
       "IMAGE_UNSUPPORTED",

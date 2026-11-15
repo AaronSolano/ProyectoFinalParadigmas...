@@ -116,9 +116,7 @@ export class QuizzesController {
     return this.service.deleteQuestion(r.identity.id, id, q);
   }
   @Put(":quizId/questions/:questionId/image")
-  @UseInterceptors(
-    FileInterceptor("file", { limits: { fileSize: 2097152, files: 1 } }),
-  )
+  @UseInterceptors(FileInterceptor("file"))
   image(
     @Req() r: UserRequest,
     @Param("quizId", uuid) id: string,

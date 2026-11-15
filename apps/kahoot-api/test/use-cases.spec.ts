@@ -254,7 +254,7 @@ describe("casos de uso con puertos en memoria, sin PostgreSQL", () => {
       c.session.joinSession({ id: "new", name: "Nuevo" }, room.code, {}),
     ).rejects.toMatchObject({ code: "ROOM_CLOSED" });
   });
-  it("cï¿½digo invï¿½lido no llega al repositorio", async () => {
+  it("codigo invalido no llega al repositorio", async () => {
     const c = setup();
     const spy = jest.spyOn(c.sessions, "findByCode");
     await expect(c.session.getSession("../bad")).rejects.toMatchObject({

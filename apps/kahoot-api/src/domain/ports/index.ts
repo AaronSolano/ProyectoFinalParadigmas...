@@ -28,6 +28,7 @@ export interface QuizRepository {
   imageReferenced(name: string): Promise<boolean>;
 }
 export interface SessionRepository {
+  reactivateParticipant?(id: string): Promise<void>;
   findByCode(code: string, lock?: boolean): Promise<Session | undefined>;
   listHosted(hostId: string): Promise<Session[]>;
   participants(sessionId: string): Promise<Participant[]>;

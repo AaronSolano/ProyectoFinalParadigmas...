@@ -52,3 +52,28 @@ export function httpTelemetry(req: Request, res: Response, next: NextFunction) {
   });
   next();
 }
+
+export function connectionsChanged(delta: number) {
+  metrics
+    .getMeter("kahoot-api")
+    .createUpDownCounter("game.connections.active")
+    .add(delta);
+}
+export function recordGameEvent(
+  event: string,
+  outcome: string,
+  duration: number,
+) {
+  const attributes = { "game.event": event, "game.outcome": outcome },
+    meter = metrics.getMeter("kahoot-api");
+  meter.createCounter("game.events").add(1, attributes);
+  meter
+    .createHistogram("game.event.duration", { unit: "s" })
+    .record(duration, attributes);
+  const span = trace
+    .getTracer("kahoot-api")
+    .startSpan(event, { startTime: Date.now() - duration * 1000 });
+  span.setAttributes(attributes);
+  if (outcome === "error") span.setStatus({ code: SpanStatusCode.ERROR });
+  span.end();
+}

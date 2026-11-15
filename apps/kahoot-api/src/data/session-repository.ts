@@ -7,7 +7,11 @@ export class PostgresSessionRepository
   implements SessionRepository
 {
   private async session(row: Row) {
-    return sessionFromRow(row, (await this.rawParticipants(row.id)).length);
+    return sessionFromRow(
+      row,
+      (await this.rawParticipants(row.id)).filter((p) => p.active !== false)
+        .length,
+    );
   }
   async findByCode(code: string, lock = false) {
     const row = await this.rawSession(code, lock);
@@ -20,6 +24,9 @@ export class PostgresSessionRepository
   }
   async participants(id: string) {
     return (await this.rawParticipants(id)).map(participantFromRow);
+  }
+  async reactivateParticipant(id: string): Promise<void> {
+    await this.query("UPDATE participants SET active=true WHERE id=$1", [id]);
   }
   async createWithSnapshot(
     code: string,

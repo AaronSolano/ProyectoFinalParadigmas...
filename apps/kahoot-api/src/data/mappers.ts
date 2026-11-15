@@ -46,6 +46,7 @@ export function sessionFromRow(r: Row, participantCount: number): Session {
 }
 export function participantFromRow(r: Row): Participant {
   return {
+    active: r.active,
     id: r.id,
     sessionId: r.session_id,
     userId: r.user_id,

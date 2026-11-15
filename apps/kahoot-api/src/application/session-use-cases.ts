@@ -9,6 +9,7 @@ import { SessionInput, JoinInput } from "../domain/inputs";
 import { Problem } from "../domain/problem";
 import { requireWaiting, normalizeRoomCode } from "../domain/session-rules";
 import { ownedQuiz } from "./quiz-use-cases";
+import { GameService } from "./game-service";
 async function room(repo: SessionRepository, code: string, lock = false) {
   const session = await repo.findByCode(normalizeRoomCode(code), lock);
   if (!session)
@@ -25,6 +26,7 @@ export class SessionUseCases {
     private readonly work: UnitOfWork,
     private readonly ids: IdGenerator,
     private readonly questionTime: number,
+    private readonly game?: GameService,
   ) {}
   listSessions(user: string) {
     return this.sessions.listHosted(user);
@@ -66,19 +68,30 @@ export class SessionUseCases {
     );
   }
   joinSession(user: Identity, code: string, input: JoinInput) {
-    return this.work.transaction(async ({ sessions }) => {
-      const session = await room(sessions, code, true);
-      const existing = (await sessions.participants(session.id)).find(
-        (p) => p.userId === user.id,
-      );
-      if (existing) return existing;
-      requireWaiting(session);
-      return sessions.addParticipant(
-        session.id,
-        user.id,
-        input.displayName ?? user.name,
-      );
-    });
+    const join = () =>
+      this.work.transaction(async ({ sessions }) => {
+        const session = await room(sessions, code, true);
+        const existing = (await sessions.participants(session.id)).find(
+          (p) => p.userId === user.id,
+        );
+        if (existing) {
+          await sessions.reactivateParticipant?.(existing.id);
+          return { participant: existing };
+        }
+        requireWaiting(session);
+        const participant = await sessions.addParticipant(
+          session.id,
+          user.id,
+          input.displayName ?? user.name,
+        );
+        return {
+          participant,
+          joined: { id: participant.id, displayName: participant.displayName },
+        };
+      });
+    return this.game
+      ? this.game.joinFromRest(normalizeRoomCode(code), join)
+      : join().then((result) => result.participant);
   }
   private async accessible(user: string, code: string) {
     const session = await room(this.sessions, code);
@@ -88,7 +101,9 @@ export class SessionUseCases {
     return { session, participants };
   }
   async participants(user: string, code: string) {
-    return (await this.accessible(user, code)).participants;
+    return (await this.accessible(user, code)).participants.filter(
+      (p) => p.active !== false,
+    );
   }
   async results(user: string, code: string): Promise<SessionResults> {
     const { session } = await this.accessible(user, code);

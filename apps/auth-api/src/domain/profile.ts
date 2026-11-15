@@ -11,4 +11,6 @@ export function publicProfile(profile: StoredProfile): Profile {
 }
 export interface Profiles { findByEmail(email: string): Promise<StoredProfile | null>; findById(id: string): Promise<StoredProfile | null>; create(email: string, displayName: string, passwordHash: string): Promise<StoredProfile>; }
 export interface PasswordHasher { hash(password: string): Promise<string>; verify(hash: string, password: string): Promise<boolean>; }
-export interface Tokens { sign(profile: Profile): string; verify(token: string): string; readonly expiresIn: number; }
+export const TOKENS = Symbol('Tokens');
+export interface JsonWebKeySet { keys: Array<{ kty?: string; n?: string; e?: string; use: string; alg: string; kid: string }>; }
+export interface Tokens { jwks(): JsonWebKeySet; sign(profile: Profile): string; verify(token: string): string; readonly expiresIn: number; }

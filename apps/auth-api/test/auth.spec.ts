@@ -2,6 +2,7 @@ import { createPublicKey } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { JwtService } from '@nestjs/jwt';
+import { OpenAPIObject, OperationObject } from '@nestjs/swagger';
 import request from 'supertest';
 import { parse } from 'yaml';
 import { createApp } from '../src/app';
@@ -56,11 +57,11 @@ describe('HTTP authentication and contract',()=>{
   });
   test.each([{email:'not-email',password:'Password123',displayName:'Ana'},{email:'a@example.com',password:'weak',displayName:'Ana'},{email:'a@example.com',password:'Password123',displayName:'  '},{email:'a@example.com',password:'Password123',displayName:'Ana',admin:true}])('rejects invalid payload',async body=>{const res=await request(built.app.getHttpServer()).post('/api/v1/auth/register').send(body).expect(400); expect(res.body.code).toBe('VALIDATION_ERROR');});
   test('generated OpenAPI matches contract routes, methods, statuses and JWKS root override',async()=>{
-    const contract=parse(readFileSync(resolve(__dirname,'../../../packages/contracts/openapi/auth-api.yaml'),'utf8'));
+    const contract=parse(readFileSync(resolve(__dirname,'../../../packages/contracts/openapi/auth-api.yaml'),'utf8')) as OpenAPIObject;
     expect(Object.keys(built.document.paths).sort()).toEqual(Object.keys(contract.paths).sort());
-    for(const [path,item] of Object.entries<any>(contract.paths)) for(const method of Object.keys(item)) {
-      const operation=(built.document.paths[path] as any)[method]; expect(operation).toBeDefined();
-      expect(Object.keys(operation.responses).sort()).toEqual(Object.keys(item[method].responses).sort());
+    for(const [path,item] of Object.entries(contract.paths)) for(const method of Object.keys(item)) {
+      const operation=(built.document.paths[path] as Record<string, OperationObject>)[method]; expect(operation).toBeDefined();
+      expect(Object.keys(operation.responses).sort()).toEqual(Object.keys((item as Record<string, OperationObject>)[method].responses).sort());
     }
     expect(built.document.paths['/.well-known/jwks.json'].get!.servers).toEqual([{url:'/'}]);
     await request(built.app.getHttpServer()).get('/docs').expect(200);

@@ -1,17 +1,14 @@
 import 'reflect-metadata';
-import { BadRequestException, Module, RequestMethod, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AuthService } from './application/auth-service';
 import { Settings } from './config/settings';
 import { Profiles } from './domain/profile';
-import { ArgonPasswords, RsaTokens } from './data/credentials';
-import { AuthController, ProblemFilter, PublicController } from './presentation/http';
+import { ProblemFilter } from './presentation/problem.filter';
+import { AppModule } from './app.module';
 import { httpTelemetry } from './telemetry';
 export async function createApp(config: Settings, profiles: Profiles) {
-  @Module({controllers:[AuthController,PublicController], providers:[{provide:RsaTokens,useValue:new RsaTokens(config)}, {provide:AuthService,inject:[RsaTokens],useFactory:(tokens:RsaTokens)=>new AuthService(profiles,new ArgonPasswords(),tokens)}]})
-  class AppModule {}
-  const app = await NestFactory.create(AppModule, {logger:false});
+  const app = await NestFactory.create(AppModule.register(config, profiles), {logger:false});
   app.setGlobalPrefix('api/v1', {exclude:[{path:'.well-known/jwks.json',method:RequestMethod.GET}]});
   app.useGlobalPipes(new ValidationPipe({whitelist:true,forbidNonWhitelisted:true,transform:true, exceptionFactory:errors=>new BadRequestException({status:400,code:'VALIDATION_ERROR',message:'Los datos enviados no son válidos.',details:errors.flatMap(error=>Object.values(error.constraints ?? {}).map(message=>({field:error.property,message})))})}));
   app.useGlobalFilters(new ProblemFilter());

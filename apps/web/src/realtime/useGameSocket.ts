@@ -44,6 +44,8 @@ export interface GameLiveState {
   closesAt: string | null;
   clockOffsetMs: number;
   myScore: number;
+  myStreak: number;
+  lastElapsedMs: number | null;
   hasAnswered: boolean;
   answerAccepted: boolean;
   rejectedReason: AnswerRejectedReason | null;
@@ -64,6 +66,8 @@ export function createInitialGameLiveState(code: string, isHostHint = false): Ga
     closesAt: null,
     clockOffsetMs: 0,
     myScore: 0,
+    myStreak: 0,
+    lastElapsedMs: null,
     hasAnswered: false,
     answerAccepted: false,
     rejectedReason: null,
@@ -91,6 +95,11 @@ export function applyStateSync(
     uniqueParticipants.set(p.id, p);
   }
 
+  const myClosedResult =
+    payload.participantId && payload.lastClosed
+      ? payload.lastClosed.results.find((r) => r.participantId === payload.participantId)
+      : undefined;
+
   return {
     code: payload.code,
     status: payload.status,
@@ -102,6 +111,8 @@ export function applyStateSync(
     closesAt: payload.closesAt,
     clockOffsetMs: computeClockOffsetMs(payload.serverTime, localNowMs),
     myScore: payload.myScore,
+    myStreak: myClosedResult?.streak ?? _prev.myStreak ?? 0,
+    lastElapsedMs: myClosedResult?.elapsedMs ?? _prev.lastElapsedMs ?? null,
     hasAnswered: payload.hasAnswered,
     answerAccepted: payload.hasAnswered,
     rejectedReason: null,
@@ -257,9 +268,12 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
           statement: payload.statement,
           imageUrl: payload.imageUrl,
           closesAt: payload.closesAt,
+          openedAt: payload.openedAt,
+          durationSeconds: payload.durationSeconds,
         },
         closesAt: payload.closesAt,
         clockOffsetMs: computeClockOffsetMs(payload.serverTime, Date.now()),
+        lastElapsedMs: null,
         hasAnswered: false,
         answerAccepted: false,
         rejectedReason: null,
@@ -297,6 +311,8 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
           lastClosed: payload,
           ranking: payload.ranking,
           myScore: myResult !== undefined ? myResult.totalScore : prev.myScore,
+          myStreak: myResult !== undefined ? myResult.streak : prev.myStreak,
+          lastElapsedMs: myResult !== undefined ? myResult.elapsedMs : null,
           lastError: null,
         };
       });

@@ -65,6 +65,24 @@ const questionsByQuiz = new Map([
 
 const sessionsByCode = new Map();
 
+export function computeSpeedPoints({
+  answer,
+  correctAnswer,
+  elapsedMs,
+  durationMs,
+  basePoints = 1000,
+}) {
+  if (answer === undefined || answer !== correctAnswer || elapsedMs === null || elapsedMs < 0) {
+    return 0;
+  }
+  if (elapsedMs < 500) {
+    return basePoints;
+  }
+  const safeDuration = Math.max(1, durationMs);
+  const clamped = Math.min(elapsedMs, safeDuration);
+  return Math.round((1 - clamped / safeDuration / 2) * basePoints);
+}
+
 function createSessionRecord(quizId, hostId, questionTimeSeconds = 20, forcedCode) {
   const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let code = forcedCode;
@@ -88,6 +106,7 @@ function createSessionRecord(quizId, hostId, questionTimeSeconds = 20, forcedCod
     finishedAt: null,
     questions,
     currentIndex: -1,
+    openedAt: null,
     closesAt: null,
     participants: new Map(),
     answersByQuestion: new Map(),
@@ -506,6 +525,7 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
         displayName: body.displayName || user.displayName,
         joinedAt: new Date().toISOString(),
         score: 0,
+        streak: 0,
       };
       s.participants.set(user.id, participant);
       s.participantCount = s.participants.size;
@@ -561,18 +581,37 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
     session.closesAt = null;
     const q = session.questions[session.currentIndex];
     const qAnswers = session.answersByQuestion.get(session.currentIndex) || new Map();
+    const durationMs = (session.questionTimeSeconds || 20) * 1000;
+    const openedAtMs = session.openedAt ? Date.parse(session.openedAt) : Date.now() - 1000;
 
     const results = Array.from(session.participants.values()).map((p) => {
-      const submitted = qAnswers.get(p.id);
-      const answered = submitted !== undefined;
-      const correct = answered && submitted === q.correctAnswer;
-      const pointsAwarded = correct ? 1 : 0;
+      const submission = qAnswers.get(p.id);
+      const answered = submission !== undefined;
+      const answerVal =
+        answered && typeof submission === 'object' ? submission.answer : submission;
+      const receivedAtMs =
+        answered && typeof submission === 'object' && typeof submission.receivedAt === 'number'
+          ? submission.receivedAt
+          : openedAtMs + 250;
+      const elapsedMs = answered
+        ? Math.max(0, Math.min(durationMs, receivedAtMs - openedAtMs))
+        : null;
+      const correct = answered && answerVal === q.correctAnswer;
+      const pointsAwarded = computeSpeedPoints({
+        answer: answered ? answerVal : undefined,
+        correctAnswer: q.correctAnswer,
+        elapsedMs,
+        durationMs,
+      });
+      p.streak = correct ? (p.streak || 0) + 1 : 0;
       p.score += pointsAwarded;
       return {
         participantId: p.id,
         answered,
         correct,
         pointsAwarded,
+        elapsedMs,
+        streak: p.streak,
         totalScore: p.score,
       };
     });
@@ -594,7 +633,9 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
     session.status = 'question_open';
     session.lastClosed = null;
     const now = Date.now();
+    const openedAt = new Date(now).toISOString();
     const closesAt = new Date(now + session.questionTimeSeconds * 1000).toISOString();
+    session.openedAt = openedAt;
     session.closesAt = closesAt;
     session.answersByQuestion.set(index, new Map());
 
@@ -605,7 +646,9 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
       statement: q.statement,
       imageUrl: q.imageUrl,
       closesAt,
-      serverTime: new Date(now).toISOString(),
+      serverTime: openedAt,
+      openedAt,
+      durationSeconds: session.questionTimeSeconds,
     });
 
     if (session.timer) {
@@ -639,6 +682,7 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
           displayName: user.displayName,
           joinedAt: new Date().toISOString(),
           score: 0,
+          streak: 0,
         };
         session.participants.set(user.id, participant);
         session.participantCount = session.participants.size;
@@ -661,6 +705,8 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
               statement: session.questions[session.currentIndex].statement,
               imageUrl: session.questions[session.currentIndex].imageUrl,
               closesAt: session.closesAt || new Date().toISOString(),
+              openedAt: session.openedAt || new Date().toISOString(),
+              durationSeconds: session.questionTimeSeconds,
             }
           : null;
 
@@ -765,7 +811,7 @@ export function startMockServers({ authPort = AUTH_PORT, kahootPort = KAHOOT_POR
         socket.emit('answer:rejected', { questionIndex, reason: 'already_answered' });
         return;
       }
-      qAnswers.set(participant.id, Boolean(answer));
+      qAnswers.set(participant.id, { answer: Boolean(answer), receivedAt: Date.now() });
       socket.emit('answer:accepted', { questionIndex });
     });
 

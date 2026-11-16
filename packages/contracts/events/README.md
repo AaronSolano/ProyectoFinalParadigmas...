@@ -73,7 +73,7 @@ Notas:
 | Una respuesta | 1 respuesta por participante y pregunta (único `(sesión, participante, pregunta)`). Un reenvío no se registra y responde `answer:rejected` (`already_answered`); no suma. |
 | Tiempo | El servidor fija `closesAt` y cierra por temporizador. Una respuesta que llega después de `closesAt` según el reloj del servidor -> `answer:rejected` (`late`). Si la pregunta ya está cerrada -> `closed`. |
 | Secreto | `correctAnswer` viaja **solo** en `question:closed` (y en `state_sync.lastClosed` si la sala ya está cerrada). Nunca en `question:opened` ni en `state_sync` con pregunta abierta. |
-| Puntaje | 1 punto por acierto; 0 por error o sin respuesta. Sin bonificación por velocidad. |
+| Puntaje | Por acierto, 1000 puntos si el servidor mide menos de 500 ms desde `openedAt` y, en otro caso, `round((1 - (elapsedMs / duración) / 2) * 1000)` (500..1000). 0 por error o sin respuesta. `elapsedMs` lo mide el servidor. La racha (`streak`) no suma puntos. |
 | Clasificación | Orden por puntaje descendente; empates comparten `position`. `ranking` va en `question:closed` y `session:finished`. |
 | Persistencia | Respuestas, puntajes y clasificación final se guardan al cerrar y al terminar; sobreviven a reinicios. |
 
@@ -206,8 +206,8 @@ Campos por estado: en `waiting`, `currentQuestion` y `closesAt` son `null`; en `
   "questionIndex": 0,
   "correctAnswer": true,
   "results": [
-    { "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11", "answered": true,  "correct": true,  "pointsAwarded": 1, "totalScore": 1 },
-    { "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12", "answered": false, "correct": false, "pointsAwarded": 0, "totalScore": 0 }
+    { "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11", "answered": true,  "correct": true,  "pointsAwarded": 850, "elapsedMs": 6000, "streak": 1, "totalScore": 850 },
+    { "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12", "answered": false, "correct": false, "pointsAwarded": 0, "elapsedMs": null, "streak": 0, "totalScore": 0 }
   ],
   "ranking": [
     { "position": 1, "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11", "displayName": "Ana",  "score": 1 },
@@ -281,7 +281,7 @@ sequenceDiagram
     autonumber
     participant P as Participante
     participant S as kahoot-api /game
-    Note over P,S: Pregunta 1 abierta. P ya sumó 1 punto
+    Note over P,S: Pregunta 1 abierta. P ya sumó sus puntos
     P--xS: se pierde la conexión
     Note over P: Socket.IO reintenta automáticamente
     P->>S: connect (auth.token)

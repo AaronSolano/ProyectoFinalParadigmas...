@@ -3,6 +3,8 @@ export interface Settings {
   port: number;
   databaseUrl: string;
   ssl: boolean;
+  sslCa?: string;
+  databaseSchema: string;
   privateKey: string;
   publicKey: string;
   keyId: string;
@@ -55,6 +57,8 @@ export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
     port,
     databaseUrl,
     ssl: env.DATABASE_SSL === 'true',
+    sslCa: env.DATABASE_SSL_CA?.replace(/\\n/g, '\n'),
+    databaseSchema: env.DATABASE_SCHEMA ?? 'public',
     privateKey,
     publicKey,
     keyId: required('JWT_KEY_ID'),

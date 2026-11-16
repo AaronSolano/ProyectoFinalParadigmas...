@@ -9,7 +9,7 @@ OWN-WORLD: Crema de la referencia, canela para acciones primarias con variante o
 
 STORY: Entrar, preparar preguntas o unirse por código; responder y consultar resultados. Ruby saluda por apodo al ingresar con código de formato válido; espera mirando el contador en lobby, anima al arrancar y piensa junto al reloj. Tras el cierre del servidor celebra, acompaña el error, se sorprende o anima según el resultado y la historia observada.
 
-FIRST VIEWPORT: Navegación superior compacta. Acceso dividido entre bienvenida con Ruby y formulario. Biblioteca con encabezado, acceso a sala y editor junto a la lista. Juego con código y tiempo visibles, enunciado amplio y botones grandes.
+FIRST VIEWPORT: Navegación superior compacta. Acceso dividido entre bienvenida con Ruby y formulario. Biblioteca con configuración de sala en diálogo modal sobre la lista, sin perder posición. Lobby del anfitrión con Ruby y participantes a la izquierda, código y QR a la derecha; columnas apiladas en móvil. Durante la partida se oculta el código y se priorizan tiempo, enunciado y respuestas.
 
 FORM: seed: none (pinned). Referencias del usuario: las tres imágenes de Ruby y su paleta; nombre confirmado «RubyMind». Pantallas de aplicación construidas directamente en código. Gesto distintivo: el sprite transparente local `ruby-states.png` reúne nueve poses en una cuadrícula 3×3. Ruby acompaña bienvenida, lobby, pregunta y resultados. En pregunta mide 64px; no tapa el enunciado ni bloquea respuestas. Este pedido explícito sustituye la decisión anterior de cambiar expresión solo en descanso o resultado.
 

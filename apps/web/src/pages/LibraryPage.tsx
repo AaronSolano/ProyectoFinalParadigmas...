@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { kahootApi, type Question, type Quiz } from '../api/client';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { Modal } from '../components/Modal';
 import {
   AutoAdvanceField,
   DEFAULT_AUTO_ADVANCE_SECONDS,
@@ -138,7 +139,7 @@ export function LibraryPage() {
       <p className="quiz-item__desc">{t('library.subtitle')}</p>
 
       <ErrorBanner
-        error={error ?? libraryQuery.error}
+        error={hostingQuiz ? libraryQuery.error : (error ?? libraryQuery.error)}
         onDismiss={() => setError(null)}
       />
 
@@ -153,13 +154,18 @@ export function LibraryPage() {
       )}
 
       {hostingQuiz && (
-        <section
-          className="card card--highlight"
-          aria-labelledby="library-host-heading"
+        <Modal
+          labelledBy="library-host-heading"
+          busy={hostMutation.isPending}
+          onClose={() => {
+            setHostingQuiz(null);
+            setError(null);
+          }}
         >
           <h2 id="library-host-heading" className="card__subtitle">
             {t('quizzes.hostRoomBtn')}: {hostingQuiz.title}
           </h2>
+          <ErrorBanner error={error} onDismiss={() => setError(null)} />
           <form onSubmit={handleCreateRoom} className="form-stack">
             <div className="form-field">
               <label htmlFor="library-question-time">
@@ -193,13 +199,17 @@ export function LibraryPage() {
               <button
                 type="button"
                 className="btn btn--ghost"
-                onClick={() => setHostingQuiz(null)}
+                disabled={hostMutation.isPending}
+                onClick={() => {
+                  setHostingQuiz(null);
+                  setError(null);
+                }}
               >
                 {t('quizzes.cancelBtn')}
               </button>
             </div>
           </form>
-        </section>
+        </Modal>
       )}
 
       <QuizFilters
@@ -245,7 +255,10 @@ export function LibraryPage() {
                       type="button"
                       data-testid={`btn-host-library-${quiz.id}`}
                       className="btn btn--primary"
-                      onClick={() => setHostingQuiz(quiz)}
+                      onClick={() => {
+                        setError(null);
+                        setHostingQuiz(quiz);
+                      }}
                     >
                       {t('quizzes.hostRoomBtn')}
                     </button>

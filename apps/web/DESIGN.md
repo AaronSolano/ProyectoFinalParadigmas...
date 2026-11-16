@@ -254,6 +254,12 @@ La celebración conserva ocho piezas de confeti de (650ms), con retrasos (0–18
 
 ## Do's and Don'ts
 
+### Configuración y sala de espera
+
+La biblioteca configura la sala en un diálogo modal nativo, conservando la posición de la lista y devolviendo el foco al botón de origen al cancelar. Escape cierra el diálogo; durante la creación los controles evitan solicitudes duplicadas. Los errores aparecen dentro de la ventana.
+
+El lobby del anfitrión agrupa Ruby (120px), participantes y acción de iniciar a la izquierda; código, QR (192px), enlace de ingreso y copia a la derecha. La lista de participantes tiene desplazamiento propio si crece. A 700px o menos las columnas se apilan, sin reducir el QR ni ocultar controles. El código solo aparece durante la espera; se retira durante preguntas y resultados. La revisión visual y `npm run test:ui -w @rubymind/web` verifican escritorio en español e inglés, móvil, foco del diálogo y listas grandes sin necesitar Docker.
+
 ### Do:
 - **Do** mantener las acciones principales en canela y el texto de lectura en marrón.
 - **Do** conservar etiquetas, iconos y foco visible junto a los estados de color.

@@ -62,6 +62,7 @@ async function waitForHealth(url, timeoutMs = 20000) {
 }
 
 export async function runLiveE2ESuite() {
+  let expectedScore = 0;
   const report = {
     startedAt: new Date().toISOString(),
     authApiUrl: AUTH_API_URL,
@@ -181,7 +182,12 @@ export async function runLiveE2ESuite() {
     hostSock.emit('question:close', { code: roomCode });
     const qClosed = await qClosedPromise;
     assert.equal(typeof qClosed.correctAnswer, 'boolean', 'question:closed revela correctAnswer');
-    assert.equal(qClosed.ranking[0].score, 1);
+    // Puntaje por velocidad: acierto entre 500 y 1000 puntos
+    expectedScore = qClosed.ranking[0].score;
+    assert.ok(
+      expectedScore >= 500 && expectedScore <= 1000,
+      `puntaje por velocidad fuera de rango: ${expectedScore}`,
+    );
 
     const closedRejPromise = onceEvent(p1Sock, 'answer:rejected');
     p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, answer: true });
@@ -206,7 +212,7 @@ export async function runLiveE2ESuite() {
       const reconnSyncPromise = onceEvent(p1ReconnectSock, 'state_sync');
       p1ReconnectSock.emit('session:join', { code: roomCode });
       const reconnSync = await reconnSyncPromise;
-      assert.equal(reconnSync.myScore, 1, 'El puntaje se conserva tras reconectar');
+      assert.equal(reconnSync.myScore, expectedScore, 'El puntaje se conserva tras reconectar');
       assert.equal(
         reconnSync.participants.length,
         1,
@@ -334,7 +340,7 @@ export async function runLiveE2ESuite() {
     200,
     'Resultados de sesión finalizada persisten tras reiniciar contenedores',
   );
-  assert.equal(resultsAfterRestart.body.ranking[0].score, 1);
+  assert.equal(resultsAfterRestart.body.ranking[0].score, expectedScore);
 
   report.cases['2.5_persistencia_reinicio'] = {
     passed: true,

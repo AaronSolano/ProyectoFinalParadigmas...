@@ -19,7 +19,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -32,7 +32,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(game_connections_active)",
           "legendFormat": "conexiones",
@@ -70,7 +70,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 6,
@@ -83,7 +83,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(rate(http_server_requests_total[1m]))",
           "legendFormat": "req/s",
@@ -121,7 +121,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 12,
@@ -134,7 +134,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(rate(http_server_requests_total{http_response_status_code=~\"5..\"}[1m])) or vector(0)",
           "legendFormat": "5xx/s",
@@ -176,7 +176,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 18,
@@ -189,7 +189,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(rate(game_events_total[1m]))",
           "legendFormat": "eventos/s",
@@ -227,7 +227,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -240,7 +240,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (job) (rate(http_server_requests_total[1m]))",
           "legendFormat": "{{job}}",
@@ -274,7 +274,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 12,
@@ -287,7 +287,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_server_duration_seconds_bucket[1m])))",
           "legendFormat": "{{job}} P95",
@@ -321,7 +321,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -334,7 +334,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (job) (rate(http_server_requests_total{http_response_status_code=~\"5..\"}[1m]))",
           "legendFormat": "{{job}} 5xx",
@@ -344,7 +344,7 @@
           "refId": "B",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (job) (rate(http_server_requests_total{http_response_status_code=~\"4..\"}[1m]))",
           "legendFormat": "{{job}} 4xx",
@@ -378,7 +378,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 12,
@@ -391,7 +391,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(game_connections_active)",
           "legendFormat": "conexiones",
@@ -425,7 +425,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -438,7 +438,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (game_event) (rate(game_events_total[1m]))",
           "legendFormat": "{{game_event}}",
@@ -472,7 +472,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 12,
@@ -485,7 +485,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "histogram_quantile(0.95, sum by (le, game_event) (rate(game_event_duration_seconds_bucket[1m])))",
           "legendFormat": "{{game_event}} P95",
@@ -519,7 +519,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -532,7 +532,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (game_outcome) (rate(game_events_total[1m]))",
           "legendFormat": "{{game_outcome}}",
@@ -566,7 +566,7 @@
       "type": "stat",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -579,7 +579,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(game_sessions_active)",
           "legendFormat": "Salas activas",
@@ -617,7 +617,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 6,
@@ -630,7 +630,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (outcome) (rate(game_answers_total[1m]))",
           "legendFormat": "{{outcome}}",
@@ -664,7 +664,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 15,
@@ -677,7 +677,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "histogram_quantile(0.95, sum by (le) (rate(game_question_close_duration_seconds_bucket[1m])))",
           "legendFormat": "P95",
@@ -711,7 +711,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 0,
@@ -724,7 +724,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum by (reason) (rate(game_answers_total{outcome=\"rejected\"}[1m]))",
           "legendFormat": "{{reason}}",
@@ -758,7 +758,7 @@
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "${ds}"
       },
       "gridPos": {
         "x": 12,
@@ -771,7 +771,7 @@
           "refId": "A",
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "${ds}"
           },
           "expr": "sum(rate(game_live_rate_limited_total[1m])) or vector(0)",
           "legendFormat": "desconexiones/s",
@@ -801,7 +801,20 @@
     }
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "ds",
+        "label": "Datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "regex": "/.*-prom$/",
+        "current": {},
+        "hide": 0,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false
+      }
+    ]
   },
   "annotations": {
     "list": []
@@ -811,15 +824,6 @@
       "title": "Trazas (Explore - Tempo)",
       "type": "link",
       "url": "/explore?left=%7B%22datasource%22:%22tempo%22,%22queries%22:%5B%7B%22refId%22:%22A%22,%22queryType%22:%22traceql%22,%22query%22:%22%7B%7D%22%7D%5D%7D"
-    }
-  ],
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus (Grafana Cloud)",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
     }
   ]
 }

@@ -115,7 +115,7 @@ Las APIs de Render envían OTLP/HTTP directo a Grafana Cloud (plan gratuito); no
    OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic%20<BASE64>
    ```
    (el espacio del header va como `%20`). El token vive solo en Render, nunca en el repositorio. Guardar para que redespliegue.
-4. En Grafana Cloud: *Dashboards → New → Import* y subir `infra/observability/grafana-cloud/rubymind-overview-cloud.json`; elegir el datasource Prometheus del stack (`grafanacloud-…-prom`).
+4. En Grafana Cloud: *Dashboards → New → Import* y subir `infra/observability/grafana-cloud/rubymind-overview-cloud.json`. El dashboard elige solo el datasource `grafanacloud-…-prom` (variable `ds`).
 5. Probar: abrir la app desplegada, jugar una partida y esperar ~1 minuto (la exportación es cada 10 s). Las trazas se ven en *Explore → Tempo* (`grafanacloud-…-traces`).
 
 Diferencias con el modo local: la etiqueta `service_name` se llama `job` en Grafana Cloud, y el panel no incluye registros (Alloy/Loki solo existen en local; los logs de las APIs se ven en el panel de Render). Con el plan gratuito de Render las APIs se duermen: antes de presentar, abrir la app unos minutos antes para que haya datos.

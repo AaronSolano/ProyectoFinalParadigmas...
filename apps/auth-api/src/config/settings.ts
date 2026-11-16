@@ -10,6 +10,7 @@ export interface Settings {
   audience: string;
   expiresIn: number;
   corsOrigins: string[];
+  runMigrations: boolean;
 }
 export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
   const required = (name: string) => {
@@ -43,6 +44,11 @@ export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
   if (env.DATABASE_SSL && !['true', 'false'].includes(env.DATABASE_SSL))
     throw new Error('DATABASE_SSL inválido');
   const databaseUrl = required('AUTH_DATABASE_URL');
+  if (
+    env.RUN_MIGRATIONS !== undefined &&
+    !['true', 'false'].includes(env.RUN_MIGRATIONS)
+  )
+    throw new Error('RUN_MIGRATIONS inválido');
   if (!['postgres:', 'postgresql:'].includes(new URL(databaseUrl).protocol))
     throw new Error('AUTH_DATABASE_URL debe ser PostgreSQL');
   return {
@@ -56,5 +62,6 @@ export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
     audience: env.JWT_AUDIENCE ?? 'kahoot-api',
     expiresIn,
     corsOrigins: (env.CORS_ORIGINS ?? '').split(',').filter(Boolean),
+    runMigrations: env.RUN_MIGRATIONS !== 'false',
   };
 }

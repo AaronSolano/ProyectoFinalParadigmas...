@@ -127,3 +127,7 @@ Todas usan el servicio `kahoot-api`. Los atributos nuevos tienen valores de una 
 `game.question.close.duration` mide desde `closesAt` hasta que el servidor publica `question:closed`, después del commit, incluyendo espera en la cola y persistencia. Un cierre manual anterior al plazo se registra como 0, nunca negativo. No mide el tiempo de recepción en cada navegador. `game.live.rate_limited` cuenta una vez cada socket desconectado por exceso repetido; no cuenta cada paquete descartado.
 
 Pruebas: `game-telemetry.spec.ts` verifica exportación OTLP real, valores, unidades y atributos; `game-metrics.spec.ts` verifica recuperación, inicio/fin y medición después de publicar; `live.spec.ts` verifica el contador al desconectar un emisor que inunda la sala y el conteo de respuestas de otro participante.
+
+## Assets del seed compilado
+
+El build copia los assets de demostración a dist/assets. El seed compilado usa ese directorio si existe y conserva la ruta del repositorio como respaldo para desarrollo.

@@ -118,7 +118,9 @@ Las APIs de Render envían OTLP/HTTP directo a Grafana Cloud (plan gratuito); no
 4. En Grafana Cloud: *Dashboards → New → Import* y subir `infra/observability/grafana-cloud/rubymind-overview-cloud.json`. El dashboard elige solo el datasource `grafanacloud-…-prom` (variable `ds`).
 5. Probar: abrir la app desplegada, jugar una partida y esperar ~1 minuto (la exportación es cada 10 s). Las trazas se ven en *Explore → Tempo* (`grafanacloud-…-traces`).
 
-Diferencias con el modo local: la etiqueta `service_name` se llama `job` en Grafana Cloud, y el panel no incluye registros (Alloy/Loki solo existen en local; los logs de las APIs se ven en el panel de Render). Con el plan gratuito de Render las APIs se duermen: antes de presentar, abrir la app unos minutos antes para que haya datos.
+Registros: con la misma variable, las APIs también envían por OTLP las líneas de log que ya escriben (mismos campos permitidos; no se agrega nada nuevo). Se ven en el panel **Registros recientes** del dashboard y en *Explore → `grafanacloud-…-logs`* con `{service_name="kahoot-api"}`; también siguen en la pestaña Logs de Render.
+
+Diferencia con el modo local: la etiqueta `service_name` de las métricas se llama `job` en Grafana Cloud. Con el plan gratuito de Render las APIs se duermen: antes de presentar, abrir la app unos minutos antes para que haya datos.
 
 ## Archivos
 

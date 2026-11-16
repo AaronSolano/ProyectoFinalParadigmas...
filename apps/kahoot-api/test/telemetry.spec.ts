@@ -57,6 +57,12 @@ test("exporta trazas y métricas HTTP con nombre kahoot-api", async () => {
           item.body.includes("http.server.duration"),
       ),
     ).toBe(true);
+    expect(
+      received.some(
+        (item) =>
+          item.url === "/v1/logs" && item.body.includes("/api/v1/health"),
+      ),
+    ).toBe(true);
   } finally {
     await app.close();
     await new Promise<void>((resolve) => collector.close(() => resolve()));

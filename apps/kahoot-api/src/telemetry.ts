@@ -5,6 +5,7 @@ import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { NextFunction, Request, Response } from "express";
 import { GameMetrics } from "./domain/ports/game-metrics";
+import { startLogExport } from "./log-export";
 
 let activeSessions = 0;
 function setActiveSessions(count: number) {
@@ -78,6 +79,12 @@ export function startTelemetry(
     ],
   });
   sdk.start();
+  const stopLogs = startLogExport(base, "kahoot-api");
+  const shutdown = sdk.shutdown.bind(sdk);
+  sdk.shutdown = async () => {
+    await stopLogs();
+    await shutdown();
+  };
   return sdk;
 }
 

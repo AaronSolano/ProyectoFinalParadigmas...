@@ -4,6 +4,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NextFunction, Request, Response } from 'express';
+import { startLogExport } from './log-export';
 export function startTelemetry(
   endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
 ) {
@@ -26,6 +27,12 @@ export function startTelemetry(
     ],
   });
   sdk.start();
+  const stopLogs = startLogExport(base, 'auth-api');
+  const shutdown = sdk.shutdown.bind(sdk);
+  sdk.shutdown = async () => {
+    await stopLogs();
+    await shutdown();
+  };
   return sdk;
 }
 export function httpTelemetry(req: Request, res: Response, next: NextFunction) {

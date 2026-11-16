@@ -152,3 +152,6 @@ El canal `/game` emite una línea por evento entrante procesado (también si fal
 | `service` | `kahoot-api` |
 | `event` | `session:join`, `session:leave`, `session:start`, `question:next`, `question:close`, `answer:submit` o `unknown` |
 | `outcome` | `ok`, `rejected`, `error`, `rate_limited` o `ignored` |
+## Assets del seed compilado
+
+El build copia los assets de demostración a dist/assets. El seed compilado usa ese directorio si existe y conserva la ruta del repositorio como respaldo para desarrollo.

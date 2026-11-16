@@ -50,3 +50,6 @@ Cada solicitud HTTP emite una línea JSON a stdout, sin requerir OpenTelemetry n
 | `status` | Estado HTTP; 499 si el cliente interrumpe la respuesta |
 | `duration_ms` | Tiempo transcurrido desde la entrada hasta terminar o cerrar la respuesta, en milisegundos |
 | `requestId` | UUID nuevo generado por el servidor por solicitud; no se copia de cabeceras del cliente |
+## Migraciones al arrancar
+
+`RUN_MIGRATIONS` vale `true` por defecto. Antes de escuchar HTTP se aplican las migraciones pendientes bajo un bloqueo asesor de PostgreSQL, incluida la creación de la tabla de migraciones; dos instancias pueden arrancar simultáneamente sobre una base vacía. Usa `RUN_MIGRATIONS=false` si el despliegue ejecuta las migraciones por separado. Las claves JWT se proporcionan mediante la configuración del despliegue.

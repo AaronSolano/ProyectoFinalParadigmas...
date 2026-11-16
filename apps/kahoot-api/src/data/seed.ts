@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { DataSource } from "typeorm";
 import { ImageStorage } from "../modules/images/storage";
@@ -122,8 +123,11 @@ export async function seedDemo(
       let filename: string | null = null;
       if ("image" in question) {
         filename = question.filename;
+        const bundled = resolve(__dirname, "../assets/demo", question.image);
         const bytes = await readFile(
-          resolve(__dirname, "../../assets/demo", question.image),
+          existsSync(bundled)
+            ? bundled
+            : resolve(__dirname, "../../assets/demo", question.image),
         );
         try {
           const stored = await images.get(filename);

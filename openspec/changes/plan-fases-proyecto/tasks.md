@@ -11,7 +11,7 @@
 - [x] 2.2 Fase 2: completar el cambio `f2-auth` y verificar que está archivado
 - [x] 2.3 Fase 3: completar el cambio `f3-nucleo-kahoot` y verificar que está archivado
 - [x] 2.4 Fase 4: completar el cambio `f4-tiempo-real` y verificar que está archivado
-- [ ] 2.5 Fase 5: completar el cambio `f5-frontend` y verificar que está archivado
+- [x] 2.5 Fase 5: completar el cambio `f5-frontend` y verificar que está archivado
 - [ ] 2.6 Fase 6: completar el cambio `f6-plataforma` y verificar que está archivado
 - [ ] 2.7 Fase 7: completar el cambio `f7-calidad` y verificar que está archivado
 - [ ] 2.8 Fase 8: completar el cambio `f8-entrega` y verificar que está archivado

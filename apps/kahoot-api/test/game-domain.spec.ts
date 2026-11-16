@@ -2,6 +2,7 @@ import {
   transition,
   answerRejection,
   points,
+  streak,
   rank,
   GameStatus,
 } from "../src/domain/game";
@@ -60,16 +61,76 @@ describe("reglas de partida puras", () => {
     expect(answerRejection({ ...valid, status: "finished" })).toBe("closed");
   });
   test.each([
-    [true, true, 1],
-    [false, false, 1],
+    [true, true, 1000],
+    [false, false, 1000],
     [true, false, 0],
     [false, true, 0],
     [undefined, true, 0],
     [undefined, false, 0],
   ])("puntaje %s / %s = %s", (answer, correct, result) => {
-    expect(points(answer as boolean | undefined, correct as boolean)).toBe(
-      result,
-    );
+    expect(
+      points({
+        answer: answer as boolean | undefined,
+        correctAnswer: correct as boolean,
+        elapsedMs: 0,
+        durationMs: 5000,
+      }),
+    ).toBe(result);
+  });
+  test.each([
+    [0, 1000],
+    [499, 1000],
+    [500, 950],
+    [2500, 750],
+    [4999, 500],
+    [5000, 500],
+    [5001, 500],
+    [null, 0],
+    [-1, 0],
+    [NaN, 0],
+  ])("puntaje por velocidad a %s ms = %s", (elapsedMs, expected) => {
+    expect(
+      points({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs,
+        durationMs: 5000,
+      }),
+    ).toBe(expected);
+  });
+  test("duración inválida no genera puntos; base configurable respeta la fórmula", () => {
+    expect(
+      points({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs: 500,
+        durationMs: 0,
+      }),
+    ).toBe(0);
+    expect(
+      points({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs: 2500,
+        durationMs: 5000,
+        basePoints: 800,
+      }),
+    ).toBe(600);
+    expect(
+      points({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs: 499,
+        durationMs: 5000,
+        basePoints: 800,
+      }),
+    ).toBe(800);
+  });
+  test("la racha aumenta por acierto y se reinicia por error o ausencia sin bonificación", () => {
+    expect(streak(0, true)).toBe(1);
+    expect(streak(4, true)).toBe(5);
+    expect(streak(4, false)).toBe(0);
+    expect(streak(streak(4, false), true)).toBe(1);
   });
   test("empates comparten posición densa sin mutar la entrada", () => {
     const players = [

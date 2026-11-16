@@ -219,7 +219,19 @@ async function runStep(count, host, people, quizId) {
     ).slice(0, participants.length);
     if (
       results.some((result) =>
-        result.results.some((r) => !r.correct || r.totalScore !== 1),
+        result.results.some((r) => {
+          const expected =
+            r.elapsedMs < 500
+              ? 1000
+              : Math.round((1 - Math.min(r.elapsedMs, 120000) / 240000) * 1000);
+          return (
+            !r.correct ||
+            r.elapsedMs === null ||
+            r.streak !== 1 ||
+            r.pointsAwarded !== expected ||
+            r.totalScore !== expected
+          );
+        }),
       )
     )
       failures++;
@@ -229,7 +241,12 @@ async function runStep(count, host, people, quizId) {
     });
     if (
       final.ranking.length !== participants.length ||
-      final.ranking.some((r) => r.score !== 1)
+      final.ranking.some(
+        (r) =>
+          r.score !==
+          results[0]?.results.find((p) => p.participantId === r.participantId)
+            ?.totalScore,
+      )
     )
       failures++;
     const errorRate = (failures + invalidPayloads) / count,

@@ -6,7 +6,7 @@
 ## 2. Compose
 
 - [x] 2.1 (Claude Code) Crear Compose con PostgreSQL, volúmenes y variables de entorno y verificar que todos los servicios quedan sanos con healthchecks
-- [ ] 2.2 (Claude Code) Crear los perfiles `build` e `images` y verificar que ambos arrancan la solución. Implementado con `compose.yaml` (imagenes de Docker Hub) y `compose.build.yaml` (construccion local) en lugar de perfiles; el modo local esta verificado y el de Docker Hub queda pendiente hasta publicar las imagenes (5.2)
+- [x] 2.2 (Claude Code) Crear los perfiles `build` e `images` y verificar que ambos arrancan la solución. Implementado con `compose.yaml` (imagenes de Docker Hub) y `compose.build.yaml` (construccion local) en lugar de perfiles; el modo local esta verificado y el de Docker Hub quedo verificado el 16 de noviembre de 2026 (ver evidencia al final)
 - [x] 2.3 (Claude Code) Verificar que tras `down` y `up` siguen disponibles perfiles, cuestionarios, imágenes y resultados
 
 ## 3. Datos de demostración
@@ -47,3 +47,7 @@ Al revisar los PR 23 a 26 se detecto que el nombre de proyecto fijo `profelink` 
 - Prueba con dos copias a la vez (una iniciada con `start.sh` y otra con `start.ps1`): proyectos, volumenes e imagenes distintos; contrasenas distintas (el login de una con la clave de la otra devuelve 401); el Loki de una pila no recoge los registros de la otra; `stop.ps1 -Purge` de una no afecta a la otra (4 contenedores sanos y login correcto) y `stop.sh --purge` de la segunda deja 0 contenedores y 0 volumenes. Las pilas de otros proyectos en la misma maquina quedaron identicas (mismos contenedores, ids y fechas de creacion).
 - Metricas de la Fase 4 (PR 25) en Prometheus tras una partida de carga: `game_sessions_active`, `game_answers_total{outcome}`, `game_question_close_duration_seconds` y `game_live_rate_limited_total`; el panel de Grafana tiene ahora 19 paneles.
 - No se ejecuto la ruta de actualizacion de un `.env` antiguo sin `COMPOSE_PROJECT_NAME` con datos en el proyecto `profelink` (por diseno pasa a `profelink-<carpeta>` sin tocar el historico).
+
+## Evidencia de Claude Code - 16 de noviembre de 2026 (Docker Hub)
+
+Imagenes publicadas desde `main` en `aaronsc04/profelink-auth-api`, `aaronsc04/profelink-kahoot-api` y `aaronsc04/profelink-web` (etiqueta `latest`; digests `d156a30f…`, `ceb06d9c…` y `0d202b85…`). Se borraron las copias locales y `./start.sh --images` (proyecto y puertos distintos) descargo las tres imagenes de Docker Hub, levanto todos los servicios sanos, cargo el seed y se comprobo: web 200, `/health` de kahoot-api ok, login con el usuario demo y cuestionario demo listado. 2.2 queda cerrada. **5.2 sigue abierta**: falta repetir la prueba en otra maquina. Las imagenes no incluyen aun el puntaje por velocidad; hay que volver a publicarlas cuando ese cambio este en `main`.

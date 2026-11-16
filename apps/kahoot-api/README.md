@@ -165,3 +165,16 @@ El servidor guarda `question_opened_at` al abrir cada pregunta y `received_at` a
 La migración `SpeedScoring1794780003000` conserva los puntos históricos de 0/1, inicializa las rachas existentes en 0 y permite puntos de 0 a 1000. Deduce la apertura de preguntas anteriores a partir del plazo y la duración; completa los cierres guardados con los campos del nuevo contrato. En partidas históricas terminadas sin marca de apertura recuperable, el tiempo de respuesta queda en `null`. El rollback rechaza una base con puntos mayores que 1 para evitar pérdida de datos.
 
 Verificación: `game-domain.spec.ts` cubre la fórmula y la racha puras; `live.spec.ts` cubre velocidades distintas, límites, rechazo de tiempos enviados por clientes, rachas, PostgreSQL, reconexión, reinicio y clasificación final; `speed-migration.spec.ts` verifica la actualización desde datos anteriores. El script de carga valida la fórmula nueva y compara los resultados REST con los del cierre. Los informes de capacidad anteriores documentan la versión evaluada entonces; no certifican la capacidad de esta nueva escala.
+
+## PostgreSQL compartido y TLS (Supabase)
+
+| Variable | Valor y comportamiento |
+| --- | --- |
+| `DATABASE_SSL_CA` | Opcional: contenido PEM de la CA raíz, con saltos reales o `\n` escapados. Con `DATABASE_SSL=true` se pasa junto con `rejectUnauthorized: true`; sin CA se conserva la validación del almacén de confianza de Node. Con TLS desactivado se ignora. |
+| `DATABASE_SCHEMA` | `public` por defecto. Para compartir la base `postgres`, configurar `kahoot` en esta API. Acepta identificadores de hasta 63 caracteres (letras, dígitos y `_`, sin dígito inicial ni prefijo `pg_`). |
+
+El esquema se crea si falta, serializando esa creación entre instancias, y la tabla de migraciones de TypeORM vive dentro de él. Cada conexión nueva del pool espera la configuración SQL de `search_path` antes de usarse; no se envían opciones de arranque al pooler. La búsqueda comienza por el esquema del servicio e incluye `public` y `extensions` para resolver tipos de extensiones existentes como `citext`. El usuario de la base necesita permisos para crear el esquema si falta y ejecutar las migraciones. Usar el pooler en modo sesión (puerto 5432 del brief).
+
+La configuración se aplica al servidor, al CLI de migraciones y a los seeds, incluidos los compilados. No se trasladan datos antiguos de `public`: cambiar `DATABASE_SCHEMA` selecciona otro espacio. Los parámetros TLS de la URL (`sslmode`, `sslrootcert`, `sslcert`, `sslkey`, `sslpassword`, `ssl`) se retiran para que no sustituyan `DATABASE_SSL` y `DATABASE_SSL_CA`. No se ofrece una opción para desactivar la verificación del certificado manteniendo TLS.
+
+El despliegue debe pasar `DATABASE_SCHEMA` por separado a cada servicio (`auth`/`kahoot`) y la CA a ambas APIs. La configuración raíz de `.env.example` y Compose corresponde al orquestador.

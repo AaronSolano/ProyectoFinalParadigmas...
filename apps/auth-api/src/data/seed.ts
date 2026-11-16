@@ -45,6 +45,8 @@ async function main() {
   const db = await createDataSource(
     process.env.AUTH_DATABASE_URL,
     process.env.DATABASE_SSL === 'true',
+    process.env.DATABASE_SSL_CA,
+    process.env.DATABASE_SCHEMA,
   ).initialize();
   try {
     const profile = await seedDemoProfile(db);

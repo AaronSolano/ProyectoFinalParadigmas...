@@ -7,7 +7,12 @@ import { startTelemetry } from './telemetry';
 import { runStartupMigrations } from './data/startup-migrations';
 export async function startServer(config = settings()) {
   const telemetry = startTelemetry();
-  const db = createDataSource(config.databaseUrl, config.ssl);
+  const db = createDataSource(
+    config.databaseUrl,
+    config.ssl,
+    config.sslCa,
+    config.databaseSchema,
+  );
   let app: Awaited<ReturnType<typeof createApp>>['app'] | undefined;
   const close = async () => {
     try {

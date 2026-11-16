@@ -1,6 +1,8 @@
 export interface Config {
   databaseUrl: string;
   ssl: boolean;
+  sslCa?: string;
+  databaseSchema: string;
   port: number;
   authUrl: string;
   issuer: string;
@@ -36,6 +38,8 @@ export function loadConfig(env = process.env): Config {
     return value.replace(/\/$/, "");
   };
   const storage = env.IMAGE_STORAGE ?? "disk";
+  if (env.DATABASE_SSL && !["true", "false"].includes(env.DATABASE_SSL))
+    throw new Error("DATABASE_SSL invalido");
   if (
     env.RUN_MIGRATIONS !== undefined &&
     !["true", "false"].includes(env.RUN_MIGRATIONS)
@@ -46,6 +50,8 @@ export function loadConfig(env = process.env): Config {
   return {
     databaseUrl: required("KAHOOT_DATABASE_URL"),
     ssl: env.DATABASE_SSL === "true",
+    sslCa: env.DATABASE_SSL_CA?.replace(/\\n/g, "\n"),
+    databaseSchema: env.DATABASE_SCHEMA ?? "public",
     port: integer("KAHOOT_PORT", 3002, 1, 65535),
     authUrl: url(required("AUTH_BASE_URL")),
     issuer: env.JWT_ISSUER ?? "auth-api",

@@ -10,7 +10,7 @@ Configurar `AUTH_DATABASE_URL`, `DATABASE_SSL` (`true` exige un certificado vál
 
 `npm run keys:generate` imprime claves RSA PEM escapadas para configurar **JWT_PRIVATE_KEY**, **JWT_PUBLIC_KEY** y **JWT_KEY_ID**. Guardarlas fuera del repositorio. Las tres son obligatorias; se rechazan claves menores de 2048 bits, pares distintos y tiempos de expiración inválidos. El antiguo `JWT_SECRET` no se usa.
 
-Con PostgreSQL disponible, ejecutar `npm run migration:run` y después `npm start`. No se usa sincronización automática ni se aplican migraciones al iniciar cada réplica. `npm run migration:revert` revierte la última migración (destructivo: elimina la tabla de perfiles).
+Con PostgreSQL disponible, ejecutar `npm run migration:run` y después `npm start`. No se usa sincronización automática. Las migraciones al arrancar se controlan con RUN_MIGRATIONS, como se detalla más abajo. `npm run migration:revert` revierte la última migración (destructivo: elimina la tabla de perfiles).
 
 HTTP: `/api/v1/health`, `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/me`. JWKS se publica exclusivamente en `/.well-known/jwks.json`. Scalar: `/docs`. OpenAPI generado: `/docs/openapi-json`.
 
@@ -53,3 +53,16 @@ Cada solicitud HTTP emite una línea JSON a stdout, sin requerir OpenTelemetry n
 ## Migraciones al arrancar
 
 `RUN_MIGRATIONS` vale `true` por defecto. Antes de escuchar HTTP se aplican las migraciones pendientes bajo un bloqueo asesor de PostgreSQL, incluida la creación de la tabla de migraciones; dos instancias pueden arrancar simultáneamente sobre una base vacía. Usa `RUN_MIGRATIONS=false` si el despliegue ejecuta las migraciones por separado. Las claves JWT se proporcionan mediante la configuración del despliegue.
+
+## PostgreSQL compartido y TLS (Supabase)
+
+| Variable | Valor y comportamiento |
+| --- | --- |
+| `DATABASE_SSL_CA` | Opcional: contenido PEM de la CA raíz, con saltos reales o `\n` escapados. Con `DATABASE_SSL=true` se pasa junto con `rejectUnauthorized: true`; sin CA se conserva la validación del almacén de confianza de Node. Con TLS desactivado se ignora. |
+| `DATABASE_SCHEMA` | `public` por defecto. Para compartir la base `postgres`, configurar `auth` en esta API. Acepta identificadores de hasta 63 caracteres (letras, dígitos y `_`, sin dígito inicial ni prefijo `pg_`). |
+
+El esquema se crea si falta, serializando esa creación entre instancias, y la tabla de migraciones de TypeORM vive dentro de él. Cada conexión nueva del pool espera la configuración SQL de `search_path` antes de usarse; no se envían opciones de arranque al pooler. La búsqueda comienza por el esquema del servicio e incluye `public` y `extensions` para resolver tipos de extensiones existentes como `citext`. El usuario de la base necesita permisos para crear el esquema si falta y ejecutar las migraciones. Usar el pooler en modo sesión (puerto 5432 del brief).
+
+La configuración se aplica al servidor, al CLI de migraciones y a los seeds, incluidos los compilados. No se trasladan datos antiguos de `public`: cambiar `DATABASE_SCHEMA` selecciona otro espacio. Los parámetros TLS de la URL (`sslmode`, `sslrootcert`, `sslcert`, `sslkey`, `sslpassword`, `ssl`) se retiran para que no sustituyan `DATABASE_SSL` y `DATABASE_SSL_CA`. No se ofrece una opción para desactivar la verificación del certificado manteniendo TLS.
+
+El despliegue debe pasar `DATABASE_SCHEMA` por separado a cada servicio (`auth`/`kahoot`) y la CA a ambas APIs. La configuración raíz de `.env.example` y Compose corresponde al orquestador.

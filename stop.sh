@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detiene ProfeLink Kahoot.
+# Detiene RubyMind.
 #   ./stop.sh            Detiene y elimina los contenedores; CONSERVA los datos (perfiles, cuestionarios, imagenes, resultados)
 #   ./stop.sh --purge    Ademas BORRA los volumenes: se pierden todos los datos
 set -euo pipefail

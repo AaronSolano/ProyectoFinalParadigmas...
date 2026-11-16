@@ -93,11 +93,11 @@ Con `--observability` hay tres señales, todas en Grafana (`http://localhost:300
 
 | Señal | Cómo llega | Dónde verla |
 |---|---|---|
-| **Métricas** | Las APIs las envían por OTLP al Collector (`OTEL_EXPORTER_OTLP_ENDPOINT`); Prometheus las recoge del Collector | Panel **ProfeLink - Resumen** |
+| **Métricas** | Las APIs las envían por OTLP al Collector (`OTEL_EXPORTER_OTLP_ENDPOINT`); Prometheus las recoge del Collector | Panel **RubyMind - Resumen** |
 | **Trazas** | Igual, del Collector a Tempo | *Explore → Tempo* |
-| **Registros** | Alloy lee la salida estándar de los contenedores del proyecto y la envía a Loki | Panel **ProfeLink - Resumen** (errores, volumen y registros recientes) y *Explore → Loki*, con la etiqueta `service` (`auth-api`, `kahoot-api`, `web`, `postgres`…) |
+| **Registros** | Alloy lee la salida estándar de los contenedores del proyecto y la envía a Loki | Panel **RubyMind - Resumen** (errores, volumen y registros recientes) y *Explore → Loki*, con la etiqueta `service` (`auth-api`, `kahoot-api`, `web`, `postgres`…) |
 
-El panel **ProfeLink - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, salas activas, respuestas aceptadas y rechazadas (con la razón), latencia P95 de cierre de pregunta, desconexiones por control de flujo y los paneles de registros.
+El panel **RubyMind - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, salas activas, respuestas aceptadas y rechazadas (con la razón), latencia P95 de cierre de pregunta, desconexiones por control de flujo y los paneles de registros.
 
 Sin el perfil, la variable de OTLP queda vacía y las APIs no exportan nada.
 

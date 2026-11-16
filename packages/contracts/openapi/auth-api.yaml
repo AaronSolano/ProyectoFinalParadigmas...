@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: ProfeLink auth-api
+  title: RubyMind auth-api
   version: 1.0.0
   summary: Servicio de autenticación de la plataforma de evaluaciones en vivo.
   description: |

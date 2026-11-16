@@ -1,7 +1,7 @@
 export const es = {
   translation: {
     app: {
-      title: 'ProfeLink Kahoot',
+      title: 'RubyMind',
       subtitle: 'Evaluaciones en vivo Verdadero / Falso',
       nav: {
         quizzes: 'Mis cuestionarios',

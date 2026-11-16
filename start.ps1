@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Inicia ProfeLink Kahoot con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
+Inicia RubyMind con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
 
 .DESCRIPTION
   .\start.ps1                       Construye las imagenes en esta maquina y las inicia
@@ -135,7 +135,7 @@ docker @compose run --rm seed-kahoot
 if ($LASTEXITCODE -ne 0) { throw "Fallo el seed de kahoot-api." }
 
 Write-Host ""
-Write-Host "ProfeLink Kahoot esta en marcha."
+Write-Host "RubyMind esta en marcha."
 Write-Host "  Proyecto Compose: $($env:COMPOSE_PROJECT_NAME)"
 Write-Host "  Aplicacion:      $(Get-EnvValue 'PUBLIC_URL')"
 Write-Host "  Usuario demo:    $(Get-EnvValue 'DEMO_EMAIL')"

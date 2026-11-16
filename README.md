@@ -1,4 +1,4 @@
-# ProfeLink Kahoot
+# RubyMind
 
 Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400 Paradigmas de Programación, II Ciclo 2026). Un docente crea cuestionarios de Verdadero o Falso con imágenes, abre una sala con código y los participantes responden desde su celular o computadora mientras ven el resultado al instante.
 

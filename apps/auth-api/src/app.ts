@@ -45,7 +45,7 @@ export async function createApp(config: Settings, profiles: Profiles) {
   const document = SwaggerModule.createDocument(
     app,
     new DocumentBuilder()
-      .setTitle('ProfeLink auth-api')
+      .setTitle('RubyMind auth-api')
       .setVersion('1.0.0')
       .addBearerAuth()
       .addServer('/api/v1')

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Detiene ProfeLink Kahoot.
+Detiene RubyMind.
 
 .DESCRIPTION
   .\stop.ps1          Detiene y elimina los contenedores; CONSERVA los datos (perfiles, cuestionarios, imagenes, resultados)

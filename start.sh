@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inicia ProfeLink Kahoot con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
+# Inicia RubyMind con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
 #
 #   ./start.sh                       Construye las imagenes en esta maquina y las inicia
 #   ./start.sh --images              Usa las imagenes publicadas en Docker Hub (no construye)
@@ -111,7 +111,7 @@ echo "Cargando datos de demostracion (idempotente)..."
 "${COMPOSE[@]}" run --rm seed-kahoot
 
 echo
-echo "ProfeLink Kahoot esta en marcha."
+echo "RubyMind esta en marcha."
 echo "  Proyecto Compose: ${COMPOSE_PROJECT_NAME}"
 echo "  Aplicacion:      $(get_env PUBLIC_URL)"
 echo "  Usuario demo:    $(get_env DEMO_EMAIL)"

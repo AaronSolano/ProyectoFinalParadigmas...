@@ -1,4 +1,4 @@
-# ProfeLink Kahoot: solucion completa con Docker Compose.
+# RubyMind: solucion completa con Docker Compose.
 #
 #   Iniciar con imagenes publicadas en Docker Hub:   docker compose up -d --wait
 #   Construir las imagenes en esta maquina:          docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait

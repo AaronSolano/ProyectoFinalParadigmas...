@@ -1,4 +1,4 @@
-# Especificación de ProfeLink Kahoot
+# Especificación de RubyMind
 
 Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400, II Ciclo 2026). Este documento resume el alcance, las reglas, la arquitectura y los contratos. El detalle vive en los documentos enlazados y las especificaciones formales en `openspec/specs/`.
 

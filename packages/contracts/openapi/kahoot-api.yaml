@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Kahoot API (ProfeLink)
+  title: RubyMind kahoot-api
   version: 1.0.0
   summary: API REST de cuestionarios, preguntas Verdadero/Falso, salas y resultados.
   description: |

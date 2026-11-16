@@ -9,11 +9,29 @@ import { en } from '../i18n/en';
 import { App } from '../App';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
-import { CountdownTimer, computeRemainingSeconds } from '../components/CountdownTimer';
+import {
+  CountdownTimer,
+  computeProgressPercent,
+  computeRemainingSeconds,
+} from '../components/CountdownTimer';
 import { JoinRoomPage, isValidRoomCode, normalizeRoomCode } from '../pages/JoinRoomPage';
 import { QuizzesPage } from '../pages/QuizzesPage';
 import { QuizQuestionsPage, validateQuestionImageFile } from '../pages/QuizQuestionsPage';
-import { GameRoomPage } from '../pages/GameRoomPage';
+import { GameRoomPage, formatElapsedSeconds } from '../pages/GameRoomPage';
+import {
+  AUDIO_MUTED_STORAGE_KEY,
+  computeStreakMultiplier,
+  isSoundMuted,
+  playCountdownTick,
+  playLobbySound,
+  playPodiumFanfare,
+  playResultSound,
+  playSubmitAnswerSound,
+  playTimeUpSound,
+  setAudioContextFactoryForTests,
+  setSoundMuted,
+  toggleSoundMuted,
+} from '../audio/soundEngine';
 import { AuthProvider } from '../auth/AuthContext';
 import { clearAuthSession, getStoredToken, saveAuthSession } from '../auth/storage';
 import { AuthPage } from '../pages/AuthPage';
@@ -25,7 +43,7 @@ import {
 } from '../realtime/useGameSocket';
 import { ApiProblemError, kahootApi, authApi } from '../api/client';
 // @ts-expect-error ESM mock server module
-import { startMockServers } from '../../mocks/mock-server.mjs';
+import { computeSpeedPoints, startMockServers } from '../../mocks/mock-server.mjs';
 
 function renderWithProviders(ui: React.ReactElement, initialEntries = ['/']) {
   const queryClient = new QueryClient({
@@ -307,19 +325,22 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
           statement: 'El agua hierve a 100 °C al nivel del mar.',
           imageUrl: null,
           closesAt: '2026-11-15T15:00:30.000Z',
+          openedAt: '2026-11-15T15:00:00.000Z',
+          durationSeconds: 30,
         },
         closesAt: '2026-11-15T15:00:30.000Z',
         serverTime: '2026-11-15T15:00:10.000Z',
-        myScore: 3,
+        myScore: 950,
         hasAnswered: true,
       },
       Date.parse('2026-11-15T15:00:10.000Z'),
     );
 
     expect(synced.participants).toHaveLength(2);
-    expect(synced.myScore).toBe(3);
+    expect(synced.myScore).toBe(950);
     expect(synced.hasAnswered).toBe(true);
     expect(synced.currentQuestion?.statement).toBe('El agua hierve a 100 °C al nivel del mar.');
+    expect(synced.currentQuestion?.durationSeconds).toBe(30);
   });
 
   it('1.2, 3.1, 3.4, 3.5 ejecuta una partida completa con reconexión contra el servidor mock Socket.IO y renderiza GameRoomPage', async () => {
@@ -387,6 +408,8 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
       const openedEvt = await qOpenedPromise;
       expect(openedEvt.questionIndex).toBe(0);
       expect(openedEvt).not.toHaveProperty('correctAnswer');
+      expect(openedEvt.openedAt).toBeTruthy();
+      expect(openedEvt.durationSeconds).toBe(20);
 
       const acceptedPromise = new Promise<any>((resolve) =>
         partSocket.once('answer:accepted', resolve),
@@ -408,12 +431,16 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
       hostSocket.emit('question:close', { code: 'K7M3QX' });
       const closedEvt = await closedPromise;
       expect(closedEvt.correctAnswer).toBe(true);
-      expect(closedEvt.ranking[0].score).toBe(1);
+      expect(closedEvt.results[0].pointsAwarded).toBeGreaterThanOrEqual(500);
+      expect(closedEvt.results[0].pointsAwarded).toBeLessThanOrEqual(1000);
+      expect(typeof closedEvt.results[0].elapsedMs).toBe('number');
+      expect(closedEvt.results[0].streak).toBe(1);
+      expect(closedEvt.ranking[0].score).toBe(closedEvt.results[0].pointsAwarded);
 
       const resyncPromise = new Promise<any>((resolve) => partSocket.once('state_sync', resolve));
       partSocket.emit('session:join', { code: 'K7M3QX' });
       const resync = await resyncPromise;
-      expect(resync.myScore).toBe(1);
+      expect(resync.myScore).toBe(closedEvt.results[0].pointsAwarded);
       expect(resync.participants).toHaveLength(1);
     } finally {
       hostSocket.disconnect();
@@ -699,6 +726,222 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
     } finally {
       RECONNECT_CONFIG.baseDelayMs = prevBaseDelay;
       RECONNECT_CONFIG.maxDelayMs = prevMaxDelay;
+      await mocks.close();
+    }
+  });
+
+  it('velocidad 3.1 y 3.2: calcula puntos por velocidad (500..1000) y sintetiza efectos con Web Audio API + silencio persistente', () => {
+    expect(
+      computeSpeedPoints({ answer: true, correctAnswer: true, elapsedMs: 250, durationMs: 20_000 }),
+    ).toBe(1000);
+    expect(
+      computeSpeedPoints({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs: 10_000,
+        durationMs: 20_000,
+      }),
+    ).toBe(750);
+    expect(
+      computeSpeedPoints({
+        answer: true,
+        correctAnswer: true,
+        elapsedMs: 20_000,
+        durationMs: 20_000,
+      }),
+    ).toBe(500);
+    expect(
+      computeSpeedPoints({
+        answer: false,
+        correctAnswer: true,
+        elapsedMs: 200,
+        durationMs: 20_000,
+      }),
+    ).toBe(0);
+    expect(
+      computeSpeedPoints({
+        answer: undefined,
+        correctAnswer: true,
+        elapsedMs: null,
+        durationMs: 20_000,
+      }),
+    ).toBe(0);
+
+    // En jsdom sin AudioContext no lanza errores (no-op)
+    setAudioContextFactoryForTests(null);
+    expect(playLobbySound()).toBe(false);
+
+    // Inyectar un AudioContext simulado para verificar osciladores, frecuencias por racha y silencio
+    const frequencies: number[] = [];
+    const fakeCtx = {
+      state: 'running',
+      currentTime: 0,
+      destination: {},
+      resume: vi.fn(),
+      createOscillator: () => ({
+        type: 'sine',
+        frequency: {
+          setValueAtTime: (freq: number) => {
+            frequencies.push(freq);
+          },
+        },
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+      }),
+      createGain: () => ({
+        gain: {
+          setValueAtTime: vi.fn(),
+          exponentialRampToValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+      }),
+    } as unknown as AudioContext;
+
+    setAudioContextFactoryForTests(() => fakeCtx);
+    try {
+      expect(isSoundMuted()).toBe(false);
+      expect(playLobbySound()).toBe(true);
+      expect(playCountdownTick(10)).toBe(true);
+      expect(playCountdownTick(3)).toBe(true); // pulso doble urgente en <= 5 s
+      expect(playSubmitAnswerSound()).toBe(true);
+      expect(playTimeUpSound()).toBe(true);
+
+      frequencies.length = 0;
+      playResultSound(true, 1);
+      const streak1Base = frequencies[0]!;
+      frequencies.length = 0;
+      playResultSound(true, 4);
+      const streak4Base = frequencies[0]!;
+      expect(streak4Base).toBeGreaterThan(streak1Base);
+      expect(computeStreakMultiplier(5)).toBeGreaterThan(computeStreakMultiplier(1));
+      expect(playResultSound(false, 0)).toBe(true);
+      expect(playPodiumFanfare()).toBe(true);
+
+      // Silenciar persiste en localStorage y evita reproducir sonidos
+      expect(toggleSoundMuted()).toBe(true);
+      expect(window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY)).toBe('true');
+      expect(playLobbySound()).toBe(false);
+      setSoundMuted(false);
+      expect(isSoundMuted()).toBe(false);
+    } finally {
+      setAudioContextFactoryForTests(null);
+    }
+  });
+
+  it('velocidad 3.3: muestra anillo/barra de progreso, tiempo de respuesta en segundos, desglose de puntos e insignia de racha (ES/EN)', async () => {
+    expect(formatElapsedSeconds(1450)).toBe('1.45');
+    expect(formatElapsedSeconds(null)).toBeNull();
+
+    const nowMs = Date.parse('2026-11-15T15:00:10.000Z');
+    const pct = computeProgressPercent(
+      '2026-11-15T15:00:20.000Z',
+      '2026-11-15T15:00:00.000Z',
+      20,
+      0,
+      nowMs,
+    );
+    expect(pct).toBe(50);
+
+    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
+    const kahootPort = mocks.kahootServer.address().port;
+    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
+
+    const hostToken = Buffer.from(
+      JSON.stringify({
+        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+        name: 'Ana Mora',
+        email: 'ana.mora@example.com',
+      }),
+    ).toString('base64url');
+    const hostJwt = `hdr.${hostToken}.sig`;
+
+    const partToken = Buffer.from(
+      JSON.stringify({
+        sub: 'user-vel-1',
+        name: 'Elena Veloz',
+        email: 'elena@example.com',
+      }),
+    ).toString('base64url');
+    const partJwt = `hdr.${partToken}.sig`;
+
+    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${hostJwt}` },
+      body: JSON.stringify({
+        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+        questionTimeSeconds: 20,
+      }),
+    });
+    const session = (await createRes.json()) as { code: string };
+
+    saveAuthSession(partJwt, {
+      id: 'user-vel-1',
+      email: 'elena@example.com',
+      displayName: 'Elena Veloz',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    const hostSocket = ioClient(`http://localhost:${kahootPort}/game`, {
+      auth: { token: hostJwt },
+    });
+
+    try {
+      renderWithProviders(<App />, [`/play/${session.code}`]);
+
+      const hostSync = new Promise<any>((r) => hostSocket.once('state_sync', r));
+      hostSocket.emit('session:join', { code: session.code });
+      await hostSync;
+
+      await waitFor(() => {
+        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
+      });
+
+      // Verificar botón de silencio en sala
+      const soundBtn = screen.getByTestId('btn-toggle-sound');
+      expect(soundBtn).toHaveTextContent(/Sonido activo/i);
+      fireEvent.click(soundBtn);
+      expect(soundBtn).toHaveTextContent(/Silenciado/i);
+
+      // Abrir Pregunta 1 -> verificar anillo y barra de progreso
+      hostSocket.emit('session:start', { code: session.code });
+      expect(await screen.findByTestId('question-open-view')).toBeInTheDocument();
+      expect(screen.getByTestId('countdown-ring')).toBeInTheDocument();
+      expect(screen.getByTestId('countdown-progress-bar')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('btn-answer-true'));
+      await waitFor(() => {
+        expect(screen.getByTestId('answer-status')).toBeInTheDocument();
+      });
+
+      hostSocket.emit('question:close', { code: session.code });
+      expect(await screen.findByTestId('question-closed-view')).toBeInTheDocument();
+      expect(screen.getByTestId('response-elapsed-time')).toHaveTextContent(
+        /Tiempo de respuesta: \d+\.\d{2} s/,
+      );
+      expect(screen.getByTestId('points-breakdown')).toHaveTextContent(/Velocidad: \+\d+ pts/);
+
+      // Abrir Pregunta 2 y responder bien para alcanzar racha >= 2
+      hostSocket.emit('question:next', { code: session.code });
+      expect(await screen.findByTestId('question-open-view')).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId('btn-answer-false'));
+      await waitFor(() => {
+        expect(screen.getByTestId('answer-status')).toBeInTheDocument();
+      });
+
+      hostSocket.emit('question:close', { code: session.code });
+      expect(await screen.findByTestId('streak-badge')).toHaveTextContent(/Racha de 2 aciertos/i);
+
+      // Verificar traducción al inglés
+      fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } });
+      await waitFor(() => {
+        expect(screen.getByTestId('streak-badge')).toHaveTextContent(/2-answer streak/i);
+        expect(screen.getByTestId('response-elapsed-time')).toHaveTextContent(
+          /Response time: \d+\.\d{2} s/,
+        );
+      });
+    } finally {
+      hostSocket.disconnect();
       await mocks.close();
     }
   });

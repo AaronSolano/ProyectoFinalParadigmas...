@@ -1,14 +1,33 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { getAppEnv } from '../config/env';
 import { useGameSocket } from '../realtime/useGameSocket';
+import {
+  isSoundMuted,
+  playLobbySound,
+  playPodiumFanfare,
+  playQuestionOpenSound,
+  playResultSound,
+  playSubmitAnswerSound,
+  playTimeUpSound,
+  toggleSoundMuted,
+  unlockAudioContext,
+} from '../audio/soundEngine';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
 import { ErrorBanner } from '../components/ErrorBanner';
 
 interface GameRoomPageProps {
   roleHint: 'host' | 'participant';
+}
+
+export function formatElapsedSeconds(elapsedMs: number | null | undefined): string | null {
+  if (typeof elapsedMs !== 'number' || Number.isNaN(elapsedMs) || elapsedMs < 0) {
+    return null;
+  }
+  return (elapsedMs / 1000).toFixed(2);
 }
 
 export function GameRoomPage({ roleHint }: GameRoomPageProps) {
@@ -19,6 +38,9 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
   const normalizedCode = code.trim().toUpperCase();
   const { enableDebugControls } = getAppEnv();
+  const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
+  const prevStatusRef = useRef<string | null>(null);
+
   const {
     liveState,
     connectionState,
@@ -42,10 +64,61 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     ? liveState.lastClosed.results.filter((r) => r.answered).length
     : 0;
 
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const curr = liveState.status;
+    if (prev === curr) {
+      return;
+    }
+    prevStatusRef.current = curr;
+
+    if (curr === 'waiting') {
+      playLobbySound();
+    } else if (curr === 'question_open') {
+      playQuestionOpenSound();
+    } else if (curr === 'question_closed') {
+      if (!isHost && myQuestionResult) {
+        if (!myQuestionResult.answered) {
+          playTimeUpSound();
+        } else {
+          playResultSound(myQuestionResult.correct, myQuestionResult.streak);
+        }
+      } else {
+        playTimeUpSound();
+      }
+    } else if (curr === 'finished') {
+      playPodiumFanfare();
+    }
+  }, [liveState.status, isHost, myQuestionResult]);
+
+  const handleToggleSound = () => {
+    unlockAudioContext();
+    const nextMuted = toggleSoundMuted();
+    setMuted(nextMuted);
+  };
+
+  const handleStartSession = () => {
+    unlockAudioContext();
+    startSession();
+  };
+
+  const handleSubmitAnswer = (answer: boolean) => {
+    unlockAudioContext();
+    playSubmitAnswerSound();
+    if (liveState.currentQuestion) {
+      submitAnswer(liveState.currentQuestion.questionIndex, answer);
+    }
+  };
+
   const handleLeave = () => {
     leaveSession();
     navigate('/join');
   };
+
+  const elapsedSecondsFormatted = formatElapsedSeconds(
+    myQuestionResult?.elapsedMs ?? liveState.lastElapsedMs,
+  );
+  const currentStreak = myQuestionResult?.streak ?? liveState.myStreak;
 
   return (
     <div className="game-container" data-testid="game-room-page">
@@ -85,6 +158,20 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
               {t('game.myScore', { score: liveState.myScore })}
             </span>
           )}
+          {!isHost && currentStreak >= 2 && (
+            <span className="streak-pill" data-testid="header-streak-badge">
+              {t('game.streakBadge', { streak: currentStreak })}
+            </span>
+          )}
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            data-testid="btn-toggle-sound"
+            aria-pressed={muted}
+            onClick={handleToggleSound}
+          >
+            {muted ? t('game.soundMutedBtn') : t('game.soundOnBtn')}
+          </button>
           {enableDebugControls && (
             <button
               type="button"
@@ -137,7 +224,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
                 type="button"
                 data-testid="btn-start-session"
                 className="btn btn--primary btn--lg"
-                onClick={startSession}
+                onClick={handleStartSession}
               >
                 {t('game.startSessionBtn')}
               </button>
@@ -159,7 +246,10 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
             <CountdownTimer
               closesAt={liveState.closesAt}
+              openedAt={liveState.currentQuestion.openedAt}
+              durationSeconds={liveState.currentQuestion.durationSeconds}
               clockOffsetMs={liveState.clockOffsetMs}
+              enableTickSound
             />
           </div>
 
@@ -195,9 +285,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
               hasAnswered={liveState.hasAnswered}
               answerAccepted={liveState.answerAccepted}
               rejectedReason={liveState.rejectedReason}
-              onSubmitAnswer={(answer) =>
-                submitAnswer(liveState.currentQuestion!.questionIndex, answer)
-              }
+              onSubmitAnswer={handleSubmitAnswer}
             />
           )}
         </section>
@@ -223,11 +311,34 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
               }`}
               data-testid="personal-question-result"
             >
-              {!myQuestionResult.answered
-                ? t('game.didNotAnswer')
-                : myQuestionResult.correct
-                  ? t('game.youAnsweredRight', { points: myQuestionResult.pointsAwarded })
-                  : t('game.youAnsweredWrong')}
+              <div>
+                {!myQuestionResult.answered
+                  ? t('game.didNotAnswer')
+                  : myQuestionResult.correct
+                    ? t('game.youAnsweredRight', { points: myQuestionResult.pointsAwarded })
+                    : t('game.youAnsweredWrong')}
+              </div>
+
+              {myQuestionResult.answered && elapsedSecondsFormatted !== null && (
+                <div className="personal-result__meta" data-testid="response-elapsed-time">
+                  {t('game.elapsedSeconds', { seconds: elapsedSecondsFormatted })}
+                </div>
+              )}
+
+              {myQuestionResult.correct && (
+                <div className="personal-result__breakdown" data-testid="points-breakdown">
+                  {t('game.pointsBreakdown', {
+                    points: myQuestionResult.pointsAwarded,
+                    total: myQuestionResult.totalScore,
+                  })}
+                </div>
+              )}
+
+              {myQuestionResult.streak >= 2 && (
+                <div className="streak-badge" data-testid="streak-badge">
+                  {t('game.streakBadge', { streak: myQuestionResult.streak })}
+                </div>
+              )}
             </div>
           )}
 

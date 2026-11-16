@@ -11,6 +11,8 @@ export interface LiveCurrentQuestion {
   statement: string;
   imageUrl: string | null;
   closesAt: string;
+  openedAt: string;
+  durationSeconds: number;
 }
 
 export interface LiveQuestionResult {
@@ -18,6 +20,8 @@ export interface LiveQuestionResult {
   answered: boolean;
   correct: boolean;
   pointsAwarded: number;
+  elapsedMs: number | null;
+  streak: number;
   totalScore: number;
 }
 
@@ -35,6 +39,8 @@ export interface QuestionOpenedEvent {
   imageUrl: string | null;
   closesAt: string;
   serverTime: string;
+  openedAt: string;
+  durationSeconds: number;
 }
 
 export interface QuestionClosedEvent {

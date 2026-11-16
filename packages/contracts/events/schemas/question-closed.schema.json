@@ -43,14 +43,18 @@
           "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
           "answered": true,
           "correct": true,
-          "pointsAwarded": 1,
-          "totalScore": 1
+          "pointsAwarded": 1000,
+          "elapsedMs": 320,
+          "streak": 1,
+          "totalScore": 1000
         },
         {
           "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12",
           "answered": false,
           "correct": false,
           "pointsAwarded": 0,
+          "elapsedMs": null,
+          "streak": 0,
           "totalScore": 0
         }
       ],
@@ -59,7 +63,7 @@
           "position": 1,
           "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
           "displayName": "Ana",
-          "score": 1
+          "score": 1000
         },
         {
           "position": 2,

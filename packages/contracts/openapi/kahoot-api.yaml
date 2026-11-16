@@ -28,7 +28,7 @@ info:
     - Base path `/api/v1`.
     - Identificadores UUID v4. Fechas en ISO 8601 UTC.
     - Todos los errores usan el esquema `Problem` con un `code` estable.
-    - Puntaje basico: 1 punto por respuesta correcta, 0 por incorrecta o ausente.
+    - Puntaje por velocidad: por respuesta correcta se otorgan 1000 puntos si el servidor mide menos de 500 ms desde la apertura de la pregunta y, en otro caso, `round((1 - (elapsedMs / duración) / 2) * 1000)` (500..1000); 0 por incorrecta o ausente. La racha de aciertos no suma puntos.
   contact:
     name: Equipo EIF400 - ProfeLink
   license:
@@ -772,12 +772,12 @@ paths:
                       - position: 1
                         participantId: 5a1e2d3c-4b5a-4c6d-8e7f-9a0b1c2d3e4f
                         displayName: Ana
-                        score: 9
+                        score: 8450
                         correctAnswers: 9
                       - position: 2
                         participantId: 6b2f3e4d-5c6b-4d7e-9f80-ab1c2d3e4f50
                         displayName: Luis
-                        score: 7
+                        score: 6120
                         correctAnswers: 7
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -1176,7 +1176,7 @@ components:
         score:
           type: integer
           minimum: 0
-          description: Puntaje acumulado (1 punto por respuesta correcta).
+          description: Puntaje acumulado (0..1000 por pregunta, segun la velocidad de la respuesta correcta).
 
     RankingEntry:
       type: object

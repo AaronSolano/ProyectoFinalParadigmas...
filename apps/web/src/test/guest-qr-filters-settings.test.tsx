@@ -254,7 +254,13 @@ describe('invitados, QR, filtros y ajustes', () => {
     const button = screen.getByTestId('btn-settings');
     fireEvent.click(button);
     expect(button).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('language-selector')).toHaveFocus();
+    // Al abrir se ve el menú, no las opciones de idioma
+    expect(screen.getByTestId('settings-language-toggle')).toHaveFocus();
+    expect(screen.getByTestId('settings-language-toggle')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByTestId('language-selector')).not.toBeVisible();
+    fireEvent.click(screen.getByTestId('settings-language-toggle'));
+    expect(screen.getByTestId('settings-language-toggle')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('language-selector')).toBeVisible();
     fireEvent.change(screen.getByTestId('language-selector'), {
       target: { value: 'en' },
     });

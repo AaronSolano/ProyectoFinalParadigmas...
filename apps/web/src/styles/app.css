@@ -1650,3 +1650,29 @@ input[type='radio'] {
 @media (max-width: 700px) {
   .settings__panel { position: fixed; inset-inline: 1rem; top: var(--settings-top, 10rem); width: auto; max-height: calc(100dvh - var(--settings-top, 10rem) - 1rem); overflow-y: auto; }
 }
+
+/* Menú de ajustes: lista de filas; el idioma queda plegado hasta elegirlo */
+.settings__menu { display: grid; gap: 0.25rem; }
+.settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-align: start;
+  cursor: pointer;
+}
+.settings__row:hover { background: var(--bg-elevated, rgba(0, 0, 0, 0.05)); }
+.settings__row:focus-visible { outline: 2px solid var(--focus-ring, currentColor); outline-offset: 2px; }
+.settings__value { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; opacity: 0.8; }
+.settings__chevron { font-size: 0.75rem; }
+.settings__options { padding: 0.25rem 0.75rem 0.5rem; }
+.settings__options[hidden] { display: none; }

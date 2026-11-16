@@ -363,7 +363,10 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await expect(h.getByTestId('lobby-participants-list')).toContainText('Invitado Ruby');
       await p.getByTestId('btn-settings').focus();
       await p.keyboard.press('Enter');
-      await expect(p.getByTestId('language-selector')).toBeFocused();
+      await expect(p.getByTestId('settings-language-toggle')).toBeFocused();
+      await expect(p.getByTestId('language-selector')).toBeHidden();
+      await p.getByTestId('settings-language-toggle').click();
+      await expect(p.getByTestId('language-selector')).toBeVisible();
       await p.getByTestId('settings-sound').click();
       await expect(p.getByTestId('btn-toggle-sound')).toHaveAttribute('aria-pressed', 'true');
       await p.keyboard.press('Escape');

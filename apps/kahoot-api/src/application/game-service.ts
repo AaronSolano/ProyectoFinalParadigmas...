@@ -50,6 +50,7 @@ export class GameService {
       questionIndex: q.index,
       total,
       statement: q.statement,
+      options: q.options,
       imageUrl: q.imageFilename
         ? `${this.publicUrl}/api/v1/images/${q.imageFilename}`
         : null,
@@ -242,7 +243,7 @@ export class GameService {
     user: GameIdentity,
     code: string,
     questionIndex: number,
-    answer: boolean,
+    option: number,
     joined: boolean,
   ) {
     const receivedAt = this.clock.now();
@@ -271,7 +272,7 @@ export class GameService {
         const inserted = await tx.insertAnswer(
           me!.id,
           questionIndex,
-          answer,
+          option,
           receivedAt,
         );
         return inserted
@@ -295,10 +296,10 @@ export class GameService {
         elapsedMs = answer
           ? Math.max(0, Math.min(durationMs, answer.receivedAt - openedAt))
           : null,
-        correct = answer !== undefined && answer.answer === q.correctAnswer,
+        correct = answer !== undefined && answer.option === q.correctOption,
         awarded = points({
-          answer: answer?.answer,
-          correctAnswer: q.correctAnswer,
+          option: answer?.option,
+          correctOption: q.correctOption,
           elapsedMs,
           durationMs,
         });
@@ -321,7 +322,7 @@ export class GameService {
     );
     const closed = {
       questionIndex: q.index,
-      correctAnswer: q.correctAnswer,
+      correctOption: q.correctOption,
       results,
       ranking,
     };

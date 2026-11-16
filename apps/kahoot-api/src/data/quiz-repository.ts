@@ -1,6 +1,7 @@
 import { SqlAdapter, Row } from "./sql-adapter";
 import { QuizRepository } from "../domain/ports";
 import { QuizInput, QuestionInput } from "../domain/inputs";
+import { Quiz } from "../domain/entities";
 import { quizFromRow, questionFromRow } from "./mappers";
 export class PostgresQuizRepository
   extends SqlAdapter
@@ -24,6 +25,27 @@ export class PostgresQuizRepository
     return Promise.all(
       (await this.rawListOwnedQuizzes([ownerId])).map((r) => this.quiz(r)),
     );
+  }
+  async listLibrary() {
+    return Promise.all(
+      (
+        await this.query(
+          "SELECT * FROM quizzes WHERE is_library=true AND deleted_at IS NULL ORDER BY category NULLS LAST, title",
+          [],
+        )
+      ).map((r) => this.quiz(r)),
+    );
+  }
+  async copyQuiz(ownerId: string, source: Quiz, newId: () => string) {
+    const copy = (
+      await this.rawInsertQuiz([ownerId, source.title, source.description])
+    )[0];
+    for (const q of await this.rawQuestions(source.id))
+      await this.query(
+        "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position) VALUES($1,$2,$3,$4::jsonb,$5,$6)",
+        [newId(), copy.id, q.statement, JSON.stringify(q.options), q.correct_option, q.position],
+      );
+    return this.quiz(copy);
   }
   async create(ownerId: string, input: QuizInput) {
     return this.quiz(
@@ -55,7 +77,8 @@ export class PostgresQuizRepository
       id,
       quizId,
       input.statement,
-      input.correctAnswer,
+      JSON.stringify(input.options),
+      input.correctOption,
       position,
     ]);
   }
@@ -63,7 +86,8 @@ export class PostgresQuizRepository
     await this.rawUpdateQuestionContent([
       id,
       input.statement,
-      input.correctAnswer,
+      JSON.stringify(input.options),
+      input.correctOption,
     ]);
   }
   async setQuestionPosition(id: string, position: number) {
@@ -151,13 +175,13 @@ export class PostgresQuizRepository
   }
   private rawInsertQuestion(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "INSERT INTO questions(id,quiz_id,statement,correct_answer,position) VALUES($1,$2,$3,$4,$5)",
+      "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position) VALUES($1,$2,$3,$4::jsonb,$5,$6)",
       params,
     );
   }
   private rawUpdateQuestionContent(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "UPDATE questions SET statement=$2,correct_answer=$3,updated_at=now() WHERE id=$1",
+      "UPDATE questions SET statement=$2,options=$3::jsonb,correct_option=$4,updated_at=now() WHERE id=$1",
       params,
     );
   }

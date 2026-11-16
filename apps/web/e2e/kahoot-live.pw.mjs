@@ -157,9 +157,9 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await expect(partPage.getByTestId('correct-answer-reveal')).toHaveCount(0);
 
       // Un solo envío permitido: tras responder se deshabilitan los botones
-      await partPage.getByTestId('btn-answer-true').click();
-      await expect(partPage.getByTestId('btn-answer-true')).toBeDisabled();
-      await expect(partPage.getByTestId('btn-answer-false')).toBeDisabled();
+      await partPage.getByTestId('btn-answer-0').click();
+      await expect(partPage.getByTestId('btn-answer-0')).toBeDisabled();
+      await expect(partPage.getByTestId('btn-answer-1')).toBeDisabled();
 
       // Al cerrar la pregunta se revela la respuesta correcta y el puntaje
       await hostPage.getByTestId('btn-close-question').click();
@@ -182,6 +182,63 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await expect(partPage.getByTestId('question-closed-view')).toBeVisible({ timeout: 8000 });
       await expect(partPage.getByTestId('personal-question-result')).toContainText(/0 pts/);
       await expect(partPage.getByTestId('participant-score')).toHaveText(scoreBeforeLateQuestion);
+    } finally {
+      await hostContext.close();
+      await partContext.close();
+    }
+  });
+
+  test('2.6 Biblioteca y opción múltiple: se abre una sala con un cuestionario de la biblioteca y se responde con 4 opciones', async ({
+    browser,
+  }) => {
+    const hostContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const partContext = await browser.newContext({ viewport: { width: 360, height: 640 } });
+    const hostPage = await hostContext.newPage();
+    const partPage = await partContext.newPage();
+
+    try {
+      await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      await hostPage.getByRole('link', { name: /biblioteca|library/i }).click();
+      await expect(hostPage).toHaveURL(/\/library$/);
+      await expect(hostPage.locator('[data-testid^="library-card-"]')).toHaveCount(10);
+      await expect(hostPage.getByText('Cultura general')).toBeVisible();
+      await expect(hostPage.getByText('Tecnología')).toBeVisible();
+
+      await hostPage.locator('[data-testid^="btn-host-library-"]').first().click();
+      await hostPage.locator('[data-testid="input-question-time"]').fill('10');
+      await hostPage.locator('[data-testid="btn-confirm-create-room"]').click();
+      const code = (await hostPage.getByTestId('room-code-display').textContent()).trim();
+
+      await registerAndLoginInPage(partPage, {
+        displayName: 'Opciones User',
+        email: `opciones.${Date.now()}@example.com`,
+        password: 'Clave2026seg',
+      });
+      await partPage.goto(`${WEB_URL}/join`);
+      await partPage.getByTestId('input-room-code').fill(code);
+      await partPage.getByTestId('btn-join-room').click();
+      await expect(partPage.getByTestId('lobby-view')).toBeVisible();
+
+      await hostPage.getByTestId('btn-start-session').click();
+      await expect(partPage.getByTestId('question-open-view')).toBeVisible();
+
+      // Cuatro opciones visibles; el cuestionario es el primero de la biblioteca por categoría y título
+      for (const index of [0, 1, 2, 3]) {
+        await expect(partPage.getByTestId(`btn-answer-${index}`)).toBeVisible();
+      }
+      await expect(partPage.getByTestId('correct-answer-reveal')).toHaveCount(0);
+
+      const choices = await partPage.locator('[data-testid^="btn-answer-"]').allTextContents();
+      expect(choices.length).toBe(4);
+
+      await partPage.getByTestId('btn-answer-1').click();
+      await expect(partPage.getByTestId('btn-answer-0')).toBeDisabled();
+
+      await hostPage.getByTestId('btn-close-question').click();
+      await expect(partPage.getByTestId('correct-answer-reveal')).toBeVisible();
+      const reveal = await partPage.getByTestId('correct-answer-reveal').textContent();
+      // La respuesta revelada es el texto de una de las opciones mostradas
+      expect(choices.some((c) => reveal.includes(c.replace(/^[^\wÁÉÍÓÚÑáéíóúñ]+/, '').trim()))).toBe(true);
     } finally {
       await hostContext.close();
       await partContext.close();

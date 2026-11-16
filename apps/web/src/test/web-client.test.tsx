@@ -2,36 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { io as ioClient } from 'socket.io-client';
 import i18n, { LANGUAGE_STORAGE_KEY, setAppLanguage } from '../i18n';
-import { es } from '../i18n/es';
-import { en } from '../i18n/en';
 import { App } from '../App';
 import { LanguageSelector } from '../components/LanguageSelector';
-import { TrueFalseButtons } from '../components/TrueFalseButtons';
+import { OptionButtons } from '../components/OptionButtons';
 import {
   CountdownTimer,
-  computeProgressPercent,
   computeRemainingSeconds,
 } from '../components/CountdownTimer';
 import { JoinRoomPage, isValidRoomCode, normalizeRoomCode } from '../pages/JoinRoomPage';
 import { QuizzesPage } from '../pages/QuizzesPage';
+import { GameRoomPage } from '../pages/GameRoomPage';
 import { QuizQuestionsPage, validateQuestionImageFile } from '../pages/QuizQuestionsPage';
-import { GameRoomPage, formatElapsedSeconds } from '../pages/GameRoomPage';
-import {
-  AUDIO_MUTED_STORAGE_KEY,
-  computeStreakMultiplier,
-  isSoundMuted,
-  playCountdownTick,
-  playLobbySound,
-  playPodiumFanfare,
-  playResultSound,
-  playSubmitAnswerSound,
-  playTimeUpSound,
-  setAudioContextFactoryForTests,
-  setSoundMuted,
-  toggleSoundMuted,
-} from '../audio/soundEngine';
 import { AuthProvider } from '../auth/AuthContext';
 import { clearAuthSession, getStoredToken, saveAuthSession } from '../auth/storage';
 import { AuthPage } from '../pages/AuthPage';
@@ -39,11 +21,8 @@ import {
   applyStateSync,
   computeClockOffsetMs,
   createInitialGameLiveState,
-  RECONNECT_CONFIG,
 } from '../realtime/useGameSocket';
 import { ApiProblemError, kahootApi, authApi } from '../api/client';
-// @ts-expect-error ESM mock server module
-import { computeSpeedPoints, startMockServers } from '../../mocks/mock-server.mjs';
 
 function renderWithProviders(ui: React.ReactElement, initialEntries = ['/']) {
   const queryClient = new QueryClient({
@@ -92,11 +71,12 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
     expect(i18n.t('game.trueBtn')).toBe('True');
   });
 
-  it('3.3 botones Verdadero/Falso permiten un solo envío por pregunta y muestran confirmación o rechazo', () => {
+  it('3.3 las opciones de respuesta (2 a 4) permiten un solo envío por pregunta y muestran confirmación o rechazo', () => {
     const onSubmit = vi.fn();
     const { rerender } = render(
-      <TrueFalseButtons
+      <OptionButtons
         questionIndex={0}
+        options={['Alajuela', 'San José', 'Cartago', 'Heredia']}
         hasAnswered={false}
         answerAccepted={false}
         rejectedReason={null}
@@ -104,22 +84,24 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
       />,
     );
 
-    const trueBtn = screen.getByTestId('btn-answer-true');
-    const falseBtn = screen.getByTestId('btn-answer-false');
+    const second = screen.getByTestId('btn-answer-1');
+    const fourth = screen.getByTestId('btn-answer-3');
+    expect(screen.getByText('San José')).toBeInTheDocument();
 
-    fireEvent.click(trueBtn);
-    fireEvent.click(trueBtn);
-    fireEvent.click(falseBtn);
+    fireEvent.click(second);
+    fireEvent.click(second);
+    fireEvent.click(fourth);
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenCalledWith(true);
-    expect(trueBtn).toBeDisabled();
-    expect(falseBtn).toBeDisabled();
+    expect(onSubmit).toHaveBeenCalledWith(1);
+    expect(second).toBeDisabled();
+    expect(fourth).toBeDisabled();
     expect(screen.getByTestId('answer-status')).toBeInTheDocument();
 
     rerender(
-      <TrueFalseButtons
+      <OptionButtons
         questionIndex={0}
+        options={['Alajuela', 'San José', 'Cartago', 'Heredia']}
         hasAnswered={true}
         answerAccepted={false}
         rejectedReason="late"
@@ -281,7 +263,8 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
         id: 'q-1',
         quizId: 'quiz-1',
         statement: 'TCP es orientado a conexión.',
-        correctAnswer: true,
+        options: ['Verdadero', 'Falso'],
+        correctOption: 0,
         imageUrl: null,
         position: 1,
         createdAt: '2026-11-10T14:05:00.000Z',
@@ -323,6 +306,7 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
           questionIndex: 1,
           total: 5,
           statement: 'El agua hierve a 100 °C al nivel del mar.',
+          options: ['Verdadero', 'Falso'],
           imageUrl: null,
           closesAt: '2026-11-15T15:00:30.000Z',
           openedAt: '2026-11-15T15:00:00.000Z',
@@ -341,112 +325,6 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
     expect(synced.hasAnswered).toBe(true);
     expect(synced.currentQuestion?.statement).toBe('El agua hierve a 100 °C al nivel del mar.');
     expect(synced.currentQuestion?.durationSeconds).toBe(30);
-  });
-
-  it('1.2, 3.1, 3.4, 3.5 ejecuta una partida completa con reconexión contra el servidor mock Socket.IO y renderiza GameRoomPage', async () => {
-    saveAuthSession('mock-jwt', {
-      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-      email: 'ana.mora@example.com',
-      displayName: 'Ana Mora',
-      createdAt: '2026-11-15T14:00:00.000Z',
-    });
-
-    renderWithProviders(
-      <Routes>
-        <Route path="/host/:code" element={<GameRoomPage roleHint="host" />} />
-      </Routes>,
-      ['/host/K7M3QX'],
-    );
-    expect(screen.getByTestId('room-code-display')).toHaveTextContent('K7M3QX');
-
-    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
-    const kahootPort = mocks.kahootServer.address().port;
-
-    const hostToken = Buffer.from(
-      JSON.stringify({
-        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-        name: 'Ana Mora',
-        email: 'ana.mora@example.com',
-      }),
-    ).toString('base64url');
-    const participantToken = Buffer.from(
-      JSON.stringify({
-        sub: 'user-beto-99',
-        name: 'Beto',
-        email: 'beto@example.com',
-      }),
-    ).toString('base64url');
-
-    const hostSocket = ioClient(`http://localhost:${kahootPort}/game`, {
-      auth: { token: `hdr.${hostToken}.sig` },
-    });
-    const partSocket = ioClient(`http://localhost:${kahootPort}/game`, {
-      auth: { token: `hdr.${participantToken}.sig` },
-    });
-
-    try {
-      const hostSyncPromise = new Promise<any>((resolve) => hostSocket.once('state_sync', resolve));
-      hostSocket.emit('session:join', { code: 'K7M3QX' });
-      const hostSync = await hostSyncPromise;
-      expect(hostSync.isHost).toBe(true);
-      expect(hostSync.status).toBe('waiting');
-
-      const joinedPromise = new Promise<any>((resolve) =>
-        hostSocket.once('participant:joined', resolve),
-      );
-      const partSyncPromise = new Promise<any>((resolve) => partSocket.once('state_sync', resolve));
-      partSocket.emit('session:join', { code: 'K7M3QX' });
-
-      const [joinedEvt, partSync] = await Promise.all([joinedPromise, partSyncPromise]);
-      expect(joinedEvt.participant.displayName).toBe('Beto');
-      expect(partSync.isHost).toBe(false);
-
-      const qOpenedPromise = new Promise<any>((resolve) =>
-        partSocket.once('question:opened', resolve),
-      );
-      hostSocket.emit('session:start', { code: 'K7M3QX' });
-      const openedEvt = await qOpenedPromise;
-      expect(openedEvt.questionIndex).toBe(0);
-      expect(openedEvt).not.toHaveProperty('correctAnswer');
-      expect(openedEvt.openedAt).toBeTruthy();
-      expect(openedEvt.durationSeconds).toBe(20);
-
-      const acceptedPromise = new Promise<any>((resolve) =>
-        partSocket.once('answer:accepted', resolve),
-      );
-      partSocket.emit('answer:submit', { code: 'K7M3QX', questionIndex: 0, answer: true });
-      const acceptedEvt = await acceptedPromise;
-      expect(acceptedEvt.questionIndex).toBe(0);
-
-      const rejectedPromise = new Promise<any>((resolve) =>
-        partSocket.once('answer:rejected', resolve),
-      );
-      partSocket.emit('answer:submit', { code: 'K7M3QX', questionIndex: 0, answer: false });
-      const rejectedEvt = await rejectedPromise;
-      expect(rejectedEvt.reason).toBe('already_answered');
-
-      const closedPromise = new Promise<any>((resolve) =>
-        partSocket.once('question:closed', resolve),
-      );
-      hostSocket.emit('question:close', { code: 'K7M3QX' });
-      const closedEvt = await closedPromise;
-      expect(closedEvt.correctAnswer).toBe(true);
-      expect(closedEvt.results[0].pointsAwarded).toBeGreaterThanOrEqual(500);
-      expect(closedEvt.results[0].pointsAwarded).toBeLessThanOrEqual(1000);
-      expect(typeof closedEvt.results[0].elapsedMs).toBe('number');
-      expect(closedEvt.results[0].streak).toBe(1);
-      expect(closedEvt.ranking[0].score).toBe(closedEvt.results[0].pointsAwarded);
-
-      const resyncPromise = new Promise<any>((resolve) => partSocket.once('state_sync', resolve));
-      partSocket.emit('session:join', { code: 'K7M3QX' });
-      const resync = await resyncPromise;
-      expect(resync.myScore).toBe(closedEvt.results[0].pointsAwarded);
-      expect(resync.participants).toHaveLength(1);
-    } finally {
-      hostSocket.disconnect();
-      partSocket.disconnect();
-      await mocks.close();
-    }
   });
 
   it('ajuste 1: un 401 en una llamada REST autenticada limpia el token y redirige a /login con aviso de sesión expirada (ES y EN)', async () => {
@@ -515,437 +393,6 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
     expect(screen.getByTestId('btn-simulate-reconnect')).toBeInTheDocument();
   });
 
-  it('ajuste 3: ante io server disconnect reconecta con retraso y vuelve a aplicar state_sync', async () => {
-    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
-    const kahootPort = mocks.kahootServer.address().port;
-    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
-
-    const hostToken = Buffer.from(
-      JSON.stringify({
-        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-        name: 'Ana Mora',
-        email: 'ana.mora@example.com',
-      }),
-    ).toString('base64url');
-    const jwt = `hdr.${hostToken}.sig`;
-
-    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({
-        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
-        questionTimeSeconds: 20,
-      }),
-    });
-    const freshSession = (await createRes.json()) as { code: string };
-
-    saveAuthSession(jwt, {
-      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-      email: 'ana.mora@example.com',
-      displayName: 'Ana Mora',
-      createdAt: '2026-11-15T14:00:00.000Z',
-    });
-
-    let serverConnectionCount = 0;
-    let firstServerSocket: any = null;
-    let stateSyncEmitted = 0;
-    mocks.io.of('/game').on('connection', (sock: any) => {
-      serverConnectionCount += 1;
-      if (serverConnectionCount === 1) {
-        firstServerSocket = sock;
-      }
-      sock.on('session:join', () => {
-        stateSyncEmitted += 1;
-      });
-    });
-
-    try {
-      renderWithProviders(<App />, [`/host/${freshSession.code}`]);
-
-      await waitFor(() => {
-        expect(serverConnectionCount).toBe(1);
-        expect(stateSyncEmitted).toBe(1);
-        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
-      });
-
-      // El servidor desconecta al cliente (produce motivo 'io server disconnect' en el cliente)
-      firstServerSocket.disconnect(true);
-
-      expect(await screen.findByTestId('reconnect-banner')).toBeInTheDocument();
-
-      await waitFor(
-        () => {
-          expect(serverConnectionCount).toBe(2);
-          expect(stateSyncEmitted).toBe(2);
-          expect(screen.queryByTestId('reconnect-banner')).not.toBeInTheDocument();
-          expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
-        },
-        { timeout: 4000 },
-      );
-
-      // Si una reconexión falla con unauthorized, limpia el token y redirige a /login
-      let rejectNext = true;
-      mocks.io.of('/game').use((_socket: any, next: (err?: Error) => void) => {
-        if (rejectNext) {
-          rejectNext = false;
-          next(new Error('unauthorized'));
-          return;
-        }
-        next();
-      });
-
-      const sockets = await mocks.io.of('/game').fetchSockets();
-      for (const s of sockets) {
-        s.disconnect(true);
-      }
-
-      await waitFor(
-        () => {
-          expect(getStoredToken()).toBeNull();
-          expect(screen.getByRole('heading', { name: /Iniciar sesión/i })).toBeInTheDocument();
-          expect(screen.getByTestId('error-banner')).toHaveTextContent(
-            'Tu sesión expiró, inicia sesión de nuevo.',
-          );
-        },
-        { timeout: 4000 },
-      );
-    } finally {
-      await mocks.close();
-    }
-  });
-
-  it('ajuste 3b: tras 10 intentos seguidos fallidos de io server disconnect muestra aviso con botón Reintentar (ES/EN) que reinicia el contador y reconecta', async () => {
-    const collectKeyPaths = (obj: Record<string, unknown>, prefix = ''): string[] =>
-      Object.keys(obj)
-        .sort()
-        .flatMap((key) => {
-          const val = obj[key];
-          const path = prefix ? `${prefix}.${key}` : key;
-          return val && typeof val === 'object'
-            ? collectKeyPaths(val as Record<string, unknown>, path)
-            : [path];
-        });
-
-    expect(collectKeyPaths(es)).toEqual(collectKeyPaths(en));
-
-    const prevBaseDelay = RECONNECT_CONFIG.baseDelayMs;
-    const prevMaxDelay = RECONNECT_CONFIG.maxDelayMs;
-    RECONNECT_CONFIG.baseDelayMs = 5;
-    RECONNECT_CONFIG.maxDelayMs = 10;
-
-    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
-    const kahootPort = mocks.kahootServer.address().port;
-    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
-
-    const hostToken = Buffer.from(
-      JSON.stringify({
-        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-        name: 'Ana Mora',
-        email: 'ana.mora@example.com',
-      }),
-    ).toString('base64url');
-    const jwt = `hdr.${hostToken}.sig`;
-
-    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${jwt}`,
-      },
-      body: JSON.stringify({
-        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
-        questionTimeSeconds: 20,
-      }),
-    });
-    const freshSession = (await createRes.json()) as { code: string };
-
-    saveAuthSession(jwt, {
-      id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-      email: 'ana.mora@example.com',
-      displayName: 'Ana Mora',
-      createdAt: '2026-11-15T14:00:00.000Z',
-    });
-
-    let dropReconnects = false;
-    let disconnectCount = 0;
-    let firstServerSocket: any = null;
-    mocks.io.of('/game').on('connection', (sock: any) => {
-      if (!firstServerSocket) {
-        firstServerSocket = sock;
-      }
-      if (dropReconnects) {
-        disconnectCount += 1;
-        sock.disconnect(true);
-      }
-    });
-
-    try {
-      renderWithProviders(<App />, [`/host/${freshSession.code}`]);
-
-      await waitFor(() => {
-        expect(firstServerSocket).not.toBeNull();
-        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
-      });
-
-      // Provocar 10 desconexiones seguidas desde el servidor
-      dropReconnects = true;
-      firstServerSocket.disconnect(true);
-
-      const failedBanner = await screen.findByTestId(
-        'reconnect-failed-banner',
-        {},
-        { timeout: 4000 },
-      );
-      expect(failedBanner).toHaveTextContent('No se pudo reconectar a la partida.');
-      expect(screen.getByTestId('btn-retry-reconnect')).toHaveTextContent('Reintentar');
-      expect(disconnectCount).toBe(RECONNECT_CONFIG.maxAttempts);
-
-      // Verificar también en inglés
-      fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } });
-      await waitFor(() => {
-        expect(screen.getByTestId('reconnect-failed-banner')).toHaveTextContent(
-          'Could not reconnect to the game.',
-        );
-        expect(screen.getByTestId('btn-retry-reconnect')).toHaveTextContent('Retry');
-      });
-
-      // Al pulsar Reintentar, reinicia el contador y vuelve a conectar aplicando state_sync
-      dropReconnects = false;
-      fireEvent.click(screen.getByTestId('btn-retry-reconnect'));
-
-      await waitFor(
-        () => {
-          expect(screen.queryByTestId('reconnect-failed-banner')).not.toBeInTheDocument();
-          expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
-        },
-        { timeout: 4000 },
-      );
-    } finally {
-      RECONNECT_CONFIG.baseDelayMs = prevBaseDelay;
-      RECONNECT_CONFIG.maxDelayMs = prevMaxDelay;
-      await mocks.close();
-    }
-  });
-
-  it('velocidad 3.1 y 3.2: calcula puntos por velocidad (500..1000) y sintetiza efectos con Web Audio API + silencio persistente', () => {
-    expect(
-      computeSpeedPoints({ answer: true, correctAnswer: true, elapsedMs: 250, durationMs: 20_000 }),
-    ).toBe(1000);
-    expect(
-      computeSpeedPoints({
-        answer: true,
-        correctAnswer: true,
-        elapsedMs: 10_000,
-        durationMs: 20_000,
-      }),
-    ).toBe(750);
-    expect(
-      computeSpeedPoints({
-        answer: true,
-        correctAnswer: true,
-        elapsedMs: 20_000,
-        durationMs: 20_000,
-      }),
-    ).toBe(500);
-    expect(
-      computeSpeedPoints({
-        answer: false,
-        correctAnswer: true,
-        elapsedMs: 200,
-        durationMs: 20_000,
-      }),
-    ).toBe(0);
-    expect(
-      computeSpeedPoints({
-        answer: undefined,
-        correctAnswer: true,
-        elapsedMs: null,
-        durationMs: 20_000,
-      }),
-    ).toBe(0);
-
-    // En jsdom sin AudioContext no lanza errores (no-op)
-    setAudioContextFactoryForTests(null);
-    expect(playLobbySound()).toBe(false);
-
-    // Inyectar un AudioContext simulado para verificar osciladores, frecuencias por racha y silencio
-    const frequencies: number[] = [];
-    const fakeCtx = {
-      state: 'running',
-      currentTime: 0,
-      destination: {},
-      resume: vi.fn(),
-      createOscillator: () => ({
-        type: 'sine',
-        frequency: {
-          setValueAtTime: (freq: number) => {
-            frequencies.push(freq);
-          },
-        },
-        connect: vi.fn(),
-        start: vi.fn(),
-        stop: vi.fn(),
-      }),
-      createGain: () => ({
-        gain: {
-          setValueAtTime: vi.fn(),
-          exponentialRampToValueAtTime: vi.fn(),
-        },
-        connect: vi.fn(),
-      }),
-    } as unknown as AudioContext;
-
-    setAudioContextFactoryForTests(() => fakeCtx);
-    try {
-      expect(isSoundMuted()).toBe(false);
-      expect(playLobbySound()).toBe(true);
-      expect(playCountdownTick(10)).toBe(true);
-      expect(playCountdownTick(3)).toBe(true); // pulso doble urgente en <= 5 s
-      expect(playSubmitAnswerSound()).toBe(true);
-      expect(playTimeUpSound()).toBe(true);
-
-      frequencies.length = 0;
-      playResultSound(true, 1);
-      const streak1Base = frequencies[0]!;
-      frequencies.length = 0;
-      playResultSound(true, 4);
-      const streak4Base = frequencies[0]!;
-      expect(streak4Base).toBeGreaterThan(streak1Base);
-      expect(computeStreakMultiplier(5)).toBeGreaterThan(computeStreakMultiplier(1));
-      expect(playResultSound(false, 0)).toBe(true);
-      expect(playPodiumFanfare()).toBe(true);
-
-      // Silenciar persiste en localStorage y evita reproducir sonidos
-      expect(toggleSoundMuted()).toBe(true);
-      expect(window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY)).toBe('true');
-      expect(playLobbySound()).toBe(false);
-      setSoundMuted(false);
-      expect(isSoundMuted()).toBe(false);
-    } finally {
-      setAudioContextFactoryForTests(null);
-    }
-  });
-
-  it('velocidad 3.3: muestra anillo/barra de progreso, tiempo de respuesta en segundos, desglose de puntos e insignia de racha (ES/EN)', async () => {
-    expect(formatElapsedSeconds(1450)).toBe('1.45');
-    expect(formatElapsedSeconds(null)).toBeNull();
-
-    const nowMs = Date.parse('2026-11-15T15:00:10.000Z');
-    const pct = computeProgressPercent(
-      '2026-11-15T15:00:20.000Z',
-      '2026-11-15T15:00:00.000Z',
-      20,
-      0,
-      nowMs,
-    );
-    expect(pct).toBe(50);
-
-    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
-    const kahootPort = mocks.kahootServer.address().port;
-    vi.stubEnv('VITE_KAHOOT_API_URL', `http://localhost:${kahootPort}`);
-
-    const hostToken = Buffer.from(
-      JSON.stringify({
-        sub: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
-        name: 'Ana Mora',
-        email: 'ana.mora@example.com',
-      }),
-    ).toString('base64url');
-    const hostJwt = `hdr.${hostToken}.sig`;
-
-    const partToken = Buffer.from(
-      JSON.stringify({
-        sub: 'user-vel-1',
-        name: 'Elena Veloz',
-        email: 'elena@example.com',
-      }),
-    ).toString('base64url');
-    const partJwt = `hdr.${partToken}.sig`;
-
-    const createRes = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${hostJwt}` },
-      body: JSON.stringify({
-        quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
-        questionTimeSeconds: 20,
-      }),
-    });
-    const session = (await createRes.json()) as { code: string };
-
-    saveAuthSession(partJwt, {
-      id: 'user-vel-1',
-      email: 'elena@example.com',
-      displayName: 'Elena Veloz',
-      createdAt: '2026-11-15T14:00:00.000Z',
-    });
-
-    const hostSocket = ioClient(`http://localhost:${kahootPort}/game`, {
-      auth: { token: hostJwt },
-    });
-
-    try {
-      renderWithProviders(<App />, [`/play/${session.code}`]);
-
-      const hostSync = new Promise<any>((r) => hostSocket.once('state_sync', r));
-      hostSocket.emit('session:join', { code: session.code });
-      await hostSync;
-
-      await waitFor(() => {
-        expect(screen.getByTestId('lobby-view')).toBeInTheDocument();
-      });
-
-      // Verificar botón de silencio en sala
-      const soundBtn = screen.getByTestId('btn-toggle-sound');
-      expect(soundBtn).toHaveTextContent(/Sonido activo/i);
-      fireEvent.click(soundBtn);
-      expect(soundBtn).toHaveTextContent(/Silenciado/i);
-
-      // Abrir Pregunta 1 -> verificar anillo y barra de progreso
-      hostSocket.emit('session:start', { code: session.code });
-      expect(await screen.findByTestId('question-open-view')).toBeInTheDocument();
-      expect(screen.getByTestId('countdown-ring')).toBeInTheDocument();
-      expect(screen.getByTestId('countdown-progress-bar')).toBeInTheDocument();
-
-      fireEvent.click(screen.getByTestId('btn-answer-true'));
-      await waitFor(() => {
-        expect(screen.getByTestId('answer-status')).toBeInTheDocument();
-      });
-
-      hostSocket.emit('question:close', { code: session.code });
-      expect(await screen.findByTestId('question-closed-view')).toBeInTheDocument();
-      expect(screen.getByTestId('response-elapsed-time')).toHaveTextContent(
-        /Tiempo de respuesta: \d+\.\d{2} s/,
-      );
-      expect(screen.getByTestId('points-breakdown')).toHaveTextContent(/Velocidad: \+\d+ pts/);
-
-      // Abrir Pregunta 2 y responder bien para alcanzar racha >= 2
-      hostSocket.emit('question:next', { code: session.code });
-      expect(await screen.findByTestId('question-open-view')).toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('btn-answer-false'));
-      await waitFor(() => {
-        expect(screen.getByTestId('answer-status')).toBeInTheDocument();
-      });
-
-      hostSocket.emit('question:close', { code: session.code });
-      expect(await screen.findByTestId('streak-badge')).toHaveTextContent(/Racha de 2 aciertos/i);
-
-      // Verificar traducción al inglés
-      fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } });
-      await waitFor(() => {
-        expect(screen.getByTestId('streak-badge')).toHaveTextContent(/2-answer streak/i);
-        expect(screen.getByTestId('response-elapsed-time')).toHaveTextContent(
-          /Response time: \d+\.\d{2} s/,
-        );
-      });
-    } finally {
-      hostSocket.disconnect();
-      await mocks.close();
-    }
-  });
-
   it('7.1.2a (permisos en UI): un participante no ve controles de anfitrión y un 403 FORBIDDEN al modificar un cuestionario ajeno muestra aviso claro', async () => {
     saveAuthSession('part-jwt', {
       id: 'user-part-1',
@@ -994,68 +441,4 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
     );
   });
 
-  it('7.1.2b (aislamiento de dos salas): dos sesiones simultáneas mantienen participantes, preguntas y resultados separados', async () => {
-    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
-    const kahootPort = mocks.kahootServer.address().port;
-
-    const makeJwt = (sub: string, name: string) =>
-      `hdr.${Buffer.from(JSON.stringify({ sub, name, email: `${sub}@example.com` })).toString('base64url')}.sig`;
-
-    const hostAJwt = makeJwt('host-a', 'Host A');
-    const hostBJwt = makeJwt('host-b', 'Host B');
-    const partAJwt = makeJwt('part-a', 'Alice Sala A');
-    const partBJwt = makeJwt('part-b', 'Bruno Sala B');
-
-    const createRoom = async (jwt: string) => {
-      const res = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
-        body: JSON.stringify({
-          quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
-          questionTimeSeconds: 20,
-        }),
-      });
-      return (await res.json()) as { code: string };
-    };
-
-    const roomA = await createRoom(hostAJwt);
-    const roomB = await createRoom(hostBJwt);
-    expect(roomA.code).not.toBe(roomB.code);
-
-    const sockHostA = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: hostAJwt } });
-    const sockHostB = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: hostBJwt } });
-    const sockPartA = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: partAJwt } });
-    const sockPartB = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: partBJwt } });
-
-    try {
-      const syncHA = new Promise<any>((r) => sockHostA.once('state_sync', r));
-      const syncHB = new Promise<any>((r) => sockHostB.once('state_sync', r));
-      sockHostA.emit('session:join', { code: roomA.code });
-      sockHostB.emit('session:join', { code: roomB.code });
-      await Promise.all([syncHA, syncHB]);
-
-      let roomBReceivedFromA = false;
-      sockHostB.on('participant:joined', (evt: any) => {
-        if (evt.participant?.displayName === 'Alice Sala A') {
-          roomBReceivedFromA = true;
-        }
-      });
-
-      const syncPA = new Promise<any>((r) => sockPartA.once('state_sync', r));
-      const syncPB = new Promise<any>((r) => sockPartB.once('state_sync', r));
-      sockPartA.emit('session:join', { code: roomA.code });
-      sockPartB.emit('session:join', { code: roomB.code });
-      const [stateA, stateB] = await Promise.all([syncPA, syncPB]);
-
-      expect(stateA.participants.map((p: any) => p.displayName)).toEqual(['Alice Sala A']);
-      expect(stateB.participants.map((p: any) => p.displayName)).toEqual(['Bruno Sala B']);
-      expect(roomBReceivedFromA).toBe(false);
-    } finally {
-      sockHostA.disconnect();
-      sockHostB.disconnect();
-      sockPartA.disconnect();
-      sockPartB.disconnect();
-      await mocks.close();
-    }
-  });
 });

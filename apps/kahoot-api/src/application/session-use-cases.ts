@@ -8,7 +8,7 @@ import { Identity, SessionResults } from "../domain/entities";
 import { SessionInput, JoinInput } from "../domain/inputs";
 import { Problem } from "../domain/problem";
 import { requireWaiting, normalizeRoomCode } from "../domain/session-rules";
-import { ownedQuiz } from "./quiz-use-cases";
+import { usableQuiz } from "./quiz-use-cases";
 import { GameService } from "./game-service";
 async function room(repo: SessionRepository, code: string, lock = false) {
   const session = await repo.findByCode(normalizeRoomCode(code), lock);
@@ -38,7 +38,7 @@ export class SessionUseCases {
     for (let attempt = 0; attempt < 10; attempt++) {
       try {
         return await this.work.transaction(async ({ quizzes, sessions }) => {
-          const quiz = await ownedQuiz(quizzes, input.quizId, user, true);
+          const quiz = await usableQuiz(quizzes, input.quizId, user, true);
           const questions = await quizzes.listQuestions(quiz.id);
           if (!questions.length)
             throw new Problem(

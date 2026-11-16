@@ -21,7 +21,8 @@ test("métricas siguen inicio, recuperación, publicación del cierre y fin sin 
       {
         index: 0,
         statement: "Pregunta",
-        correctAnswer: true,
+        options: ["Verdadero", "Falso"],
+        correctOption: 0,
         imageFilename: null,
       },
     ],

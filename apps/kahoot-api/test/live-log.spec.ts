@@ -10,7 +10,7 @@ test("eventos aceptados, rechazados e inválidos no registran respuesta, sala o 
     .fn()
     .mockResolvedValueOnce({
       event: "answer:accepted",
-      payload: { answer: true, score: 1 },
+      payload: { option: 0, score: 1 },
     })
     .mockResolvedValueOnce({
       event: "answer:rejected",
@@ -43,12 +43,12 @@ test("eventos aceptados, rechazados e inválidos no registran respuesta, sala o 
     await gateway["dispatch"](socket, "answer:submit", {
       code: "ABC234",
       questionIndex: 0,
-      answer: true,
+      option: 0,
     });
     await gateway["dispatch"](socket, "answer:submit", {
       code: "ABC234",
       questionIndex: 0,
-      answer: false,
+      option: 1,
     });
     await gateway["dispatch"](socket, "answer:submit", {
       token: "token-secret",

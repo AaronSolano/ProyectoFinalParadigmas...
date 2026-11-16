@@ -31,6 +31,12 @@ class MemoryQuizzes implements QuizRepository {
       .filter((q) => q.quizId === id)
       .sort((a, b) => a.position - b.position);
   }
+  async listLibrary() {
+    return [...this.quizzes.values()].filter((q) => q.isLibrary);
+  }
+  async copyQuiz(): Promise<never> {
+    throw new Error("no usado");
+  }
   async listOwned(id: string) {
     return [...this.quizzes.values()].filter((q) => q.ownerId === id);
   }
@@ -43,6 +49,8 @@ class MemoryQuizzes implements QuizRepository {
       ownerId,
       title: input.title,
       description: input.description ?? "",
+      category: null,
+      isLibrary: false,
       createdAt: now,
       updatedAt: now,
       questionCount: 0,
@@ -62,7 +70,7 @@ class MemoryQuizzes implements QuizRepository {
   async createQuestion(
     id: string,
     quizId: string,
-    input: { statement: string; correctAnswer: boolean },
+    input: { statement: string; options: string[]; correctOption: number },
     position: number,
   ) {
     this.questions.set(id, {
@@ -77,7 +85,7 @@ class MemoryQuizzes implements QuizRepository {
   }
   async updateQuestion(
     id: string,
-    input: { statement: string; correctAnswer: boolean },
+    input: { statement: string; options: string[]; correctOption: number },
   ) {
     Object.assign(this.questions.get(id)!, input);
   }
@@ -140,7 +148,8 @@ class MemorySessions implements SessionRepository {
         sessionId: s.id,
         position,
         statement: q.statement,
-        correctAnswer: q.correctAnswer,
+        options: q.options,
+        correctOption: q.correctOption,
         imageFilename: q.imageFilename,
       })),
     );
@@ -219,18 +228,20 @@ describe("casos de uso con puertos en memoria, sin PostgreSQL", () => {
     await c.quiz.createQuiz("owner", { title: "Prueba" });
     const q = await c.quiz.saveQuestion("owner", "quiz", {
       statement: "Original",
-      correctAnswer: true,
+      options: ["Verdadero", "Falso"],
+      correctOption: 0,
     });
     await c.session.createSession("owner", { quizId: "quiz" });
     await c.quiz.saveQuestion(
       "owner",
       "quiz",
-      { statement: "Editada", correctAnswer: false },
+      { statement: "Editada", options: ["Verdadero", "Falso"], correctOption: 1 },
       q.id,
     );
     expect(c.sessions.snapshots[0]).toMatchObject({
       statement: "Original",
-      correctAnswer: true,
+      options: ["Verdadero", "Falso"],
+      correctOption: 0,
       position: 0,
     });
     expect(c.quizzes.quizzes.get("quiz")!.updatedAt).toBe(now);
@@ -240,7 +251,8 @@ describe("casos de uso con puertos en memoria, sin PostgreSQL", () => {
     await c.quiz.createQuiz("owner", { title: "Prueba" });
     await c.quiz.saveQuestion("owner", "quiz", {
       statement: "Original",
-      correctAnswer: true,
+      options: ["Verdadero", "Falso"],
+      correctOption: 0,
     });
     const room = await c.session.createSession("owner", { quizId: "quiz" });
     const user = { id: "user", name: "Nombre" };

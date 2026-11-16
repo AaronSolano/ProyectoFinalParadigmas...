@@ -112,7 +112,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await api()
         .post(`/api/v1/quizzes/${quiz.id}/questions`)
         .set(auth())
-        .send({ statement: `Pregunta ${i}`, correctAnswer: i === 0 })
+        .send({ statement: `Pregunta ${i}`, options: ["Verdadero", "Falso"], correctOption: i === 0 ? 0 : 1 })
         .expect(201);
     const session = (
       await api()
@@ -204,7 +204,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await command(h, "session:start", { code }, "question:opened");
     const disconnected = event(flood, "disconnect");
     for (let i = 0; i < 200; i++)
-      flood.emit("answer:submit", { code, questionIndex: 999, answer: true });
+      flood.emit("answer:submit", { code, questionIndex: 999, option: 0 });
     expect(await disconnected).toBe("io server disconnect");
     expect(flood.connected).toBe(false);
     expect(limited).toHaveBeenCalledTimes(1);
@@ -213,7 +213,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         normal,
         "answer:submit",
-        { code, questionIndex: 0, answer: true },
+        { code, questionIndex: 0, option: 0 },
         "answer:accepted",
       ),
     ).toEqual({ questionIndex: 0 });
@@ -250,12 +250,12 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       { code, other: true },
       { code: code.toLowerCase() },
       null,
-      { code, questionIndex: 0, answer: "true" },
+      { code, questionIndex: 0, option: "0" },
     ]) {
       expect(
         await command(
           p,
-          typeof payload?.answer === "string"
+          typeof payload?.option === "string"
             ? "answer:submit"
             : "session:join",
           payload,
@@ -272,7 +272,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       { code },
       "question:opened",
     );
-    expect(opened).not.toHaveProperty("correctAnswer");
+    expect(opened).not.toHaveProperty("correctOption");
     expect(await command(h, "question:next", { code }, "error")).toMatchObject({
       code: "INVALID_STATE",
     });
@@ -334,15 +334,15 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     ).toBe("in_progress");
     const accepted = event(p, "answer:accepted"),
       rejected = event(p2, "answer:rejected");
-    p.emit("answer:submit", { code, questionIndex: 0, answer: true });
+    p.emit("answer:submit", { code, questionIndex: 0, option: 0 });
     await accepted;
-    p2.emit("answer:submit", { code, questionIndex: 0, answer: false });
+    p2.emit("answer:submit", { code, questionIndex: 0, option: 1 });
     expect((await rejected).reason).toBe("already_answered");
     expect(
       await command(
         q,
         "answer:submit",
-        { code, questionIndex: 0, answer: false },
+        { code, questionIndex: 0, option: 1 },
         "answer:accepted",
       ),
     ).toEqual({ questionIndex: 0 });
@@ -350,7 +350,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         r,
         "answer:submit",
-        { code, questionIndex: 0, answer: true },
+        { code, questionIndex: 0, option: 0 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "not_in_session" });
@@ -363,8 +363,8 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       event(p, "answer:rejected"),
       event(p2, "answer:rejected"),
     ];
-    p.emit("answer:submit", { code, questionIndex: 0, answer: true });
-    p2.emit("answer:submit", { code, questionIndex: 0, answer: true });
+    p.emit("answer:submit", { code, questionIndex: 0, option: 0 });
+    p2.emit("answer:submit", { code, questionIndex: 0, option: 0 });
     expect((await Promise.all(rejectedBoth)).map((x) => x.reason)).toEqual([
       "already_answered",
       "already_answered",
@@ -372,14 +372,14 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     const before = await enter(p, code);
     expect(before.myScore).toBe(0);
     expect(before.hasAnswered).toBe(true);
-    expect(JSON.stringify(before)).not.toContain("correctAnswer");
+    expect(JSON.stringify(before)).not.toContain("correctOption");
     const closed = await command(
       h,
       "question:close",
       { code },
       "question:closed",
     );
-    expect(closed.correctAnswer).toBe(true);
+    expect(closed.correctOption).toBe(0);
     expect(
       closed.results.find((x: any) => x.participantId === me.participantId),
     ).toMatchObject({ pointsAwarded: 1000, totalScore: 1000 });
@@ -387,7 +387,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         p,
         "answer:submit",
-        { code, questionIndex: 0, answer: true },
+        { code, questionIndex: 0, option: 0 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "closed" });
@@ -403,7 +403,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await command(
       q,
       "answer:submit",
-      { code, questionIndex: 1, answer: false },
+      { code, questionIndex: 1, option: 1 },
       "answer:accepted",
     );
     const second = await command(
@@ -479,11 +479,11 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       absent = await enter(r, code);
     const result = (closed: any, id: string) =>
       closed.results.find((x: any) => x.participantId === id);
-    const submit = (socket: Socket, index: number, answer: boolean) =>
+    const submit = (socket: Socket, index: number, option: number) =>
       command(
         socket,
         "answer:submit",
-        { code, questionIndex: index, answer },
+        { code, questionIndex: index, option },
         "answer:accepted",
       );
     async function restart() {
@@ -514,13 +514,13 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         p,
         "answer:submit",
-        { code, questionIndex: 0, answer: true, elapsedMs: 0, points: 1000 },
+        { code, questionIndex: 0, option: 0, elapsedMs: 0, points: 1000 },
         "error",
       ),
     ).toMatchObject({ code: "INVALID_PAYLOAD" });
-    await submit(p, 0, true);
+    await submit(p, 0, 0);
     now = firstOpening + 2500;
-    await submit(q, 0, true);
+    await submit(q, 0, 0);
     let closed = await command(
       h,
       "question:close",
@@ -554,24 +554,24 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     opened = await command(h, "question:next", { code }, "question:opened");
     const secondOpening = now;
     now += 500;
-    await submit(p, 1, false);
+    await submit(p, 1, 1);
     expect(
       await command(
         p,
         "answer:submit",
-        { code, questionIndex: 1, answer: true },
+        { code, questionIndex: 1, option: 0 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "already_answered" });
     now = secondOpening + 1000;
-    await submit(q, 1, true);
+    await submit(q, 1, 0);
     sync = await restart();
     expect(sync.currentQuestion).toMatchObject({
       openedAt: opened.openedAt,
       durationSeconds: 5,
     });
     expect(sync.hasAnswered).toBe(true);
-    expect(JSON.stringify(sync)).not.toContain("correctAnswer");
+    expect(JSON.stringify(sync)).not.toContain("correctOption");
     expect(
       (
         await db.query("SELECT streak FROM participants WHERE id=$1", [
@@ -595,15 +595,15 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     const thirdOpening = now;
     await command(h, "question:next", { code }, "question:opened");
     now = thirdOpening + 100;
-    await submit(p, 2, true);
+    await submit(p, 2, 0);
     now = thirdOpening + 5000;
-    await submit(q, 2, false);
+    await submit(q, 2, 1);
     now++;
     expect(
       await command(
         r,
         "answer:submit",
-        { code, questionIndex: 2, answer: false },
+        { code, questionIndex: 2, option: 1 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "late" });
@@ -672,7 +672,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await command(
       p,
       "answer:submit",
-      { code, questionIndex: 0, answer: true },
+      { code, questionIndex: 0, option: 0 },
       "answer:accepted",
     );
     now += 20000;
@@ -742,7 +742,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         p,
         "answer:submit",
-        { code, questionIndex: 0, answer: true },
+        { code, questionIndex: 0, option: 0 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "late" });
@@ -795,8 +795,8 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       });
     }
     const replies = [outcome(p), outcome(tab)];
-    p.emit("answer:submit", { code, questionIndex: 0, answer: true });
-    tab.emit("answer:submit", { code, questionIndex: 0, answer: true });
+    p.emit("answer:submit", { code, questionIndex: 0, option: 0 });
+    tab.emit("answer:submit", { code, questionIndex: 0, option: 0 });
     expect((await Promise.all(replies)).sort()).toEqual([
       "accepted",
       "rejected",
@@ -827,7 +827,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await command(
       p,
       "answer:submit",
-      { code, questionIndex: 0, answer: true },
+      { code, questionIndex: 0, option: 0 },
       "answer:accepted",
     );
     for (const s of sockets) s.disconnect();
@@ -839,7 +839,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     expect(sync.status).toBe("question_open");
     expect(sync.hasAnswered).toBe(true);
     expect(sync.closesAt).toBe(opened.closesAt);
-    expect(JSON.stringify(sync)).not.toContain("correctAnswer");
+    expect(JSON.stringify(sync)).not.toContain("correctOption");
     const closed = event(reconnected, "question:closed");
     now += 5000;
     expect((await closed).results[0]).toMatchObject({
@@ -867,7 +867,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await command(
         tab,
         "answer:submit",
-        { code, questionIndex: 0, answer: true },
+        { code, questionIndex: 0, option: 0 },
         "answer:rejected",
       ),
     ).toMatchObject({ reason: "not_in_session" });

@@ -2,9 +2,10 @@ export const en = {
   translation: {
     app: {
       title: 'RubyMind',
-      subtitle: 'Live True / False Assessments',
+      subtitle: 'Live multiple-choice assessments',
       nav: {
         quizzes: 'My Quizzes',
+        library: 'Library',
         join: 'Join Room',
         login: 'Log in',
         register: 'Sign up',
@@ -48,6 +49,16 @@ export const en = {
       questionTimeLabel: 'Time per question (5–120 s)',
       startHostBtn: 'Open lobby',
     },
+    library: {
+      title: 'Quiz library',
+      subtitle: 'Ready-made general knowledge and technology quizzes. Host them in a room or copy them to your account to edit.',
+      loading: 'Loading questions…',
+      questionCount: '{{count}} questions',
+      previewBtn: 'View questions',
+      hideBtn: 'Hide questions',
+      copyBtn: 'Copy to my quizzes',
+      copied: 'Copied “{{title}}” to your quizzes.',
+    },
     questions: {
       backToQuizzes: 'Back to my quizzes',
       title: 'Quiz questions',
@@ -55,6 +66,14 @@ export const en = {
       addTitle: 'Add True / False question',
       editTitle: 'Edit question',
       statementLabel: 'Question statement (max 500 characters)',
+      optionsLabel: 'Answer options (2 to 4) — mark the correct one',
+      optionPlaceholder: 'Option {{n}}',
+      optionsHint: 'Use the button on the left to choose the correct answer.',
+      markCorrect: 'Mark as correct',
+      addOptionBtn: 'Add option',
+      removeOptionBtn: 'Remove',
+      presetTrueFalse: 'Use True / False',
+      correctLabel: 'Correct',
       correctAnswerLabel: 'Correct answer',
       trueOption: 'True',
       falseOption: 'False',
@@ -76,6 +95,7 @@ export const en = {
       invalidCodeFormat: 'Code must be 6 valid characters (excluding 0, O, 1, and I).',
     },
     game: {
+      optionsGroup: 'Answer options',
       roomCode: 'Room code',
       lobbyWaitingHost: 'Waiting for participants to join...',
       lobbyWaitingParticipant: 'Connected to lobby. Waiting for the host to start the game...',

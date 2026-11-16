@@ -2,9 +2,10 @@ export const es = {
   translation: {
     app: {
       title: 'RubyMind',
-      subtitle: 'Evaluaciones en vivo Verdadero / Falso',
+      subtitle: 'Evaluaciones en vivo de opción múltiple',
       nav: {
         quizzes: 'Mis cuestionarios',
+        library: 'Biblioteca',
         join: 'Unirse a sala',
         login: 'Iniciar sesión',
         register: 'Registrarse',
@@ -48,6 +49,16 @@ export const es = {
       questionTimeLabel: 'Tiempo por pregunta (5–120 s)',
       startHostBtn: 'Abrir lobby',
     },
+    library: {
+      title: 'Biblioteca de cuestionarios',
+      subtitle: 'Cuestionarios de cultura general y tecnología listos para usar. Ábrelos en una sala o cópialos a tu cuenta para editarlos.',
+      loading: 'Cargando preguntas…',
+      questionCount: '{{count}} preguntas',
+      previewBtn: 'Ver preguntas',
+      hideBtn: 'Ocultar preguntas',
+      copyBtn: 'Copiar a mis cuestionarios',
+      copied: 'Se copió «{{title}}» a tus cuestionarios.',
+    },
     questions: {
       backToQuizzes: 'Volver a mis cuestionarios',
       title: 'Preguntas del cuestionario',
@@ -55,6 +66,14 @@ export const es = {
       addTitle: 'Agregar pregunta Verdadero / Falso',
       editTitle: 'Editar pregunta',
       statementLabel: 'Enunciado de la pregunta (máx. 500 caracteres)',
+      optionsLabel: 'Opciones de respuesta (2 a 4) — marca la correcta',
+      optionPlaceholder: 'Opción {{n}}',
+      optionsHint: 'Elige con el botón de la izquierda cuál es la respuesta correcta.',
+      markCorrect: 'Marcar como correcta',
+      addOptionBtn: 'Agregar opción',
+      removeOptionBtn: 'Quitar',
+      presetTrueFalse: 'Usar Verdadero / Falso',
+      correctLabel: 'Correcta',
       correctAnswerLabel: 'Respuesta correcta',
       trueOption: 'Verdadero',
       falseOption: 'Falso',
@@ -76,6 +95,7 @@ export const es = {
       invalidCodeFormat: 'El código debe tener 6 caracteres válidos (sin 0, O, 1 ni I).',
     },
     game: {
+      optionsGroup: 'Opciones de respuesta',
       roomCode: 'Código de sala',
       lobbyWaitingHost: 'Esperando a que los participantes se unan...',
       lobbyWaitingParticipant: 'Conectado al lobby. Esperando a que el anfitrión inicie la partida...',

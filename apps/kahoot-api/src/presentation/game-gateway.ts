@@ -90,7 +90,7 @@ export class GameGateway implements OnGatewayInit {
       const input = payload as {
           code: string;
           questionIndex: number;
-          answer: boolean;
+          option: number;
         },
         room = `session:${input.code}`;
       const user = socket.data.identity as Identity;
@@ -105,7 +105,7 @@ export class GameGateway implements OnGatewayInit {
           user,
           input.code,
           input.questionIndex,
-          input.answer,
+          input.option,
           socket.rooms.has(room),
         );
         socket.emit(result.event, result.payload);

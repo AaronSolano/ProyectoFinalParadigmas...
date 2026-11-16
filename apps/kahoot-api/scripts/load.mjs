@@ -187,7 +187,7 @@ async function runStep(count, host, people, quizId) {
       questions.some(
         (q) =>
           JSON.stringify(q) !== JSON.stringify(questions[0]) ||
-          Object.hasOwn(q, "correctAnswer"),
+          Object.hasOwn(q, "correctOption"),
       )
     )
       failures++;
@@ -284,7 +284,7 @@ try {
     token: host.accessToken,
     body: {
       statement: "Esta pregunta de carga es verdadera.",
-      correctAnswer: true,
+      options: ["Verdadero", "Falso"], correctOption: 0,
     },
   });
   const image = new FormData();

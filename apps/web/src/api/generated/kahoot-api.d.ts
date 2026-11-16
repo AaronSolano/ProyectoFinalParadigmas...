@@ -84,6 +84,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar la biblioteca de cuestionarios
+         * @description Cuestionarios de cultura general y tecnologia disponibles para todos los docentes (solo lectura).
+         *     Se pueden usar directamente para abrir una sala (`POST /sessions` con su `id`) o copiar a la cuenta
+         *     propia con `POST /library/{quizId}/copy` para editarlos.
+         */
+        get: operations["listLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/{quizId}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Identificador del cuestionario.
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                 */
+                quizId: components["parameters"]["QuizId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Preguntas de un cuestionario de la biblioteca
+         * @description Incluye `options` y `correctOption`. Solo para docentes autenticados; los participantes no usan este endpoint.
+         */
+        get: operations["listLibraryQuestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library/{quizId}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Identificador del cuestionario.
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                 */
+                quizId: components["parameters"]["QuizId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copiar un cuestionario de la biblioteca a mi cuenta
+         * @description Crea un cuestionario propio y editable con las mismas preguntas.
+         */
+        post: operations["copyLibraryQuiz"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/quizzes/{quizId}/questions": {
         parameters: {
             query?: never;
@@ -99,7 +173,7 @@ export interface paths {
         };
         /**
          * Listar preguntas de un cuestionario
-         * @description Solo el propietario. Incluye `correctAnswer`. Ordenadas por `position` ascendente.
+         * @description Solo el propietario. Incluye `options` y `correctOption`. Ordenadas por `position` ascendente.
          *     Los participantes no pueden usar este endpoint (403): reciben las preguntas por WebSocket.
          */
         get: operations["listQuestions"];
@@ -136,7 +210,7 @@ export interface paths {
         };
         /**
          * Consultar una pregunta
-         * @description Solo el propietario del cuestionario. Incluye `correctAnswer`.
+         * @description Solo el propietario del cuestionario. Incluye `options` y `correctOption`.
          */
         get: operations["getQuestion"];
         /**
@@ -345,7 +419,7 @@ export interface paths {
          *     terminado responde 409 `ROOM_NOT_FINISHED`. Accesible al anfitrion y a los participantes de esa
          *     sala (incluye clientes externos que presenten un token valido y sean el anfitrion).
          *     Otros usuarios reciben 403. Los resultados sobreviven a reinicios de los contenedores.
-         *     Esta respuesta no contiene `correctAnswer`.
+         *     Esta respuesta no contiene `correctOption`.
          */
         get: operations["getSessionResults"];
         put?: never;
@@ -405,6 +479,10 @@ export interface components {
             ownerId: string;
             title: string;
             description: string;
+            /** @description Categoria (solo cuestionarios de la biblioteca, por ejemplo `Cultura general` o `Tecnologia`). */
+            category?: string | null;
+            /** @description `true` si pertenece a la biblioteca compartida (solo lectura). */
+            isLibrary?: boolean;
             questionCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -417,8 +495,9 @@ export interface components {
             description: string;
         };
         /**
-         * @description Pregunta Verdadero/Falso. Incluye `correctAnswer`, por lo que solo se devuelve al
-         *     propietario del cuestionario; nunca a participantes.
+         * @description Pregunta de opcion multiple (2 a 4 opciones, una sola correcta). Verdadero/Falso es una pregunta
+         *     de 2 opciones. Incluye `correctOption`, por lo que solo se devuelve al propietario del
+         *     cuestionario (o a quien consulte la biblioteca compartida); nunca a participantes.
          */
         Question: {
             /** Format: uuid */
@@ -426,8 +505,10 @@ export interface components {
             /** Format: uuid */
             quizId: string;
             statement: string;
-            /** @description `true` = Verdadero, `false` = Falso. */
-            correctAnswer: boolean;
+            /** @description Opciones de respuesta en el orden en que se muestran. No se pueden repetir. */
+            options: string[];
+            /** @description Indice (base 0) de la opcion correcta dentro de `options`. */
+            correctOption: number;
             /** @description URL publica y absoluta de la imagen (se construye con `PUBLIC_API_URL`; ver `GET /images/{filename}`), accesible desde otros dispositivos, o `null` si no tiene. */
             imageUrl: string | null;
             /** @description Posicion de la pregunta dentro del cuestionario (base 1). */
@@ -439,8 +520,10 @@ export interface components {
         };
         QuestionInput: {
             statement: string;
-            /** @description `true` = Verdadero, `false` = Falso. */
-            correctAnswer: boolean;
+            /** @description Entre 2 y 4 opciones distintas. Para Verdadero/Falso use `[Verdadero, Falso]`. */
+            options: string[];
+            /** @description Indice (base 0) de la opcion correcta; debe ser menor que el numero de opciones. */
+            correctOption: number;
             /** @description Posicion deseada. Si se omite al crear, se agrega al final. */
             position?: number;
         };
@@ -505,7 +588,7 @@ export interface components {
             displayName: string;
             /** Format: date-time */
             joinedAt: string;
-            /** @description Puntaje acumulado (1 punto por respuesta correcta). */
+            /** @description Puntaje acumulado (0..1000 por pregunta, segun la velocidad de la respuesta correcta). */
             score: number;
         };
         RankingEntry: {
@@ -779,6 +862,83 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listLibrary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cuestionarios de la biblioteca ordenados por categoria y titulo. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quiz"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listLibraryQuestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Identificador del cuestionario.
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                 */
+                quizId: components["parameters"]["QuizId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preguntas del cuestionario de la biblioteca. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Question"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    copyLibraryQuiz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Identificador del cuestionario.
+                 * @example 7c9e6679-7425-40de-944b-e07fc1f90ae7
+                 */
+                quizId: components["parameters"]["QuizId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copia creada. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quiz"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
     };

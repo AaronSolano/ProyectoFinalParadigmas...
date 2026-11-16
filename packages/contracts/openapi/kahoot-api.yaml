@@ -19,9 +19,9 @@ info:
     (`aud=kahoot-api`, `sub` = id de perfil). `kahoot-api` valida la firma con la clave publica (JWKS) de `auth-api`.
 
     ## Regla de confidencialidad de la respuesta correcta
-    **Ningun endpoint REST expone `correctAnswer` a participantes mientras la sala no haya terminado.**
+    **Ningun endpoint REST expone `correctOption` a participantes mientras la sala no haya terminado.**
     Las preguntas del juego en vivo viajan por WebSocket (sin la respuesta correcta hasta que se cierra
-    cada pregunta). Los endpoints de `Question` que incluyen `correctAnswer` solo responden al propietario
+    cada pregunta). Los endpoints de `Question` que incluyen `correctOption` solo responden al propietario
     del cuestionario. Los participantes de una sala nunca obtienen preguntas por REST.
 
     ## Convenciones
@@ -43,7 +43,9 @@ tags:
   - name: Quizzes
     description: Cuestionarios del usuario autenticado (solo el propietario los modifica).
   - name: Questions
-    description: Preguntas Verdadero/Falso de un cuestionario.
+    description: Preguntas de opcion multiple (2 a 4 opciones; Verdadero/Falso es el caso de 2) de un cuestionario.
+  - name: Library
+    description: Biblioteca compartida de cuestionarios de cultura general y tecnologia (solo lectura).
   - name: Images
     description: Imagenes de preguntas (carga autenticada, lectura publica).
   - name: Sessions
@@ -229,6 +231,69 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /library:
+    get:
+      operationId: listLibrary
+      tags: [Library]
+      summary: Listar la biblioteca de cuestionarios
+      description: |
+        Cuestionarios de cultura general y tecnologia disponibles para todos los docentes (solo lectura).
+        Se pueden usar directamente para abrir una sala (`POST /sessions` con su `id`) o copiar a la cuenta
+        propia con `POST /library/{quizId}/copy` para editarlos.
+      responses:
+        '200':
+          description: Cuestionarios de la biblioteca ordenados por categoria y titulo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quiz'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /library/{quizId}/questions:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    get:
+      operationId: listLibraryQuestions
+      tags: [Library]
+      summary: Preguntas de un cuestionario de la biblioteca
+      description: Incluye `options` y `correctOption`. Solo para docentes autenticados; los participantes no usan este endpoint.
+      responses:
+        '200':
+          description: Preguntas del cuestionario de la biblioteca.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /library/{quizId}/copy:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    post:
+      operationId: copyLibraryQuiz
+      tags: [Library]
+      summary: Copiar un cuestionario de la biblioteca a mi cuenta
+      description: Crea un cuestionario propio y editable con las mismas preguntas.
+      responses:
+        '201':
+          description: Copia creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quiz'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /quizzes/{quizId}/questions:
     parameters:
       - $ref: '#/components/parameters/QuizId'
@@ -237,7 +302,7 @@ paths:
       tags: [Questions]
       summary: Listar preguntas de un cuestionario
       description: |
-        Solo el propietario. Incluye `correctAnswer`. Ordenadas por `position` ascendente.
+        Solo el propietario. Incluye `options` y `correctOption`. Ordenadas por `position` ascendente.
         Los participantes no pueden usar este endpoint (403): reciben las preguntas por WebSocket.
       responses:
         '200':
@@ -254,7 +319,8 @@ paths:
                     - id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                       quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                       statement: TCP es un protocolo orientado a conexion.
-                      correctAnswer: true
+                      options: [Verdadero, Falso]
+                      correctOption: 0
                       imageUrl: null
                       position: 1
                       createdAt: '2026-11-10T14:05:00.000Z'
@@ -282,7 +348,8 @@ paths:
               basica:
                 value:
                   statement: TCP es un protocolo orientado a conexion.
-                  correctAnswer: true
+                  options: [Verdadero, Falso]
+                  correctOption: 0
       responses:
         '201':
           description: Pregunta creada.
@@ -296,7 +363,8 @@ paths:
                     id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                     quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     statement: TCP es un protocolo orientado a conexion.
-                    correctAnswer: true
+                    options: [Verdadero, Falso]
+                    correctOption: 0
                     imageUrl: null
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -318,7 +386,7 @@ paths:
       operationId: getQuestion
       tags: [Questions]
       summary: Consultar una pregunta
-      description: Solo el propietario del cuestionario. Incluye `correctAnswer`.
+      description: Solo el propietario del cuestionario. Incluye `options` y `correctOption`.
       responses:
         '200':
           description: Pregunta.
@@ -332,7 +400,8 @@ paths:
                     id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                     quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     statement: TCP es un protocolo orientado a conexion.
-                    correctAnswer: true
+                    options: [Verdadero, Falso]
+                    correctOption: 0
                     imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -360,7 +429,8 @@ paths:
               edicion:
                 value:
                   statement: UDP es un protocolo orientado a conexion.
-                  correctAnswer: false
+                  options: [Verdadero, Falso]
+                  correctOption: 1
                   position: 2
       responses:
         '200':
@@ -375,7 +445,8 @@ paths:
                     id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                     quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     statement: UDP es un protocolo orientado a conexion.
-                    correctAnswer: false
+                    options: [Verdadero, Falso]
+                    correctOption: 1
                     imageUrl: null
                     position: 2
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -444,7 +515,8 @@ paths:
                     id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                     quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     statement: TCP es un protocolo orientado a conexion.
-                    correctAnswer: true
+                    options: [Verdadero, Falso]
+                    correctOption: 0
                     imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -479,7 +551,8 @@ paths:
                     id: 9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10
                     quizId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
                     statement: TCP es un protocolo orientado a conexion.
-                    correctAnswer: true
+                    options: [Verdadero, Falso]
+                    correctOption: 0
                     imageUrl: null
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -752,7 +825,7 @@ paths:
         terminado responde 409 `ROOM_NOT_FINISHED`. Accesible al anfitrion y a los participantes de esa
         sala (incluye clientes externos que presenten un token valido y sean el anfitrion).
         Otros usuarios reciben 403. Los resultados sobreviven a reinicios de los contenedores.
-        Esta respuesta no contiene `correctAnswer`.
+        Esta respuesta no contiene `correctOption`.
       responses:
         '200':
           description: Resultados de la sesion.
@@ -1004,6 +1077,12 @@ components:
         description:
           type: string
           maxLength: 500
+        category:
+          type: [string, 'null']
+          description: Categoria (solo cuestionarios de la biblioteca, por ejemplo `Cultura general` o `Tecnologia`).
+        isLibrary:
+          type: boolean
+          description: "`true` si pertenece a la biblioteca compartida (solo lectura)."
         questionCount:
           type: integer
           minimum: 0
@@ -1031,9 +1110,10 @@ components:
     Question:
       type: object
       description: |
-        Pregunta Verdadero/Falso. Incluye `correctAnswer`, por lo que solo se devuelve al
-        propietario del cuestionario; nunca a participantes.
-      required: [id, quizId, statement, correctAnswer, imageUrl, position, createdAt, updatedAt]
+        Pregunta de opcion multiple (2 a 4 opciones, una sola correcta). Verdadero/Falso es una pregunta
+        de 2 opciones. Incluye `correctOption`, por lo que solo se devuelve al propietario del
+        cuestionario (o a quien consulte la biblioteca compartida); nunca a participantes.
+      required: [id, quizId, statement, options, correctOption, imageUrl, position, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1045,9 +1125,20 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-        correctAnswer:
-          type: boolean
-          description: "`true` = Verdadero, `false` = Falso."
+        options:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items:
+            type: string
+            minLength: 1
+            maxLength: 120
+          description: Opciones de respuesta en el orden en que se muestran. No se pueden repetir.
+        correctOption:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Indice (base 0) de la opcion correcta dentro de `options`.
         imageUrl:
           type: [string, 'null']
           description: URL publica y absoluta de la imagen (se construye con `PUBLIC_API_URL`; ver `GET /images/{filename}`), accesible desde otros dispositivos, o `null` si no tiene.
@@ -1064,16 +1155,27 @@ components:
 
     QuestionInput:
       type: object
-      required: [statement, correctAnswer]
+      required: [statement, options, correctOption]
       additionalProperties: false
       properties:
         statement:
           type: string
           minLength: 1
           maxLength: 500
-        correctAnswer:
-          type: boolean
-          description: "`true` = Verdadero, `false` = Falso."
+        options:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items:
+            type: string
+            minLength: 1
+            maxLength: 120
+          description: Entre 2 y 4 opciones distintas. Para Verdadero/Falso use `[Verdadero, Falso]`.
+        correctOption:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Indice (base 0) de la opcion correcta; debe ser menor que el numero de opciones.
         position:
           type: integer
           minimum: 1

@@ -4,7 +4,8 @@ export interface QuizInput {
 }
 export interface QuestionInput {
   statement: string;
-  correctAnswer: boolean;
+  options: string[];
+  correctOption: number;
   position?: number;
 }
 export interface SessionInput {

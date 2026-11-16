@@ -55,21 +55,21 @@ export function answerRejection(input: {
   return undefined;
 }
 export function points({
-  answer,
-  correctAnswer,
+  option,
+  correctOption,
   elapsedMs,
   durationMs,
   basePoints = 1000,
 }: {
-  answer: boolean | undefined;
-  correctAnswer: boolean;
+  option: number | undefined;
+  correctOption: number;
   elapsedMs: number | null;
   durationMs: number;
   basePoints?: number;
 }): number {
   if (
-    answer === undefined ||
-    answer !== correctAnswer ||
+    option === undefined ||
+    option !== correctOption ||
     elapsedMs === null ||
     !Number.isFinite(elapsedMs) ||
     elapsedMs < 0 ||
@@ -118,7 +118,7 @@ export interface QuestionResult {
 }
 export interface QuestionClosed {
   questionIndex: number;
-  correctAnswer: boolean;
+  correctOption: number;
   results: QuestionResult[];
   ranking: RankingEntry[];
 }
@@ -144,12 +144,13 @@ export interface GameParticipant {
 export interface GameQuestion {
   index: number;
   statement: string;
-  correctAnswer: boolean;
+  options: string[];
+  correctOption: number;
   imageFilename: string | null;
 }
 export interface GameAnswer {
   participantId: string;
   questionIndex: number;
-  answer: boolean;
+  option: number;
   receivedAt: number;
 }

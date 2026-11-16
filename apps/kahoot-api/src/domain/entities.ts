@@ -3,6 +3,8 @@ export interface Quiz {
   ownerId: string;
   title: string;
   description: string;
+  category: string | null;
+  isLibrary: boolean;
   createdAt: Date;
   updatedAt: Date;
   questionCount: number;
@@ -11,7 +13,8 @@ export interface Question {
   id: string;
   quizId: string;
   statement: string;
-  correctAnswer: boolean;
+  options: string[];
+  correctOption: number;
   imageFilename: string | null;
   position: number;
   createdAt: Date;
@@ -35,7 +38,8 @@ export interface SessionQuestion {
   sessionId: string;
   position: number;
   statement: string;
-  correctAnswer: boolean;
+  options: string[];
+  correctOption: number;
   imageFilename: string | null;
 }
 export interface Participant {

@@ -40,7 +40,7 @@ Tras un `session:join` válido el servidor une el socket a la sala Socket.IO **`
 1. Si se pierde la conexión (red, suspensión del equipo, reinicio del servidor), el cliente Socket.IO reintenta solo.
 2. Al volver a conectar, el cliente debe reenviar el handshake con el token (automático por `auth`) y emitir otra vez `session:join { code }` (se recomienda hacerlo dentro del manejador de `connect`).
 3. El servidor reasocia por identidad: **no crea un participante nuevo, no emite `participant:joined` y no altera el puntaje**. Devuelve al socket a la sala `session:<code>` y le emite **`state_sync`**.
-4. `state_sync` es la fuente de verdad para reconstruir la pantalla: estado de la sala, participantes, pregunta vigente (sin `correctAnswer` si sigue abierta), `closesAt`, `serverTime`, tu puntaje y si ya respondiste.
+4. `state_sync` es la fuente de verdad para reconstruir la pantalla: estado de la sala, participantes, pregunta vigente (sin `correctOption` si sigue abierta), `closesAt`, `serverTime`, tu puntaje y si ya respondiste.
 5. El cliente calcula la cuenta regresiva como `closesAt - serverTime` (desfase del reloj ya compensado), no con su propio reloj.
 6. Respuestas enviadas mientras estaba desconectado se pierden salvo que hayan llegado antes; si reenvía una ya aceptada recibe `answer:rejected` con `already_answered` (no suma dos veces).
 7. Una desconexión de red no emite `participant:left`; solo `session:leave` explícito lo hace.
@@ -72,7 +72,8 @@ Notas:
 | Control | `session:start`, `question:next` y `question:close` solo del anfitrión. De un no anfitrión: `error { code: "FORBIDDEN" }`, sin cambio de estado. |
 | Una respuesta | 1 respuesta por participante y pregunta (único `(sesión, participante, pregunta)`). Un reenvío no se registra y responde `answer:rejected` (`already_answered`); no suma. |
 | Tiempo | El servidor fija `closesAt` y cierra por temporizador. Una respuesta que llega después de `closesAt` según el reloj del servidor -> `answer:rejected` (`late`). Si la pregunta ya está cerrada -> `closed`. |
-| Secreto | `correctAnswer` viaja **solo** en `question:closed` (y en `state_sync.lastClosed` si la sala ya está cerrada). Nunca en `question:opened` ni en `state_sync` con pregunta abierta. |
+| Opciones | Cada pregunta tiene de 2 a 4 `options`; el participante responde con el índice `option` (base 0). Verdadero/Falso es una pregunta de 2 opciones. |
+| Secreto | `correctOption` viaja **solo** en `question:closed` (y en `state_sync.lastClosed` si la sala ya está cerrada). Nunca en `question:opened` ni en `state_sync` con pregunta abierta. |
 | Puntaje | Por acierto, 1000 puntos si el servidor mide menos de 500 ms desde `openedAt` y, en otro caso, `round((1 - (elapsedMs / duración) / 2) * 1000)` (500..1000). 0 por error o sin respuesta. `elapsedMs` lo mide el servidor. La racha (`streak`) no suma puntos. |
 | Clasificación | Orden por puntaje descendente; empates comparten `position`. `ranking` va en `question:closed` y `session:finished`. |
 | Persistencia | Respuestas, puntajes y clasificación final se guardan al cerrar y al terminar; sobreviven a reinicios. |
@@ -99,7 +100,7 @@ Códigos de `error.code`: `FORBIDDEN`, `ROOM_NOT_FOUND`, `INVALID_PAYLOAD`, `INV
 | `session:start` | Solo anfitrión | [`{ code }`](schemas/session.start.schema.json) | `session:started` + `question:opened` |
 | `question:next` | Solo anfitrión | [`{ code }`](schemas/question.next.schema.json) | `question:opened` o `session:finished` |
 | `question:close` | Solo anfitrión | [`{ code }`](schemas/question.close.schema.json) | `question:closed` |
-| `answer:submit` | Participante | [`{ code, questionIndex, answer }`](schemas/answer.submit.schema.json) | `answer:accepted` o `answer:rejected` |
+| `answer:submit` | Participante | [`{ code, questionIndex, option }`](schemas/answer.submit.schema.json) | `answer:accepted` o `answer:rejected` |
 | `session:leave` | Participante | [`{ code }`](schemas/session.leave.schema.json) | `participant:left` a la sala |
 
 Ejemplos:
@@ -113,8 +114,8 @@ Ejemplos:
 { "code": "K7P2QX" }
 // question:close
 { "code": "K7P2QX" }
-// answer:submit  (answer: true = Verdadero)
-{ "code": "K7P2QX", "questionIndex": 0, "answer": true }
+// answer:submit  (option: índice 0..3 de la opción elegida)
+{ "code": "K7P2QX", "questionIndex": 0, "option": 1 }
 // session:leave
 { "code": "K7P2QX" }
 ```
@@ -136,7 +137,7 @@ Ejemplos:
 
 Esquemas auxiliares: [participant](schemas/participant.schema.json), [ranking-entry](schemas/ranking-entry.schema.json), [question-result](schemas/question-result.schema.json), [handshake-auth](schemas/handshake-auth.schema.json).
 
-**`state_sync`** (reconexión en mitad de una pregunta abierta; nótese que no hay `correctAnswer`)
+**`state_sync`** (reconexión en mitad de una pregunta abierta; nótese que no hay `correctOption`)
 
 ```json
 {
@@ -152,6 +153,7 @@ Esquemas auxiliares: [participant](schemas/participant.schema.json), [ranking-en
   "currentQuestion": {
     "questionIndex": 1, "total": 5,
     "statement": "El agua hierve a 100 °C al nivel del mar.",
+    "options": ["Verdadero", "Falso"],
     "imageUrl": null,
     "closesAt": "2026-11-15T15:00:30.000Z"
   },
@@ -162,7 +164,7 @@ Esquemas auxiliares: [participant](schemas/participant.schema.json), [ranking-en
 }
 ```
 
-Campos por estado: en `waiting`, `currentQuestion` y `closesAt` son `null`; en `question_closed`, `currentQuestion` es la última pregunta y `lastClosed` trae el cierre (con `correctAnswer`); en `finished`, `ranking` trae la clasificación final.
+Campos por estado: en `waiting`, `currentQuestion` y `closesAt` son `null`; en `question_closed`, `currentQuestion` es la última pregunta y `lastClosed` trae el cierre (con `correctOption`); en `finished`, `ranking` trae la clasificación final.
 
 **`participant:joined`**
 ```json
@@ -184,6 +186,7 @@ Campos por estado: en `waiting`, `currentQuestion` y `closesAt` son `null`; en `
 {
   "questionIndex": 0, "total": 5,
   "statement": "Costa Rica no tiene ejército permanente.",
+  "options": ["Verdadero", "Falso"],
   "imageUrl": "http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png",
   "closesAt": "2026-11-15T15:00:30.000Z",
   "serverTime": "2026-11-15T15:00:00.000Z"
@@ -200,11 +203,11 @@ Campos por estado: en `waiting`, `currentQuestion` y `closesAt` son `null`; en `
 { "questionIndex": 0, "reason": "already_answered" }
 ```
 
-**`question:closed`** (único evento con `correctAnswer`)
+**`question:closed`** (único evento con `correctOption`)
 ```json
 {
   "questionIndex": 0,
-  "correctAnswer": true,
+  "correctOption": 1,
   "results": [
     { "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11", "answered": true,  "correct": true,  "pointsAwarded": 850, "elapsedMs": 6000, "streak": 1, "totalScore": 850 },
     { "participantId": "8c2d3f40-1a7b-4e9c-b3d5-6e7f8a9b0c12", "answered": false, "correct": false, "pointsAwarded": 0, "elapsedMs": null, "streak": 0, "totalScore": 0 }
@@ -259,13 +262,13 @@ sequenceDiagram
     S-->>P: session:started {totalQuestions}
     S-->>H: question:opened {questionIndex 0, closesAt, serverTime}
     S-->>P: question:opened {questionIndex 0, closesAt, serverTime}
-    P->>S: answer:submit {code, questionIndex 0, answer true}
+    P->>S: answer:submit {code, questionIndex 0, option 1}
     S-->>P: answer:accepted {questionIndex 0}
     P->>S: answer:submit (reenvío)
     S-->>P: answer:rejected {already_answered}
     Note over S: vence closesAt (o H envía question:close)
-    S-->>H: question:closed {correctAnswer, results, ranking}
-    S-->>P: question:closed {correctAnswer, results, ranking}
+    S-->>H: question:closed {correctOption, results, ranking}
+    S-->>P: question:closed {correctOption, results, ranking}
     H->>S: question:next {code}
     S-->>P: question:opened {questionIndex 1 ...}
     Note over H,S: ... se repite hasta la última pregunta ...
@@ -289,7 +292,7 @@ sequenceDiagram
         S-->>P: connect OK
         P->>S: session:join {code}
         Note over S: reasocia por identidad, sin participante nuevo ni cambio de puntaje
-        S-->>P: state_sync {status question_open, currentQuestion sin correctAnswer, closesAt, serverTime, myScore 1, hasAnswered}
+        S-->>P: state_sync {status question_open, currentQuestion sin correctOption, closesAt, serverTime, myScore 1, hasAnswered}
         Note over P: cuenta regresiva = closesAt - serverTime
         opt hasAnswered = false y aún hay tiempo
             P->>S: answer:submit

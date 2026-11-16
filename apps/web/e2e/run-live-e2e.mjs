@@ -164,24 +164,24 @@ export async function runLiveE2ESuite() {
     hostSock.emit('session:start', { code: roomCode });
     const qOpen = await qOpenPromise;
     assert.equal(
-      'correctAnswer' in qOpen,
+      'correctOption' in qOpen,
       false,
-      'question:opened nunca debe incluir correctAnswer',
+      'question:opened nunca debe incluir correctOption',
     );
 
     const acceptedPromise = onceEvent(p1Sock, 'answer:accepted');
-    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, answer: true });
+    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, option: 0 });
     await acceptedPromise;
 
     const dupRejectedPromise = onceEvent(p1Sock, 'answer:rejected');
-    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, answer: false });
+    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, option: 1 });
     const dupRejected = await dupRejectedPromise;
     assert.equal(dupRejected.reason, 'already_answered', 'Segundo envío debe rechazarse');
 
     const qClosedPromise = onceEvent(p1Sock, 'question:closed');
     hostSock.emit('question:close', { code: roomCode });
     const qClosed = await qClosedPromise;
-    assert.equal(typeof qClosed.correctAnswer, 'boolean', 'question:closed revela correctAnswer');
+    assert.equal(typeof qClosed.correctOption, 'number', 'question:closed revela correctOption');
     // Puntaje por velocidad: acierto entre 500 y 1000 puntos
     expectedScore = qClosed.ranking[0].score;
     assert.ok(
@@ -190,7 +190,7 @@ export async function runLiveE2ESuite() {
     );
 
     const closedRejPromise = onceEvent(p1Sock, 'answer:rejected');
-    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, answer: true });
+    p1Sock.emit('answer:submit', { code: roomCode, questionIndex: 0, option: 0 });
     const closedRej = await closedRejPromise;
     assert.ok(
       closedRej.reason === 'closed' || closedRej.reason === 'already_answered',
@@ -199,10 +199,10 @@ export async function runLiveE2ESuite() {
 
     report.cases['2.3_respuestas_validas'] = {
       passed: true,
-      correctAnswerHiddenOnOpen: !('correctAnswer' in qOpen),
+      correctAnswerHiddenOnOpen: !('correctOption' in qOpen),
       duplicateReason: dupRejected.reason,
       closedReason: closedRej.reason,
-      revealedOnClose: qClosed.correctAnswer,
+      revealedOnClose: qClosed.correctOption,
     };
 
     // Reconexión (2.4): desconectar socket del participante y reconectar

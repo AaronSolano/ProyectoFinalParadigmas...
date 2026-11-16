@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://profelink.local/contracts/events/schemas/state-sync.schema.json",
   "title": "state_sync",
-  "description": "Servidor -> cliente (solo al socket que se une o reconecta). Instantánea completa del estado para que el cliente se reconstruya sin duplicar participante ni puntaje. Mientras la pregunta está abierta NO incluye correctAnswer.",
+  "description": "Servidor -> cliente (solo al socket que se une o reconecta). Instantánea completa del estado para que el cliente se reconstruya sin duplicar participante ni puntaje. Mientras la pregunta está abierta NO incluye correctOption.",
   "type": "object",
   "properties": {
     "code": {
@@ -51,7 +51,7 @@
         },
         {
           "type": "object",
-          "description": "Pregunta vigente tal como la ve un participante. NUNCA incluye correctAnswer.",
+          "description": "Pregunta vigente tal como la ve un participante. NUNCA incluye correctOption.",
           "properties": {
             "questionIndex": {
               "type": "integer",
@@ -64,6 +64,17 @@
             },
             "statement": {
               "type": "string"
+            },
+            "options": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "description": "Opciones de respuesta (2 a 4) en el orden en que se muestran. Verdadero/Falso es una pregunta de 2 opciones."
             },
             "imageUrl": {
               "type": [
@@ -92,6 +103,7 @@
             "questionIndex",
             "total",
             "statement",
+            "options",
             "imageUrl",
             "closesAt",
             "openedAt",
@@ -136,7 +148,7 @@
           "$ref": "question-closed.schema.json"
         }
       ],
-      "description": "Solo en status question_closed: el cierre de la pregunta vigente (aquí sí viaja correctAnswer)."
+      "description": "Solo en status question_closed: el cierre de la pregunta vigente (aquí sí viaja correctOption)."
     },
     "ranking": {
       "oneOf": [
@@ -188,6 +200,10 @@
         "questionIndex": 1,
         "total": 5,
         "statement": "El agua hierve a 100 °C al nivel del mar.",
+        "options": [
+          "Verdadero",
+          "Falso"
+        ],
         "imageUrl": null,
         "closesAt": "2026-11-15T15:00:30.000Z",
         "openedAt": "2026-11-15T15:00:00.000Z",

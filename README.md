@@ -1,6 +1,6 @@
 # RubyMind
 
-Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400 Paradigmas de Programación, II Ciclo 2026). Un docente crea cuestionarios de Verdadero o Falso con imágenes, abre una sala con código y los participantes responden desde su celular o computadora mientras ven el resultado al instante.
+Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400 Paradigmas de Programación, II Ciclo 2026). Un docente crea cuestionarios de opción múltiple (2 a 4 opciones; Verdadero o Falso es el caso de 2) con imágenes, o usa la **biblioteca** de cuestionarios de cultura general y tecnología, abre una sala con código y los participantes responden desde su celular o computadora mientras ven el resultado al instante.
 
 ## Qué incluye
 
@@ -90,10 +90,10 @@ Los participantes se registran desde la propia aplicación con cualquier correo.
 ## Cómo demostrar el juego
 
 1. Abre la aplicación (en local <http://localhost:8080>; para celulares inicia con `--lan`).
-2. Inicia sesión con el usuario demo, o crea un cuestionario nuevo con varias preguntas y al menos una imagen.
+2. Inicia sesión con el usuario demo, abre la **Biblioteca** (10 cuestionarios de cultura general y tecnología, listos para usar o copiar) o crea un cuestionario nuevo con varias preguntas y al menos una imagen.
 3. Crea una sala con ese cuestionario. Aparece un **código de seis caracteres**.
 4. En otros dispositivos regístrate o inicia sesión, elige unirte e ingresa el código. El anfitrión ve quiénes entran.
-5. El anfitrión inicia la partida. Cada pregunta se muestra con su imagen y dos botones, Verdadero y Falso, con cuenta regresiva.
+5. El anfitrión inicia la partida. Cada pregunta se muestra con su imagen y de 2 a 4 botones de respuesta, con cuenta regresiva.
 6. Al cerrarse la pregunta (por tiempo o por el anfitrión) se revela la respuesta correcta y el resultado. El anfitrión avanza a la siguiente.
 7. Al terminar se muestra la clasificación y los resultados quedan guardados.
 8. **Reconexión:** en un participante apaga la red o recarga la página durante la pregunta. Al volver regresa a la misma sala con su puntaje, sin duplicarse. Con `--debug-controls` hay un botón que lo simula.

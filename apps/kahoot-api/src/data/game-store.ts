@@ -89,7 +89,8 @@ class PostgresGameTransaction implements GameTransaction {
     return rows.map((r: any) => ({
       index: r.position,
       statement: r.statement,
-      correctAnswer: r.correct_answer,
+      options: r.options,
+      correctOption: r.correct_option,
       imageFilename: r.image_filename,
     }));
   }
@@ -101,7 +102,7 @@ class PostgresGameTransaction implements GameTransaction {
     return rows.map((r: any) => ({
       participantId: r.participant_id,
       questionIndex: r.question_index,
-      answer: r.answer,
+      option: r.option_index,
       receivedAt: new Date(r.received_at).getTime(),
     }));
   }
@@ -121,12 +122,12 @@ class PostgresGameTransaction implements GameTransaction {
   async insertAnswer(
     id: string,
     index: number,
-    answer: boolean,
+    option: number,
     receivedAt: number,
   ) {
     const rows = await this.manager.query(
-      `INSERT INTO answers(session_id,participant_id,question_index,answer,received_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,participant_id,question_index) DO NOTHING RETURNING id`,
-      [this.session.id, id, index, answer, new Date(receivedAt)],
+      `INSERT INTO answers(session_id,participant_id,question_index,option_index,received_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(session_id,participant_id,question_index) DO NOTHING RETURNING id`,
+      [this.session.id, id, index, option, new Date(receivedAt)],
     );
     return rows.length === 1;
   }

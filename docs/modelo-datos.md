@@ -67,7 +67,8 @@ erDiagram
         uuid id PK
         uuid quiz_id FK
         text statement
-        boolean correct_answer "true = Verdadero"
+        jsonb options "2 a 4 textos"
+        int correct_option "indice 0..3"
         varchar image_filename "nullable"
         int position
         timestamptz created_at
@@ -90,7 +91,8 @@ erDiagram
         uuid session_id PK, FK
         int position PK
         text statement
-        boolean correct_answer
+        jsonb options
+        int correct_option
         varchar image_filename "nullable"
     }
     participants {
@@ -142,7 +144,8 @@ Nota: `session_questions` se relaciona con `answers` y `session_results` de form
 | `id` | `uuid` | no | PK. |
 | `quiz_id` | `uuid` | no | FK → `quizzes(id)` `ON DELETE CASCADE`. |
 | `statement` | `text` | no | Enunciado; `CHECK (char_length(trim(statement)) >= 1)`. |
-| `correct_answer` | `boolean` | no | `true` = Verdadero, `false` = Falso. |
+| `options` | `jsonb` | no | Arreglo de 2 a 4 textos (Verdadero/Falso es `["Verdadero","Falso"]`). |
+| `correct_option` | `integer` | no | Índice (base 0) de la opción correcta; debe ser menor que el número de opciones. |
 | `image_filename` | `varchar(255)` | sí | Nombre del archivo en `ImageStorage` (disco o Supabase Storage); la URL pública la construye la API. |
 | `position` | `integer` | no | Orden dentro del cuestionario, `CHECK (position >= 0)`. |
 | `created_at` | `timestamptz` | no | `DEFAULT now()`. |
@@ -181,7 +184,8 @@ Relación con la máquina de estados del dominio: la columna `status` solo guard
 | `session_id` | `uuid` | no | FK → `sessions(id)` `ON DELETE CASCADE`; parte de la PK. |
 | `position` | `integer` | no | Orden de la pregunta en la partida (base 0); parte de la PK. Coincide con `question_index`. |
 | `statement` | `text` | no | Copia del enunciado al crear la sala. |
-| `correct_answer` | `boolean` | no | Copia de la respuesta correcta. |
+| `options` | `jsonb` | no | Copia de las opciones. |
+| `correct_option` | `integer` | no | Copia del índice de la opción correcta. |
 | `image_filename` | `varchar(255)` | sí | Copia del nombre de imagen. |
 
 PK: `(session_id, position)`. Sin FK a `questions`: es intencional, para que borrar o editar la pregunta original no altere la partida.
@@ -209,7 +213,7 @@ Restricciones e índices: `UNIQUE (session_id, user_id)`: la reconexión reasoci
 | `session_id` | `uuid` | no | FK → `sessions(id)` `ON DELETE CASCADE`. |
 | `participant_id` | `uuid` | no | FK → `participants(id)` `ON DELETE CASCADE`. |
 | `question_index` | `integer` | no | Índice base 0; corresponde a `session_questions.position`. `CHECK (question_index >= 0)`. |
-| `answer` | `boolean` | no | `true` = Verdadero. |
+| `option_index` | `integer` | no | Índice (0..3) de la opción elegida. |
 | `received_at` | `timestamptz` | no | Reloj **del servidor** al recibir la respuesta; solo se acepta si `received_at <= question_closes_at`. |
 | `is_correct` | `boolean` | no | Calculado por el servidor al registrar. |
 | `points` | `integer` | no | `CHECK (points >= 0)`; 1 si es correcta, 0 si no (puntaje básico). |
@@ -248,7 +252,7 @@ PK `(session_id, participant_id)`; índice `session_results_ranking_idx (session
 | Código de sala único entre salas activas | Índice único parcial `WHERE status <> 'finished'` |
 | Partida inmune a ediciones del cuestionario | Tabla `session_questions` (snapshot) sin FK a `questions` |
 | Resultados que sobreviven a reinicios | `session_results` escrita al finalizar, más estado en `sessions` en cada transición |
-| La respuesta correcta no llega antes del cierre | `correct_answer` solo se lee en el cierre; las respuestas de pregunta abierta no la exponen (regla de aplicación) |
+| La respuesta correcta no llega antes del cierre | `correct_option` solo se lee en el cierre; las respuestas de pregunta abierta no la exponen (regla de aplicación) |
 | Datos de otro servicio sin acoplamiento | `owner_id`, `host_id`, `user_id` son `uuid` sin FK; la identidad viene del JWT |
 
 ## 4. Migraciones

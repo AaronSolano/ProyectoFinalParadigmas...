@@ -18,22 +18,24 @@
       "minimum": 0,
       "description": "Índice de la pregunta, base 0."
     },
-    "answer": {
-      "type": "boolean",
-      "description": "true = Verdadero, false = Falso."
+    "option": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3,
+      "description": "Índice (base 0) de la opción elegida entre las `options` de la pregunta."
     }
   },
   "required": [
     "code",
     "questionIndex",
-    "answer"
+    "option"
   ],
   "additionalProperties": false,
   "examples": [
     {
       "code": "K7P2QX",
       "questionIndex": 0,
-      "answer": true
+      "option": 1
     }
   ]
 }

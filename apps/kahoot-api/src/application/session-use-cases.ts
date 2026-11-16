@@ -7,7 +7,11 @@ import {
 import { Identity, SessionResults } from "../domain/entities";
 import { SessionInput, JoinInput } from "../domain/inputs";
 import { Problem } from "../domain/problem";
-import { requireWaiting, normalizeRoomCode } from "../domain/session-rules";
+import {
+  requireWaiting,
+  normalizeRoomCode,
+  validateAutoAdvanceSeconds,
+} from "../domain/session-rules";
 import { usableQuiz } from "./quiz-use-cases";
 import { GameService } from "./game-service";
 async function room(repo: SessionRepository, code: string, lock = false) {
@@ -26,6 +30,7 @@ export class SessionUseCases {
     private readonly work: UnitOfWork,
     private readonly ids: IdGenerator,
     private readonly questionTime: number,
+    private readonly autoAdvance: number,
     private readonly game?: GameService,
   ) {}
   listSessions(user: string) {
@@ -35,6 +40,9 @@ export class SessionUseCases {
     return room(this.sessions, code);
   }
   async createSession(user: string, input: SessionInput) {
+    const advanceSeconds = validateAutoAdvanceSeconds(
+      input.autoAdvanceSeconds ?? this.autoAdvance,
+    );
     for (let attempt = 0; attempt < 10; attempt++) {
       try {
         return await this.work.transaction(async ({ quizzes, sessions }) => {
@@ -54,6 +62,7 @@ export class SessionUseCases {
             quiz,
             user,
             input.questionTimeSeconds ?? this.questionTime,
+            advanceSeconds,
             questions,
           );
         });

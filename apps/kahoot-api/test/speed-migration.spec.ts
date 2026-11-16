@@ -122,8 +122,21 @@ suite("migración de velocidad sobre datos de la versión anterior", () => {
       "QuizLibrary1794780005000",
       "QuestionExplanation1794780006000",
       "LibraryExplanations1794780007000",
+      "SessionAutoAdvance1794780008000",
     ]);
     expect(await db.runMigrations()).toEqual([]);
+    expect(
+      (await db.query("SELECT auto_advance_seconds FROM sessions")).map(
+        (r: any) => r.auto_advance_seconds,
+      ),
+    ).toEqual([5, 5]);
+    await db.query("UPDATE sessions SET auto_advance_seconds=0");
+    await db.query("UPDATE sessions SET auto_advance_seconds=60");
+    for (const invalid of [-1, 61])
+      await expect(
+        db.query("UPDATE sessions SET auto_advance_seconds=$1", [invalid]),
+      ).rejects.toMatchObject({ code: "23514" });
+    await db.query("UPDATE sessions SET auto_advance_seconds=5");
     const rows = await db.query(
       "SELECT question_opened_at FROM sessions ORDER BY code",
     );
@@ -176,6 +189,7 @@ suite("migración de velocidad sobre datos de la versión anterior", () => {
     await expect(
       db.query("UPDATE answers SET points=-1"),
     ).rejects.toMatchObject({ code: "23514" });
+    await db.undoLastMigration(); // SessionAutoAdvance
     await db.undoLastMigration(); // LibraryExplanations
     await db.undoLastMigration(); // QuestionExplanation
     await db.undoLastMigration(); // QuizLibrary

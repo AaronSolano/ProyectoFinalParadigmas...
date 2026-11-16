@@ -84,6 +84,11 @@ suite('dos APIs en una sola base con esquemas aislados', () => {
       'DemoSeedHistory1794780001000',
       'LiveGame1794780002000',
       'SpeedScoring1794780003000',
+      'MultipleChoice1794780004000',
+      'QuizLibrary1794780005000',
+      'QuestionExplanation1794780006000',
+      'LibraryExplanations1794780007000',
+      'SessionAutoAdvance1794780008000',
     ]);
     expect(
       (await auth.query("SELECT to_regclass('public.migrations') AS name"))[0]
@@ -141,11 +146,17 @@ suite('dos APIs en una sola base con esquemas aislados', () => {
     expect((await auth.query('SELECT count(*) FROM profiles'))[0].count).toBe(
       '1',
     );
-    expect((await kahoot.query('SELECT count(*) FROM quizzes'))[0].count).toBe(
-      '1',
-    );
     expect(
-      (await kahoot.query('SELECT count(*) FROM questions'))[0].count,
+      (
+        await kahoot.query('SELECT count(*) FROM quizzes WHERE NOT is_library')
+      )[0].count,
+    ).toBe('1');
+    expect(
+      (
+        await kahoot.query(
+          'SELECT count(*) FROM questions q JOIN quizzes z ON z.id=q.quiz_id WHERE NOT z.is_library',
+        )
+      )[0].count,
     ).toBe('5');
     expect(
       await new PostgresProfiles(auth).findByEmail('DOCENTE.DEMO@EXAMPLE.COM'),

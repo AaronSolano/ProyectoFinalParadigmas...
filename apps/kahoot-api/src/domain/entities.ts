@@ -30,6 +30,7 @@ export interface Session {
   hostId: string;
   status: SessionStatus;
   questionTimeSeconds: number;
+  autoAdvanceSeconds: number;
   participantCount: number;
   createdAt: Date;
   startedAt: Date | null;
@@ -71,4 +72,6 @@ export interface SessionResults {
 export interface Identity {
   id: string;
   name: string;
+  /** Invitado sin cuenta: solo puede unirse a salas y jugar. */
+  guest?: boolean;
 }

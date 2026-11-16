@@ -12,6 +12,7 @@ export interface QuestionInput {
 export interface SessionInput {
   quizId: string;
   questionTimeSeconds?: number;
+  autoAdvanceSeconds?: number;
 }
 export interface JoinInput {
   displayName?: string;

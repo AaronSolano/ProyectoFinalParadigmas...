@@ -11,6 +11,7 @@ export interface Settings {
   issuer: string;
   audience: string;
   expiresIn: number;
+  guestExpiresIn: number;
   corsOrigins: string[];
   runMigrations: boolean;
 }
@@ -40,6 +41,13 @@ export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
     Number(ttl[1]) * { s: 1, m: 60, h: 3600, d: 86400 }[ttl[2] ?? 's']!;
   if (!Number.isSafeInteger(expiresIn) || expiresIn < 1)
     throw new Error('JWT_EXPIRES_IN inválido');
+  const guestTtl = /^(\d+)(s|m|h|d)?$/.exec(env.JWT_GUEST_EXPIRES_IN ?? '6h');
+  if (!guestTtl) throw new Error('JWT_GUEST_EXPIRES_IN inválido');
+  const guestExpiresIn =
+    Number(guestTtl[1]) *
+    { s: 1, m: 60, h: 3600, d: 86400 }[guestTtl[2] ?? 's']!;
+  if (!Number.isSafeInteger(guestExpiresIn) || guestExpiresIn < 1)
+    throw new Error('JWT_GUEST_EXPIRES_IN inválido');
   const port = Number(env.AUTH_PORT ?? 3001);
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw new Error('AUTH_PORT inválido');
@@ -65,6 +73,7 @@ export function settings(env: NodeJS.ProcessEnv = process.env): Settings {
     issuer: env.JWT_ISSUER ?? 'auth-api',
     audience: env.JWT_AUDIENCE ?? 'kahoot-api',
     expiresIn,
+    guestExpiresIn,
     corsOrigins: (env.CORS_ORIGINS ?? '').split(',').filter(Boolean),
     runMigrations: env.RUN_MIGRATIONS !== 'false',
   };

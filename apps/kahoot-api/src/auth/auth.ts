@@ -48,7 +48,11 @@ export class AuthGuard implements CanActivate {
         payload.name.length > 40
       )
         throw new Error();
-      return { id: payload.sub, name: payload.name };
+      return {
+        id: payload.sub,
+        name: payload.name,
+        guest: payload.guest === true,
+      };
     } catch {
       throw new Problem(
         401,
@@ -56,5 +60,20 @@ export class AuthGuard implements CanActivate {
         "Token de acceso ausente o invalido.",
       );
     }
+  }
+}
+/** Acciones solo para cuentas registradas (crear cuestionarios, abrir salas, biblioteca): rechaza invitados. */
+@Injectable()
+export class AccountGuard extends AuthGuard {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    await super.canActivate(context);
+    const req = context.switchToHttp().getRequest();
+    if (req.identity?.guest)
+      throw new Problem(
+        403,
+        "FORBIDDEN",
+        "Inicia sesión con una cuenta para crear cuestionarios o abrir salas.",
+      );
+    return true;
   }
 }

@@ -13,9 +13,25 @@ export class ArgonPasswords implements PasswordHasher {
 }
 export class RsaTokens implements Tokens {
   readonly expiresIn: number;
+  readonly guestExpiresIn: number;
   private readonly jwt = new JwtService();
   constructor(private readonly config: Settings) {
     this.expiresIn = config.expiresIn;
+    this.guestExpiresIn = config.guestExpiresIn;
+  }
+  /** Invitado: identidad efímera sin cuenta ni correo; no se guarda en la base de datos. */
+  signGuest(id: string, displayName: string) {
+    return this.jwt.sign(
+      { sub: id, name: displayName, guest: true },
+      {
+        privateKey: this.config.privateKey,
+        algorithm: 'RS256',
+        keyid: this.config.keyId,
+        issuer: this.config.issuer,
+        audience: this.config.audience,
+        expiresIn: this.guestExpiresIn,
+      },
+    );
   }
   sign(profile: Profile) {
     return this.jwt.sign(
@@ -32,6 +48,7 @@ export class RsaTokens implements Tokens {
   }
   verify(token: string) {
     const payload = this.jwt.verify<{
+      guest?: boolean;
       sub?: string;
       exp?: number;
       iat?: number;
@@ -41,6 +58,7 @@ export class RsaTokens implements Tokens {
       issuer: this.config.issuer,
       audience: this.config.audience,
     });
+    if (payload.guest === true) throw new Error('Guest has no profile');
     if (!Number.isFinite(payload.exp) || !Number.isFinite(payload.iat))
       throw new Error('Invalid lifetime');
     if (

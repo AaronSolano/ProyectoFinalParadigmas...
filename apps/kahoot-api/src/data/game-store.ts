@@ -31,6 +31,7 @@ export class PostgresGameStore implements GameStore {
         hostId: s.host_id,
         status: s.game_state,
         questionTimeSeconds: s.question_time_seconds,
+        autoAdvanceMs: (s.auto_advance_seconds ?? 5) * 1000,
         currentIndex: s.current_question_index,
         openedAt: s.question_opened_at
           ? new Date(s.question_opened_at).getTime()
@@ -54,11 +55,12 @@ export class PostgresGameStore implements GameStore {
   }
   async closedSessions() {
     const rows = await this.db.query(
-      `SELECT code,current_question_index FROM sessions WHERE game_state='question_closed'`,
+      `SELECT code,current_question_index,auto_advance_seconds FROM sessions WHERE game_state='question_closed'`,
     );
     return rows.map((r: any) => ({
       code: r.code,
       index: r.current_question_index,
+      autoAdvanceMs: (r.auto_advance_seconds ?? 5) * 1000,
     }));
   }
   async activeSessionCount(): Promise<number> {

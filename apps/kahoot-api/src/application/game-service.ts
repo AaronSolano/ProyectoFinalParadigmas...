@@ -26,7 +26,10 @@ const noEvents: GameEvents = { room() {} };
 export class GameService {
   private readonly pending = new Map<string, Promise<unknown>>();
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>();
-  private readonly advanceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private readonly advanceTimers = new Map<
+    string,
+    ReturnType<typeof setTimeout>
+  >();
   private stopped = false;
   events: GameEvents = noEvents;
   constructor(
@@ -34,8 +37,6 @@ export class GameService {
     private readonly publicUrl: string,
     private readonly clock: Clock = systemClock,
     private readonly metrics: GameMetrics = noGameMetrics,
-    /** Pasa solo a la siguiente pregunta tras este tiempo desde el cierre; 0 lo desactiva. */
-    private readonly autoAdvanceMs = 0,
   ) {}
   private serial<T>(code: string, work: () => Promise<T>): Promise<T> {
     const previous = this.pending.get(code) ?? Promise.resolve();
@@ -204,6 +205,7 @@ export class GameService {
           return {
             closed: await this.closeQuestion(tx),
             closedDeadline: s.closesAt!,
+            advanceMs: s.autoAdvanceMs,
             deadline: null,
           };
         if (target === "finished") {
@@ -246,7 +248,11 @@ export class GameService {
         this.metrics.questionClosed(
           Math.max(0, (this.clock.now() - result.closedDeadline!) / 1000),
         );
-        this.scheduleAdvance(code, result.closed.questionIndex);
+        this.scheduleAdvance(
+          code,
+          result.closed.questionIndex,
+          result.advanceMs!,
+        );
       }
       if (result.finished) {
         this.metrics.sessionFinished();
@@ -341,8 +347,8 @@ export class GameService {
       correctOption: q.correctOption,
       explanation: q.explanation,
       nextQuestionAt:
-        this.autoAdvanceMs > 0
-          ? new Date(this.clock.now() + this.autoAdvanceMs).toISOString()
+        s.autoAdvanceMs > 0
+          ? new Date(this.clock.now() + s.autoAdvanceMs).toISOString()
           : null,
       results,
       ranking,
@@ -358,14 +364,16 @@ export class GameService {
     if (advance) clearTimeout(advance);
     this.advanceTimers.delete(code);
   }
-  private scheduleAdvance(code: string, index: number) {
-    if (this.stopped || this.autoAdvanceMs <= 0) return;
+  private scheduleAdvance(code: string, index: number, advanceMs: number) {
+    if (this.stopped || advanceMs <= 0) return;
     const previous = this.advanceTimers.get(code);
     if (previous) clearTimeout(previous);
     const timer = setTimeout(() => {
       this.advanceTimers.delete(code);
-      void this.controlInternal(null, code, "next", index).catch(() => undefined);
-    }, this.autoAdvanceMs);
+      void this.controlInternal(null, code, "next", index).catch(
+        () => undefined,
+      );
+    }, advanceMs);
     timer.unref();
     this.advanceTimers.set(code, timer);
   }
@@ -392,6 +400,7 @@ export class GameService {
         return {
           closed: await this.closeQuestion(tx),
           closedDeadline: tx.session.closesAt!,
+          advanceMs: tx.session.autoAdvanceMs,
         };
       });
       this.cancelTimer(code);
@@ -400,7 +409,11 @@ export class GameService {
         this.metrics.questionClosed(
           Math.max(0, (this.clock.now() - result.closedDeadline!) / 1000),
         );
-        this.scheduleAdvance(code, result.closed.questionIndex);
+        this.scheduleAdvance(
+          code,
+          result.closed.questionIndex,
+          result.advanceMs!,
+        );
       }
       if (result.deadline !== undefined) this.schedule(code, result.deadline);
     });
@@ -413,7 +426,7 @@ export class GameService {
       else this.schedule(room.code, room.closesAt);
     }
     for (const room of (await this.store.closedSessions?.()) ?? [])
-      this.scheduleAdvance(room.code, room.index);
+      this.scheduleAdvance(room.code, room.index, room.autoAdvanceMs);
   }
   async onModuleDestroy() {
     this.stopped = true;

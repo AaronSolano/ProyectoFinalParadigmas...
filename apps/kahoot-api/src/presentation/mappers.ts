@@ -36,6 +36,7 @@ export function sessionView(s: Session) {
     hostId: s.hostId,
     status: s.status,
     questionTimeSeconds: s.questionTimeSeconds,
+    autoAdvanceSeconds: s.autoAdvanceSeconds,
     participantCount: s.participantCount,
     createdAt: s.createdAt,
     startedAt: s.startedAt,

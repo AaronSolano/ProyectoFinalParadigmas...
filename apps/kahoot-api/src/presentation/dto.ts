@@ -42,6 +42,11 @@ export class SessionInput {
   @Min(5)
   @Max(120)
   questionTimeSeconds?: number;
+  @ValidateIf((_, v) => v !== undefined)
+  @IsInt()
+  @Min(0)
+  @Max(60)
+  autoAdvanceSeconds?: number;
 }
 export class JoinInput {
   @ValidateIf((_, v) => v !== undefined)

@@ -46,6 +46,7 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-auth-api}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-kahoot-api}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_GUEST_EXPIRES_IN: ${JWT_GUEST_EXPIRES_IN:-6h}
       CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_URL:-http://localhost:8080}}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     volumes:

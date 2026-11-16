@@ -31,5 +31,7 @@ export interface GameStore {
   openSessions(): Promise<{ code: string; closesAt: number }[]>;
   activeSessionCount(): Promise<number>;
   /** Salas con la pregunta cerrada, para reanudar el avance automático tras un reinicio. */
-  closedSessions?(): Promise<{ code: string; index: number }[]>;
+  closedSessions?(): Promise<
+    { code: string; index: number; autoAdvanceMs: number }[]
+  >;
 }

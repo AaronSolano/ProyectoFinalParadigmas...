@@ -128,6 +128,7 @@ class MemorySessions implements SessionRepository {
     quiz: Quiz,
     hostId: string,
     seconds: number,
+    autoAdvanceSeconds: number,
     questions: Question[],
   ) {
     const s: Session = {
@@ -138,6 +139,7 @@ class MemorySessions implements SessionRepository {
       hostId,
       status: "waiting",
       questionTimeSeconds: seconds,
+      autoAdvanceSeconds,
       participantCount: 0,
       createdAt: now,
       startedAt: null,
@@ -202,10 +204,40 @@ function setup() {
       ids,
       2097152,
     ),
-    session: new SessionUseCases(sessions, work, ids, 20),
+    session: new SessionUseCases(sessions, work, ids, 20, 5),
   };
 }
 describe("casos de uso con puertos en memoria, sin PostgreSQL", () => {
+  it.each([-1, 61, 1.5, NaN, Infinity])(
+    "valida avance por sala en aplicación sin depender de HTTP: %s",
+    async (seconds) => {
+      const c = setup();
+      await expect(
+        c.session.createSession("owner", {
+          quizId: "quiz",
+          autoAdvanceSeconds: seconds,
+        }),
+      ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+      expect(c.sessions.rooms.size).toBe(0);
+    },
+  );
+  it.each([undefined, 0, 3, 60])(
+    "conserva el avance elegido o el valor global: %s",
+    async (seconds) => {
+      const c = setup();
+      await c.quiz.createQuiz("owner", { title: "Prueba" });
+      await c.quiz.saveQuestion("owner", "quiz", {
+        statement: "Pregunta",
+        options: ["A", "B"],
+        correctOption: 0,
+      });
+      const session = await c.session.createSession("owner", {
+        quizId: "quiz",
+        autoAdvanceSeconds: seconds,
+      });
+      expect(session.autoAdvanceSeconds).toBe(seconds ?? 5);
+    },
+  );
   it("impide editar o crear salas de cuestionarios ajenos", async () => {
     const c = setup();
     await c.quiz.createQuiz("owner", { title: "Prueba" });
@@ -237,7 +269,11 @@ describe("casos de uso con puertos en memoria, sin PostgreSQL", () => {
     await c.quiz.saveQuestion(
       "owner",
       "quiz",
-      { statement: "Editada", options: ["Verdadero", "Falso"], correctOption: 1 },
+      {
+        statement: "Editada",
+        options: ["Verdadero", "Falso"],
+        correctOption: 1,
+      },
       q.id,
     );
     expect(c.sessions.snapshots[0]).toMatchObject({

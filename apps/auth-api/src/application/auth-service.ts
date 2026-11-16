@@ -6,6 +6,7 @@ import {
   publicProfile,
   validatePassword,
 } from '../domain/profile';
+import { randomUUID } from 'node:crypto';
 export class AuthService {
   private dummyHash?: Promise<string>;
   constructor(
@@ -38,6 +39,21 @@ export class AuthService {
         'Correo o contraseña incorrectos.',
       );
     return this.response(profile);
+  }
+  guest(displayName: string) {
+    const name = displayName.trim();
+    if (name.length < 2 || name.length > 40)
+      throw new DomainError(
+        'VALIDATION_ERROR',
+        'El apodo debe tener entre 2 y 40 caracteres.',
+      );
+    const id = randomUUID();
+    return {
+      accessToken: this.tokens.signGuest(id, name),
+      tokenType: 'Bearer' as const,
+      expiresIn: this.tokens.guestExpiresIn,
+      guest: { id, displayName: name },
+    };
   }
   async me(token: string) {
     let id: string;

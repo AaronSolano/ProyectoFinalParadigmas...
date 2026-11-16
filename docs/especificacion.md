@@ -232,3 +232,12 @@ Los resultados, los participantes probados y las limitaciones conocidas se regis
 | Spec OpenSpec archivada en los PR | `openspec/changes/archive/` y `openspec/specs/` |
 | Evidencia de comprobaciones | [`docs/evidencia/`](evidencia) |
 | Aportes de cada integrante | Tabla en el [README](../README.md) y el historial de Git |
+
+
+## Ingreso de invitados y avance por sala
+
+`POST /auth/guest` recibe `displayName` (apodo recortado de 2 a 40 caracteres) y devuelve 201 con JWT RS256, tipo Bearer, duración y una identidad efímera (`id`, `displayName`). Incluye `guest: true` en claims, sin correo ni perfil persistido. Vigencia predeterminada: seis horas (`JWT_GUEST_EXPIRES_IN`). `/auth/me` responde 401 para invitados. El acceso a cuestionarios, biblioteca y GET/POST `/sessions` exige cuenta y responde 403 FORBIDDEN a invitados. Se permite consultar una sala, unirse, consultar participantes, jugar y consultar resultados como participante. Socket.IO valida el mismo JWT y exige identidad del anfitrión para controles.
+
+`SessionInput.autoAdvanceSeconds` admite enteros de 0 a 60; si se omite usa la configuración global. `Session.autoAdvanceSeconds` es requerido y persistido. Cero deja avance manual y publica `nextQuestionAt: null`; los demás valores programan la siguiente pregunta o el fin desde el servidor. La recuperación usa el valor propio de cada sala. Ni el QR ni la web deciden tiempo, puntaje o estado.
+
+`/join` es público y precarga códigos válidos de `?code=` en mayúsculas. `/play/:code` sin sesión redirige al ingreso conservando código. Invitados en rutas docentes redirigen a `/join`. El lobby del anfitrión muestra QR local SVG y enlace copiable. Búsqueda en cliente por título/descripción sin tildes y filtro de categoría mantienen la agrupación de Biblioteca. Ajustes es operable por teclado y persiste idioma/sonido con almacenamiento protegido por try/catch.

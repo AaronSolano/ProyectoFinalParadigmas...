@@ -130,6 +130,7 @@ export interface GameSession {
   hostId: string;
   status: GameStatus;
   questionTimeSeconds: number;
+  autoAdvanceMs: number;
   currentIndex: number | null;
   openedAt: number | null;
   closesAt: number | null;

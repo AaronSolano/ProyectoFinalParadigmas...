@@ -18,7 +18,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { Request } from "express";
 import { QuizUseCases } from "../application/quiz-use-cases";
-import { AuthGuard, Identity } from "../auth/auth";
+import { AccountGuard, Identity } from "../auth/auth";
 import { Config } from "../config/config";
 import { Problem } from "../domain/problem";
 import { QuizInput, QuestionInput } from "./dto";
@@ -30,7 +30,7 @@ const uuid = new ParseUUIDPipe({
     new Problem(400, "VALIDATION_ERROR", "Identificador invalido."),
 });
 @Controller("quizzes")
-@UseGuards(AuthGuard)
+@UseGuards(AccountGuard)
 @ApiBearerAuth()
 export class QuizzesController {
   constructor(

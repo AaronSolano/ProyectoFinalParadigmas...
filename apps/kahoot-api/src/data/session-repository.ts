@@ -33,6 +33,7 @@ export class PostgresSessionRepository
     quiz: Quiz,
     hostId: string,
     seconds: number,
+    autoAdvanceSeconds: number,
     questions: Question[],
   ) {
     try {
@@ -43,6 +44,7 @@ export class PostgresSessionRepository
           quiz.title,
           hostId,
           seconds,
+          autoAdvanceSeconds,
         ])
       )[0];
       for (const [position, q] of questions.entries())
@@ -117,7 +119,7 @@ export class PostgresSessionRepository
   }
   private rawInsertSession(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "INSERT INTO sessions(code,quiz_id,quiz_title,host_id,question_time_seconds) VALUES($1,$2,$3,$4,$5) RETURNING *",
+      "INSERT INTO sessions(code,quiz_id,quiz_title,host_id,question_time_seconds,auto_advance_seconds) VALUES($1,$2,$3,$4,$5,$6) RETURNING *",
       params,
     );
   }

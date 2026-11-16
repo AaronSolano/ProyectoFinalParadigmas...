@@ -18,3 +18,13 @@ export function requireWaiting(session: Session): void {
       "La sala ya no admite nuevos participantes.",
     );
 }
+
+export function validateAutoAdvanceSeconds(seconds: number): number {
+  if (!Number.isInteger(seconds) || seconds < 0 || seconds > 60)
+    throw new Problem(
+      400,
+      "VALIDATION_ERROR",
+      "El avance automático debe ser un entero entre 0 y 60 segundos.",
+    );
+  return seconds;
+}

@@ -1,5 +1,13 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, Length, Matches, MaxLength } from 'class-validator';
+export class GuestRequest {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @ApiProperty({ minLength: 2, maxLength: 40 })
+  @IsString()
+  @Length(2, 40)
+  displayName!: string;
+}
 export class LoginRequest {
   @ApiProperty({ format: 'email', maxLength: 254 })
   @IsEmail()

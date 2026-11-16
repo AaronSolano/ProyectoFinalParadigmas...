@@ -11,6 +11,16 @@ export class AuthResponse {
   @ApiProperty({ type: 'integer', minimum: 1 }) expiresIn!: number;
   @ApiProperty({ type: ProfileResponse }) profile!: ProfileResponse;
 }
+export class GuestProfile {
+  @ApiProperty({ format: 'uuid' }) id!: string;
+  @ApiProperty() displayName!: string;
+}
+export class GuestResponse {
+  @ApiProperty() accessToken!: string;
+  @ApiProperty({ enum: ['Bearer'] }) tokenType!: string;
+  @ApiProperty({ type: 'integer', minimum: 1 }) expiresIn!: number;
+  @ApiProperty({ type: GuestProfile }) guest!: GuestProfile;
+}
 export class ProblemDetail {
   @ApiPropertyOptional() field?: string;
   @ApiProperty() message!: string;

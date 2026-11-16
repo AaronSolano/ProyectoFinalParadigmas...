@@ -42,6 +42,7 @@ export function sessionFromRow(r: Row, participantCount: number): Session {
     hostId: r.host_id,
     status: r.status,
     questionTimeSeconds: r.question_time_seconds,
+    autoAdvanceSeconds: r.auto_advance_seconds,
     participantCount,
     createdAt: r.created_at,
     startedAt: r.started_at,

@@ -39,6 +39,7 @@ export interface SessionRepository {
     quiz: Quiz,
     hostId: string,
     seconds: number,
+    autoAdvanceSeconds: number,
     questions: Question[],
   ): Promise<Session>;
   addParticipant(

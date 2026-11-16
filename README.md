@@ -145,3 +145,14 @@ _Pendiente: el equipo completa esta tabla con el aporte identificable de cada in
 | Integrante | Aporte |
 |---|---|
 | | |
+
+
+### Invitados, QR y preferencias
+
+En `/join` se puede entrar sin cuenta con apodo (2–40 caracteres) y código de sala. El QR del lobby del anfitrión se genera localmente y abre `/join?code=…`. Los invitados pueden jugar y reconectar con su token; no pueden usar cuestionarios, biblioteca ni crear o listar salas (403). Cerrar la pestaña o salir elimina la sesión local; no se crea un perfil de invitado en la base.
+
+`JWT_GUEST_EXPIRES_IN` configura la duración del JWT efímero en auth-api (predeterminado `6h`; acepta segundos o sufijos `s`, `m`, `h`, `d`). Se transmite en Compose y debe configurarse también en Render si se cambia. `/auth/me` rechaza estos tokens con 401.
+
+Cada sala conserva `autoAdvanceSeconds` (0–60). Si se omite en la API, usa `AUTO_ADVANCE_SECONDS` (predeterminado 5); cero desactiva el avance. Los formularios ofrecen desactivado, 3, 5, 10, 15 y 30 segundos. La migración asigna 5 a salas existentes.
+
+Mis cuestionarios y Biblioteca permiten buscar por título y descripción sin distinguir mayúsculas ni tildes; Biblioteca también filtra por categoría. El engranaje abre Ajustes con idioma y sonido persistentes. Escape cierra el panel y devuelve el foco; el sonido se sincroniza con el control de la partida.

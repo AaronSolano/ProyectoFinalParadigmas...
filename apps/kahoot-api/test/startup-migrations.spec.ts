@@ -76,6 +76,7 @@ suite("arranque sobre PostgreSQL vacío con bloqueo asesor", () => {
             "QuizLibrary1794780005000",
             "QuestionExplanation1794780006000",
             "LibraryExplanations1794780007000",
+            "SessionAutoAdvance1794780008000",
           ]);
           expect(
             (await db.query("SELECT to_regclass('answers') AS answers"))[0]

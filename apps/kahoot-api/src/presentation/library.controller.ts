@@ -11,7 +11,7 @@ import {
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { Request } from "express";
 import { QuizUseCases } from "../application/quiz-use-cases";
-import { AuthGuard, Identity } from "../auth/auth";
+import { AccountGuard, Identity } from "../auth/auth";
 import { Config } from "../config/config";
 import { Problem } from "../domain/problem";
 import { quizView, questionView } from "./mappers";
@@ -23,7 +23,7 @@ const uuid = new ParseUUIDPipe({
 });
 /** Biblioteca compartida: cuestionarios de solo lectura que cualquier docente puede usar o copiar. */
 @Controller("library")
-@UseGuards(AuthGuard)
+@UseGuards(AccountGuard)
 @ApiBearerAuth()
 export class LibraryController {
   constructor(

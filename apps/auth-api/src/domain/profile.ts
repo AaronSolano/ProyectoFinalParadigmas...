@@ -61,6 +61,8 @@ export interface JsonWebKeySet {
 export interface Tokens {
   jwks(): JsonWebKeySet;
   sign(profile: Profile): string;
+  signGuest(id: string, displayName: string): string;
+  readonly guestExpiresIn: number;
   verify(token: string): string;
   readonly expiresIn: number;
 }

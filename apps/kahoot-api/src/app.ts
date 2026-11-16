@@ -89,7 +89,6 @@ export async function createApp(
     config.publicUrl,
     gameClock,
     gameMetrics,
-    config.autoAdvanceSeconds * 1000,
   );
   const images =
     storage ??
@@ -168,7 +167,15 @@ export async function createApp(
           repo: SessionRepository,
           work: UnitOfWork,
           ids: IdGenerator,
-        ) => new SessionUseCases(repo, work, ids, config.questionTime, game),
+        ) =>
+          new SessionUseCases(
+            repo,
+            work,
+            ids,
+            config.questionTime,
+            config.autoAdvanceSeconds,
+            game,
+          ),
       },
       { provide: AuthGuard, useValue: new AuthGuard(config) },
       { provide: "IMAGE_STORAGE", useValue: images },

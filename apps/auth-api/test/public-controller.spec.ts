@@ -17,6 +17,8 @@ test('public JWKS controller uses only the Tokens port', () => {
   const tokens: Tokens = {
     jwks: () => keySet,
     sign: () => 'token',
+    signGuest: () => 'guest-token',
+    guestExpiresIn: 21600,
     verify: () => 'profile-id',
     expiresIn: 60,
   };

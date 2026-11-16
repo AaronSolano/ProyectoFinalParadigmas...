@@ -9,8 +9,13 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../application/auth-service';
-import { LoginRequest, RegisterRequest } from './requests';
-import { AuthResponse, Problem, ProfileResponse } from './models';
+import { GuestRequest, LoginRequest, RegisterRequest } from './requests';
+import {
+  AuthResponse,
+  GuestResponse,
+  Problem,
+  ProfileResponse,
+} from './models';
 @ApiTags('Autenticación')
 @Controller('auth')
 export class AuthController {
@@ -29,6 +34,12 @@ export class AuthController {
   @ApiResponse({ status: 401, type: Problem })
   login(@Body() body: LoginRequest) {
     return this.service.login(body.email, body.password);
+  }
+  @Post('guest')
+  @ApiResponse({ status: 201, type: GuestResponse })
+  @ApiResponse({ status: 400, type: Problem })
+  guest(@Body() body: GuestRequest) {
+    return this.service.guest(body.displayName);
   }
   @Get('me')
   @ApiBearerAuth()

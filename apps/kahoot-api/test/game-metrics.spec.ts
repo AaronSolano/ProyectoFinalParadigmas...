@@ -9,6 +9,7 @@ test("métricas siguen inicio, recuperación, publicación del cierre y fin sin 
     hostId: "host",
     status: "waiting",
     questionTimeSeconds: 5,
+    autoAdvanceMs: 0,
     currentIndex: null,
     openedAt: null,
     closesAt: null,

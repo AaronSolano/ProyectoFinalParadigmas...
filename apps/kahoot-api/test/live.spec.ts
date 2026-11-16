@@ -40,7 +40,12 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     root: string,
     config: Config,
     url: string;
-  let sign: (id: string, aud?: string, expiry?: string) => Promise<string>;
+  let sign: (
+    id: string,
+    aud?: string,
+    expiry?: string,
+    guest?: boolean,
+  ) => Promise<string>;
   let now: number;
   const host = randomUUID(),
     ana = randomUUID(),
@@ -112,7 +117,11 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await api()
         .post(`/api/v1/quizzes/${quiz.id}/questions`)
         .set(auth())
-        .send({ statement: `Pregunta ${i}`, options: ["Verdadero", "Falso"], correctOption: i === 0 ? 0 : 1 })
+        .send({
+          statement: `Pregunta ${i}`,
+          options: ["Verdadero", "Falso"],
+          correctOption: i === 0 ? 0 : 1,
+        })
         .expect(201);
     const session = (
       await api()
@@ -136,8 +145,11 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       res.end(JSON.stringify({ keys: [key] }));
     });
     await new Promise<void>((resolve) => jwks.listen(0, "127.0.0.1", resolve));
-    sign = (id, aud = "kahoot-api", expiry = "1h") =>
-      new SignJWT({ name: id === host ? "Docente" : "Estudiante" })
+    sign = (id, aud = "kahoot-api", expiry = "1h", guest = false) =>
+      new SignJWT({
+        name: id === host ? "Docente" : "Estudiante",
+        ...(guest ? { guest: true } : {}),
+      })
         .setProtectedHeader({ alg: "RS256", kid: "live-test" })
         .setSubject(id)
         .setAudience(aud)
@@ -174,6 +186,97 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await db?.destroy();
     await new Promise<void>((resolve) => jwks?.close(() => resolve()));
     if (root) await rm(root, { recursive: true, force: true });
+  });
+  test("invitado: 403 en cada ruta de cuenta y partida completa con reconexión", async () => {
+    const guestId = randomUUID();
+    const token = await sign(guestId, "kahoot-api", "6h", true);
+    const guestAuth = { Authorization: `Bearer ${token}` };
+    const { quiz, code } = await room(1);
+    const qid = randomUUID();
+    const denied: [string, string][] = [
+      ["get", "/quizzes"],
+      ["post", "/quizzes"],
+      ["get", `/quizzes/${quiz.id}`],
+      ["put", `/quizzes/${quiz.id}`],
+      ["delete", `/quizzes/${quiz.id}`],
+      ["get", `/quizzes/${quiz.id}/questions`],
+      ["post", `/quizzes/${quiz.id}/questions`],
+      ["put", `/quizzes/${quiz.id}/questions/${qid}`],
+      ["delete", `/quizzes/${quiz.id}/questions/${qid}`],
+      ["put", `/quizzes/${quiz.id}/questions/${qid}/image`],
+      ["delete", `/quizzes/${quiz.id}/questions/${qid}/image`],
+      ["get", "/library"],
+      ["get", `/library/${quiz.id}/questions`],
+      ["post", `/library/${quiz.id}/copy`],
+      ["get", "/sessions"],
+      ["post", "/sessions"],
+    ];
+    for (const [method, path] of denied) {
+      const res = await (api() as any)
+        [method](`/api/v1${path}`)
+        .set(guestAuth)
+        .expect(403);
+      expect(res.body.code).toBe("FORBIDDEN");
+    }
+    await api().get(`/api/v1/sessions/${code}`).set(guestAuth).expect(200);
+    const participant = (
+      await api()
+        .post(`/api/v1/sessions/${code}/join`)
+        .set(guestAuth)
+        .send({})
+        .expect(200)
+    ).body;
+    expect(participant.userId).toBe(guestId);
+    await api()
+      .get(`/api/v1/sessions/${code}/participants`)
+      .set(guestAuth)
+      .expect(200);
+    let p = await connect(guestId, { token });
+    let connected = event(p, "connect");
+    p.connect();
+    await connected;
+    await enter(p, code);
+    const forbidden = await command(p, "session:start", { code }, "error");
+    expect(forbidden.code).toBe("FORBIDDEN");
+    const h = await ready();
+    await enter(h, code);
+    await command(h, "session:start", { code }, "question:opened");
+    now += 500;
+    const accepted = await command(
+      p,
+      "answer:submit",
+      { code, questionIndex: 0, option: 0 },
+      "answer:accepted",
+    );
+    expect(accepted).toBeDefined();
+    p.disconnect();
+    p = await connect(guestId, { token });
+    connected = event(p, "connect");
+    p.connect();
+    await connected;
+    const state = await enter(p, code);
+    expect(state.participantId).toBe(participant.id);
+    expect(state.hasAnswered).toBe(true);
+    const closed = await command(
+      h,
+      "question:close",
+      { code },
+      "question:closed",
+    );
+    expect(
+      closed.results.find((r: any) => r.participantId === participant.id)
+        .correct,
+    ).toBe(true);
+    const finished = event(p, "session:finished");
+    await command(h, "question:next", { code }, "session:finished");
+    expect((await finished).ranking).toHaveLength(1);
+    const final = await enter(p, code);
+    expect(final.status).toBe("finished");
+    expect(final.ranking[0].score).toBeGreaterThan(0);
+    await api()
+      .get(`/api/v1/sessions/${code}/results`)
+      .set(guestAuth)
+      .expect(200);
   });
   test("rechaza handshake ausente, expirado, audiencia incorrecta, firma alterada y origen no permitido", async () => {
     const token = await sign(ana);
@@ -469,14 +572,13 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     ).toEqual(results);
   });
   test("avance automático: tras cerrar pasa sola a la siguiente y la explicación opcional solo viaja al cierre", async () => {
-    const original = config;
-    config = { ...config, autoAdvanceSeconds: 1 };
-    try {
-      await built.app.close();
-      await db.destroy();
-      await start();
+    {
       const quiz = (
-        await api().post("/api/v1/quizzes").set(auth()).send({ title: "Auto" }).expect(201)
+        await api()
+          .post("/api/v1/quizzes")
+          .set(auth())
+          .send({ title: "Auto" })
+          .expect(201)
       ).body;
       const withNote = (
         await api()
@@ -494,44 +596,119 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       await api()
         .post(`/api/v1/quizzes/${quiz.id}/questions`)
         .set(auth())
-        .send({ statement: "Sin explicación", options: ["A", "B"], correctOption: 0 })
+        .send({
+          statement: "Sin explicación",
+          options: ["A", "B"],
+          correctOption: 0,
+        })
         .expect(201);
       await api()
         .post(`/api/v1/quizzes/${quiz.id}/questions`)
         .set(auth())
-        .send({ statement: "Larga", options: ["A", "B"], correctOption: 0, explanation: "x".repeat(301) })
+        .send({
+          statement: "Larga",
+          options: ["A", "B"],
+          correctOption: 0,
+          explanation: "x".repeat(301),
+        })
         .expect(400);
       const code = (
         await api()
           .post("/api/v1/sessions")
           .set(auth())
-          .send({ quizId: quiz.id, questionTimeSeconds: 5 })
+          .send({
+            quizId: quiz.id,
+            questionTimeSeconds: 5,
+            autoAdvanceSeconds: 1,
+          })
           .expect(201)
       ).body.code as string;
       const h = await ready(),
         p = await ready(ana);
       await enter(h, code);
       await enter(p, code);
-      const opened = await command(h, "session:start", { code }, "question:opened");
+      const opened = await command(
+        h,
+        "session:start",
+        { code },
+        "question:opened",
+      );
       expect(JSON.stringify(opened)).not.toContain("Porque C");
-      const closed = await command(h, "question:close", { code }, "question:closed");
+      const closed = await command(
+        h,
+        "question:close",
+        { code },
+        "question:closed",
+      );
       expect(closed.correctOption).toBe(2);
       expect(closed.explanation).toBe("Porque C es la correcta.");
       expect(typeof closed.nextQuestionAt).toBe("string");
       // Sin que nadie pulse "siguiente", la sala avanza sola
       const auto = await event(p, "question:opened", 6000);
       expect(auto.questionIndex).toBe(1);
-      const second = await command(h, "question:close", { code }, "question:closed");
+      const second = await command(
+        h,
+        "question:close",
+        { code },
+        "question:closed",
+      );
       expect(second.explanation).toBeNull();
       // Tras la última pregunta también termina sola
       const finished = await event(p, "session:finished", 6000);
       expect(finished.ranking).toHaveLength(1);
-    } finally {
-      await built.app.close();
-      await db.destroy();
-      config = original;
-      await start();
     }
+  });
+  test("el anfitrión puede desactivar el avance automático al crear la sala (0) y validar su rango", async () => {
+    const quiz = (
+      await api()
+        .post("/api/v1/quizzes")
+        .set(auth())
+        .send({ title: "Manual" })
+        .expect(201)
+    ).body;
+    await api()
+      .post(`/api/v1/quizzes/${quiz.id}/questions`)
+      .set(auth())
+      .send({ statement: "Q", options: ["A", "B"], correctOption: 0 })
+      .expect(201);
+    await api()
+      .post("/api/v1/sessions")
+      .set(auth())
+      .send({ quizId: quiz.id, autoAdvanceSeconds: 61 })
+      .expect(400);
+    const created = (
+      await api()
+        .post("/api/v1/sessions")
+        .set(auth())
+        .send({
+          quizId: quiz.id,
+          questionTimeSeconds: 5,
+          autoAdvanceSeconds: 0,
+        })
+        .expect(201)
+    ).body;
+    expect(created.autoAdvanceSeconds).toBe(0);
+    const code = created.code as string;
+    const h = await ready();
+    const p = await ready(ana);
+    await enter(h, code);
+    await enter(p, code);
+    await command(h, "session:start", { code }, "question:opened");
+    const closed = await command(
+      h,
+      "question:close",
+      { code },
+      "question:closed",
+    );
+    expect(closed.nextQuestionAt).toBeNull();
+    const defaulted = (
+      await api()
+        .post("/api/v1/sessions")
+        .set(auth())
+        .send({ quizId: quiz.id })
+        .expect(201)
+    ).body;
+    expect(defaulted.autoAdvanceSeconds).toBe(0);
   });
   test("velocidad y rachas persisten en PostgreSQL, reconexión, reinicio y resultados finales", async () => {
     const { code } = await room(4);

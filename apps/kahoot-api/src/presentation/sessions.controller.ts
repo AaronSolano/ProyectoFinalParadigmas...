@@ -11,7 +11,7 @@ import {
 import { ApiBearerAuth } from "@nestjs/swagger";
 import { Request } from "express";
 import { SessionUseCases } from "../application/session-use-cases";
-import { AuthGuard, Identity } from "../auth/auth";
+import { AccountGuard, AuthGuard, Identity } from "../auth/auth";
 import { SessionInput, JoinInput } from "./dto";
 import { sessionView, participantView } from "./mappers";
 type UserRequest = Request & { identity: Identity };
@@ -20,12 +20,15 @@ type UserRequest = Request & { identity: Identity };
 @ApiBearerAuth()
 export class SessionsController {
   constructor(private readonly service: SessionUseCases) {}
-  @Get() list(@Req() r: UserRequest) {
+  @Get() @UseGuards(AccountGuard) list(@Req() r: UserRequest) {
     return this.service
       .listSessions(r.identity.id)
       .then((items) => items.map((value) => sessionView(value)));
   }
-  @Post() create(@Req() r: UserRequest, @Body() b: SessionInput) {
+  @Post() @UseGuards(AccountGuard) create(
+    @Req() r: UserRequest,
+    @Body() b: SessionInput,
+  ) {
     return this.service
       .createSession(r.identity.id, b)
       .then((value) => sessionView(value));

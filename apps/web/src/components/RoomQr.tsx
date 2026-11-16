@@ -29,7 +29,7 @@ export function RoomQr({ code }: { code: string }) {
       />
       <p>{t('features.scan')}</p>
       <a href={url} data-testid="room-join-link">
-        {url}
+        {t('features.joinLink')}
       </a>
       <button
         type="button"
@@ -39,7 +39,7 @@ export function RoomQr({ code }: { code: string }) {
       >
         {t('features.copyLink')}
       </button>
-      <p role="status">{notice}</p>
+      <p role="status" className="room-qr__notice">{notice}</p>
     </div>
   );
 }

@@ -266,13 +266,18 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
       <ErrorBanner error={liveState.lastError} onDismiss={clearError} />
 
-      <header className="game-header card">
-        <div className="game-header__code-box">
-          <span className="game-header__label">{t('game.roomCode')}</span>
-          <strong className="game-header__code" data-testid="room-code-display">
-            {normalizedCode}
-          </strong>
-        </div>
+      <header className="game-header game-header--compact card">
+        {!isHost && liveState.status === 'waiting' && (
+          <div className="game-header__code-box">
+            <span className="game-header__label">{t('game.roomCode')}</span>
+            <strong
+              className="game-header__code"
+              data-testid="room-code-display"
+            >
+              {normalizedCode}
+            </strong>
+          </div>
+        )}
 
         <div className="game-header__meta">
           {!isHost && (
@@ -320,51 +325,71 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
       {/* WAITING LOBBY */}
       {liveState.status === 'waiting' && (
         <section className="card lobby-section" data-testid="lobby-view">
-          {isHost && <RoomQr code={normalizedCode} />}
-          <RubyFeedback
-            mood={advancing ? 'cheer' : 'idle'}
-            className="ruby-feedback--lobby"
-          />
-          <p className="lobby-status">
-            {isHost
-              ? t('game.lobbyWaitingHost')
-              : t('game.lobbyWaitingParticipant')}
-          </p>
+          <div className={`lobby-layout${isHost ? ' lobby-layout--host' : ''}`}>
+            <div className="lobby-roster">
+              <p className="lobby-status">
+                {isHost
+                  ? t('game.lobbyWaitingHost')
+                  : t('game.lobbyWaitingParticipant')}
+              </p>
+              <RubyFeedback
+                mood={advancing ? 'cheer' : 'idle'}
+                className="ruby-feedback--lobby"
+              />
+              <h2 className="card__subtitle" id="lobby-participants-heading">
+                {t('game.participantsTitle', {
+                  count: liveState.participants.length,
+                })}
+              </h2>
 
-          <h2 className="card__subtitle">
-            {t('game.participantsTitle', {
-              count: liveState.participants.length,
-            })}
-          </h2>
+              {liveState.participants.length === 0 ? (
+                <p className="empty-state">{t('game.noParticipants')}</p>
+              ) : (
+                <ul
+                  className="participant-chips"
+                  tabIndex={0}
+                  aria-labelledby="lobby-participants-heading"
+                  data-testid="lobby-participants-list"
+                >
+                  {liveState.participants.map((p) => (
+                    <li key={p.id} className="participant-chip">
+                      {p.displayName}
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          {liveState.participants.length === 0 ? (
-            <p className="empty-state">{t('game.noParticipants')}</p>
-          ) : (
-            <ul
-              className="participant-chips"
-              data-testid="lobby-participants-list"
-            >
-              {liveState.participants.map((p) => (
-                <li key={p.id} className="participant-chip">
-                  {p.displayName}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {isHost && (
-            <div className="host-actions">
-              <button
-                type="button"
-                data-testid="btn-start-session"
-                className="btn btn--primary btn--lg"
-                onClick={handleStartSession}
-                disabled={advancing || connectionState !== 'connected'}
-              >
-                {t('game.startSessionBtn')}
-              </button>
+              {isHost && (
+                <div className="host-actions">
+                  <button
+                    type="button"
+                    data-testid="btn-start-session"
+                    className="btn btn--primary btn--lg"
+                    onClick={handleStartSession}
+                    disabled={advancing || connectionState !== 'connected'}
+                  >
+                    {t('game.startSessionBtn')}
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+            {isHost && (
+              <aside className="lobby-share" aria-label={t('game.roomCode')}>
+                <div className="game-header__code-box">
+                  <span className="game-header__label">
+                    {t('game.roomCode')}
+                  </span>
+                  <strong
+                    className="game-header__code"
+                    data-testid="room-code-display"
+                  >
+                    {normalizedCode}
+                  </strong>
+                </div>
+                <RoomQr code={normalizedCode} />
+              </aside>
+            )}
+          </div>
         </section>
       )}
 

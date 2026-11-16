@@ -32,6 +32,9 @@ export class PostgresGameStore implements GameStore {
         status: s.game_state,
         questionTimeSeconds: s.question_time_seconds,
         currentIndex: s.current_question_index,
+        openedAt: s.question_opened_at
+          ? new Date(s.question_opened_at).getTime()
+          : null,
         closesAt: s.question_closes_at
           ? new Date(s.question_closes_at).getTime()
           : null,
@@ -74,6 +77,7 @@ class PostgresGameTransaction implements GameTransaction {
       userId: r.user_id,
       displayName: r.display_name,
       score: r.score,
+      streak: r.streak,
       active: r.active,
     }));
   }
@@ -98,6 +102,7 @@ class PostgresGameTransaction implements GameTransaction {
       participantId: r.participant_id,
       questionIndex: r.question_index,
       answer: r.answer,
+      receivedAt: new Date(r.received_at).getTime(),
     }));
   }
   async join(userId: string, name: string): Promise<GameParticipant> {
@@ -127,12 +132,13 @@ class PostgresGameTransaction implements GameTransaction {
   }
   async open(index: number, closesAt: number, now: number) {
     await this.manager.query(
-      `UPDATE sessions SET status='in_progress',game_state='question_open',current_question_index=$2,question_closes_at=$3,last_closed=NULL,started_at=COALESCE(started_at,$4) WHERE id=$1`,
+      `UPDATE sessions SET status='in_progress',game_state='question_open',current_question_index=$2,question_closes_at=$3,question_opened_at=$4,last_closed=NULL,started_at=COALESCE(started_at,$4) WHERE id=$1`,
       [this.session.id, index, new Date(closesAt), new Date(now)],
     );
     Object.assign(this.session, {
       status: "question_open",
       currentIndex: index,
+      openedAt: now,
       closesAt,
       lastClosed: null,
     });
@@ -140,8 +146,8 @@ class PostgresGameTransaction implements GameTransaction {
   async close(result: QuestionClosed) {
     for (const r of result.results) {
       await this.manager.query(
-        "UPDATE participants SET score=$3 WHERE session_id=$1 AND id=$2",
-        [this.session.id, r.participantId, r.totalScore],
+        "UPDATE participants SET score=$3,streak=$4 WHERE session_id=$1 AND id=$2",
+        [this.session.id, r.participantId, r.totalScore, r.streak],
       );
       await this.manager.query(
         "UPDATE answers SET is_correct=$4,points=$5 WHERE session_id=$1 AND participant_id=$2 AND question_index=$3",

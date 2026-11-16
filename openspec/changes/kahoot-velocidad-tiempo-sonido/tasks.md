@@ -5,8 +5,8 @@
 
 ## 2. Dominio, aplicación y persistencia en `kahoot-api`
 
-- [ ] 2.1 (Codex) Implementar en `apps/kahoot-api/src/domain/game.ts` el cálculo puro de puntos por velocidad (`500..1000` por acierto según `elapsedMs / durationMs`, `1000` si `< 500 ms`, `0` por fallo o ausencia) y el cálculo de racha (`streak`), y verificar con pruebas unitarias en `apps/kahoot-api/test/game-domain.spec.ts`
-- [ ] 2.2 (Codex) Agregar migración y soporte en `apps/kahoot-api/src/data/` y `src/application/game-service.ts` para persistir `question_opened_at`, `participants.streak` y `answers.points` (`0..1000`), emitiendo `openedAt`, `durationSeconds`, `elapsedMs` y `streak` en los eventos Socket.IO, y verificar con `npm test --workspace=kahoot-api`
+- [x] 2.1 (Codex) Implementar en `apps/kahoot-api/src/domain/game.ts` el cálculo puro de puntos por velocidad (`500..1000` por acierto según `elapsedMs / durationMs`, `1000` si `< 500 ms`, `0` por fallo o ausencia) y el cálculo de racha (`streak`), y verificar con pruebas unitarias en `apps/kahoot-api/test/game-domain.spec.ts`
+- [x] 2.2 (Codex) Agregar migración y soporte en `apps/kahoot-api/src/data/` y `src/application/game-service.ts` para persistir `question_opened_at`, `participants.streak` y `answers.points` (`0..1000`), emitiendo `openedAt`, `durationSeconds`, `elapsedMs` y `streak` en los eventos Socket.IO, y verificar con `npm test --workspace=kahoot-api`
 
 ## 3. Temporizador, sonido y experiencia Kahoot en `apps/web`
 

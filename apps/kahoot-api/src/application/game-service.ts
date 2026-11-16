@@ -10,6 +10,7 @@ import {
   transition,
   answerRejection,
   points,
+  streak,
   rank,
   QuestionClosed,
 } from "../domain/game";
@@ -53,6 +54,10 @@ export class GameService {
         ? `${this.publicUrl}/api/v1/images/${q.imageFilename}`
         : null,
       closesAt: new Date(s.closesAt!).toISOString(),
+      openedAt: new Date(
+        s.openedAt ?? s.closesAt! - s.questionTimeSeconds * 1000,
+      ).toISOString(),
+      durationSeconds: s.questionTimeSeconds,
     };
   }
   private async state(tx: GameTransaction, user: GameIdentity) {
@@ -240,6 +245,7 @@ export class GameService {
     answer: boolean,
     joined: boolean,
   ) {
+    const receivedAt = this.clock.now();
     return this.serial(code, () =>
       this.store.transaction(code, async (tx) => {
         const s = tx.session,
@@ -248,14 +254,13 @@ export class GameService {
           );
         const existing =
           s.currentIndex === null ? [] : await tx.answers(s.currentIndex);
-        const now = this.clock.now();
         const reason = answerRejection({
           participant: joined && !!me,
           status: s.status,
           currentIndex: s.currentIndex,
           questionIndex,
           closesAt: s.closesAt,
-          now,
+          now: receivedAt,
           answered: existing.some((a) => a.participantId === me?.id),
         });
         if (reason)
@@ -267,7 +272,7 @@ export class GameService {
           me!.id,
           questionIndex,
           answer,
-          now,
+          receivedAt,
         );
         return inserted
           ? { event: "answer:accepted", payload: { questionIndex } }
@@ -285,12 +290,25 @@ export class GameService {
       players = await tx.participants();
     const results = players.map((p) => {
       const answer = answers.find((a) => a.participantId === p.id),
-        awarded = points(answer?.answer, q.correctAnswer);
+        durationMs = s.questionTimeSeconds * 1000,
+        openedAt = s.openedAt ?? s.closesAt! - durationMs,
+        elapsedMs = answer
+          ? Math.max(0, Math.min(durationMs, answer.receivedAt - openedAt))
+          : null,
+        correct = answer !== undefined && answer.answer === q.correctAnswer,
+        awarded = points({
+          answer: answer?.answer,
+          correctAnswer: q.correctAnswer,
+          elapsedMs,
+          durationMs,
+        });
       return {
         participantId: p.id,
         answered: !!answer,
-        correct: awarded === 1,
+        correct,
         pointsAwarded: awarded,
+        elapsedMs,
+        streak: streak(p.streak, correct),
         totalScore: p.score + awarded,
       };
     });

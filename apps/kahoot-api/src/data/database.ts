@@ -4,6 +4,7 @@ import { Config } from "../config/config";
 import { InitialKahoot1794780000000 } from "./migration";
 import { DemoSeedHistory1794780001000 } from "./seed-migration";
 import { LiveGame1794780002000 } from "./live-migration";
+import { SpeedScoring1794780003000 } from "./speed-migration";
 export function database(config: Config): DataSource {
   return new DataSource({
     type: "postgres",
@@ -14,6 +15,7 @@ export function database(config: Config): DataSource {
       InitialKahoot1794780000000,
       DemoSeedHistory1794780001000,
       LiveGame1794780002000,
+      SpeedScoring1794780003000,
     ],
   });
 }

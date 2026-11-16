@@ -225,8 +225,8 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     );
     expect(
       closed.results.find((r: any) => r.participantId === me.participantId),
-    ).toMatchObject({ pointsAwarded: 1, totalScore: 1 });
-    expect((await enter(normal, code)).myScore).toBe(1);
+    ).toMatchObject({ pointsAwarded: 1000, totalScore: 1000 });
+    expect((await enter(normal, code)).myScore).toBe(1000);
     expect(answers).toHaveBeenCalledWith("accepted", "none");
     expect(logs).toHaveBeenCalledWith("answer:submit", "rate_limited");
     expect(logs).toHaveBeenCalledWith("answer:submit", "ok");
@@ -382,7 +382,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     expect(closed.correctAnswer).toBe(true);
     expect(
       closed.results.find((x: any) => x.participantId === me.participantId),
-    ).toMatchObject({ pointsAwarded: 1, totalScore: 1 });
+    ).toMatchObject({ pointsAwarded: 1000, totalScore: 1000 });
     expect(
       await command(
         p,
@@ -396,7 +396,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     const reconnected = await ready(ana),
       synced = await enter(reconnected, code);
     expect(synced.participantId).toBe(me.participantId);
-    expect(synced.myScore).toBe(1);
+    expect(synced.myScore).toBe(1000);
     expect(synced.participants).toHaveLength(2);
     await command(h, "question:next", { code }, "question:opened");
     // Ana omits the second answer; Beto gets it right, tying the final score.
@@ -414,7 +414,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     );
     expect(
       second.results.find((x: any) => x.participantId === me.participantId),
-    ).toMatchObject({ answered: false, pointsAwarded: 0, totalScore: 1 });
+    ).toMatchObject({ answered: false, pointsAwarded: 0, totalScore: 1000 });
     const finished = await command(
       h,
       "question:next",
@@ -445,7 +445,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
         .set(auth())
         .expect(200)
     ).body;
-    expect(results.ranking.map((x: any) => x.score)).toEqual([1, 1]);
+    expect(results.ranking.map((x: any) => x.score)).toEqual([1000, 1000]);
     expect(
       (
         await db.query(
@@ -466,6 +466,227 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
           .expect(200)
       ).body,
     ).toEqual(results);
+  });
+  test("velocidad y rachas persisten en PostgreSQL, reconexión, reinicio y resultados finales", async () => {
+    const { code } = await room(4);
+    let h = await ready(),
+      p = await ready(ana),
+      q = await ready(beto),
+      r = await ready(carla);
+    await enter(h, code);
+    const me = await enter(p, code),
+      other = await enter(q, code),
+      absent = await enter(r, code);
+    const result = (closed: any, id: string) =>
+      closed.results.find((x: any) => x.participantId === id);
+    const submit = (socket: Socket, index: number, answer: boolean) =>
+      command(
+        socket,
+        "answer:submit",
+        { code, questionIndex: index, answer },
+        "answer:accepted",
+      );
+    async function restart() {
+      for (const socket of sockets) socket.disconnect();
+      await built.app.close();
+      await db.destroy();
+      await start();
+      h = await ready();
+      p = await ready(ana);
+      q = await ready(beto);
+      r = await ready(carla);
+      await enter(h, code);
+      await enter(q, code);
+      await enter(r, code);
+      return enter(p, code);
+    }
+    let opened = await command(h, "session:start", { code }, "question:opened");
+    const firstOpening = now;
+    expect(opened).toMatchObject({
+      openedAt: new Date(firstOpening).toISOString(),
+      durationSeconds: 5,
+    });
+    expect(Date.parse(opened.closesAt) - Date.parse(opened.openedAt)).toBe(
+      5000,
+    );
+    now = firstOpening + 499;
+    expect(
+      await command(
+        p,
+        "answer:submit",
+        { code, questionIndex: 0, answer: true, elapsedMs: 0, points: 1000 },
+        "error",
+      ),
+    ).toMatchObject({ code: "INVALID_PAYLOAD" });
+    await submit(p, 0, true);
+    now = firstOpening + 2500;
+    await submit(q, 0, true);
+    let closed = await command(
+      h,
+      "question:close",
+      { code },
+      "question:closed",
+    );
+    expect(result(closed, me.participantId)).toMatchObject({
+      elapsedMs: 499,
+      pointsAwarded: 1000,
+      totalScore: 1000,
+      streak: 1,
+    });
+    expect(result(closed, other.participantId)).toMatchObject({
+      elapsedMs: 2500,
+      pointsAwarded: 750,
+      totalScore: 750,
+      streak: 1,
+    });
+    expect(result(closed, absent.participantId)).toMatchObject({
+      elapsedMs: null,
+      pointsAwarded: 0,
+      streak: 0,
+    });
+    let sync = await restart();
+    expect(sync.lastClosed).toEqual(closed);
+    expect(sync.currentQuestion).toMatchObject({
+      openedAt: opened.openedAt,
+      durationSeconds: 5,
+    });
+    expect(sync.myScore).toBe(1000);
+    opened = await command(h, "question:next", { code }, "question:opened");
+    const secondOpening = now;
+    now += 500;
+    await submit(p, 1, false);
+    expect(
+      await command(
+        p,
+        "answer:submit",
+        { code, questionIndex: 1, answer: true },
+        "answer:rejected",
+      ),
+    ).toMatchObject({ reason: "already_answered" });
+    now = secondOpening + 1000;
+    await submit(q, 1, true);
+    sync = await restart();
+    expect(sync.currentQuestion).toMatchObject({
+      openedAt: opened.openedAt,
+      durationSeconds: 5,
+    });
+    expect(sync.hasAnswered).toBe(true);
+    expect(JSON.stringify(sync)).not.toContain("correctAnswer");
+    expect(
+      (
+        await db.query("SELECT streak FROM participants WHERE id=$1", [
+          me.participantId,
+        ])
+      )[0].streak,
+    ).toBe(1);
+    closed = await command(h, "question:close", { code }, "question:closed");
+    expect(result(closed, me.participantId)).toMatchObject({
+      elapsedMs: 500,
+      pointsAwarded: 950,
+      totalScore: 1950,
+      streak: 2,
+    });
+    expect(result(closed, other.participantId)).toMatchObject({
+      elapsedMs: 1000,
+      correct: false,
+      pointsAwarded: 0,
+      streak: 0,
+    });
+    const thirdOpening = now;
+    await command(h, "question:next", { code }, "question:opened");
+    now = thirdOpening + 100;
+    await submit(p, 2, true);
+    now = thirdOpening + 5000;
+    await submit(q, 2, false);
+    now++;
+    expect(
+      await command(
+        r,
+        "answer:submit",
+        { code, questionIndex: 2, answer: false },
+        "answer:rejected",
+      ),
+    ).toMatchObject({ reason: "late" });
+    closed = await command(h, "question:close", { code }, "question:closed");
+    expect(result(closed, me.participantId)).toMatchObject({
+      pointsAwarded: 0,
+      streak: 0,
+    });
+    expect(result(closed, other.participantId)).toMatchObject({
+      elapsedMs: 5000,
+      pointsAwarded: 500,
+      totalScore: 1250,
+      streak: 1,
+    });
+    await command(h, "question:next", { code }, "question:opened");
+    closed = await command(h, "question:close", { code }, "question:closed");
+    expect(result(closed, other.participantId)).toMatchObject({
+      elapsedMs: null,
+      pointsAwarded: 0,
+      totalScore: 1250,
+      streak: 0,
+    });
+    const finished = await command(
+      h,
+      "question:next",
+      { code },
+      "session:finished",
+    );
+    expect(finished.ranking.map((x: any) => x.score)).toEqual([1950, 1250, 0]);
+    const rows = await db.query(
+      "SELECT question_index,points FROM answers ORDER BY question_index,points DESC",
+    );
+    expect(rows).toEqual([
+      { question_index: 0, points: 1000 },
+      { question_index: 0, points: 750 },
+      { question_index: 1, points: 950 },
+      { question_index: 1, points: 0 },
+      { question_index: 2, points: 500 },
+      { question_index: 2, points: 0 },
+    ]);
+    sync = await restart();
+    expect(sync.ranking).toEqual(finished.ranking);
+    const final = (
+      await api()
+        .get(`/api/v1/sessions/${code}/results`)
+        .set(auth())
+        .expect(200)
+    ).body;
+    expect(final.ranking.map((x: any) => x.score)).toEqual([1950, 1250, 0]);
+    expect(
+      (
+        await db.query(
+          "SELECT correct_answers FROM session_results ORDER BY score DESC",
+        )
+      ).map((x: any) => x.correct_answers),
+    ).toEqual([2, 2, 0]);
+  });
+  test("elapsedMs se acota a cero ante un retroceso del reloj y no usa la hora del cierre", async () => {
+    const { code } = await room(1),
+      h = await ready(),
+      p = await ready(ana);
+    await enter(h, code);
+    await enter(p, code);
+    await command(h, "session:start", { code }, "question:opened");
+    now -= 100;
+    await command(
+      p,
+      "answer:submit",
+      { code, questionIndex: 0, answer: true },
+      "answer:accepted",
+    );
+    now += 20000;
+    const closed = await command(
+      h,
+      "question:close",
+      { code },
+      "question:closed",
+    );
+    expect(closed.results[0]).toMatchObject({
+      elapsedMs: 0,
+      pointsAwarded: 1000,
+      streak: 1,
+    });
   });
   test("ingreso REST avisa al lobby una sola vez y conserva el nombre configurado al abrir Socket.IO", async () => {
     const { code } = await room(1),
@@ -584,10 +805,12 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       duplicateClose = event(h, "error");
     h.emit("question:close", { code });
     h.emit("question:close", { code });
-    expect((await closed).results[0].totalScore).toBe(1);
+    expect((await closed).results[0].totalScore).toBe(1000);
     expect(await duplicateClose).toMatchObject({ code: "INVALID_STATE" });
     expect((await db.query("SELECT count(*) FROM answers"))[0].count).toBe("1");
-    expect((await db.query("SELECT score FROM participants"))[0].score).toBe(1);
+    expect((await db.query("SELECT score FROM participants"))[0].score).toBe(
+      1000,
+    );
   });
   test("reinicio durante pregunta abierta conserva respuesta y restaura cierre automático", async () => {
     const { code } = await room(1),
@@ -620,8 +843,8 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     const closed = event(reconnected, "question:closed");
     now += 5000;
     expect((await closed).results[0]).toMatchObject({
-      pointsAwarded: 1,
-      totalScore: 1,
+      pointsAwarded: 1000,
+      totalScore: 1000,
     });
   });
   test("salida explícita conserva identidad, resultados y otras pestañas; desconexión no emite salida", async () => {

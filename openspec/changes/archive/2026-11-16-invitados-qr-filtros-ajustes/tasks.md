@@ -12,4 +12,4 @@
 ## 3. Validación y entrega
 - [x] 3.1 Pruebas de componente y e2e de invitado y QR.
 - [x] 3.2 Lint, tests, build, tipos, PostgreSQL y Playwright en verde.
-- [ ] 3.3 Documentar configuración y entregar en main sin PR.
+- [x] 3.3 Documentar configuración y entregar en main sin PR.

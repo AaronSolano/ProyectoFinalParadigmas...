@@ -54,11 +54,36 @@ export function answerRejection(input: {
   if (input.answered) return "already_answered";
   return undefined;
 }
-export function points(
-  answer: boolean | undefined,
-  correctAnswer: boolean,
-): 0 | 1 {
-  return answer !== undefined && answer === correctAnswer ? 1 : 0;
+export function points({
+  answer,
+  correctAnswer,
+  elapsedMs,
+  durationMs,
+  basePoints = 1000,
+}: {
+  answer: boolean | undefined;
+  correctAnswer: boolean;
+  elapsedMs: number | null;
+  durationMs: number;
+  basePoints?: number;
+}): number {
+  if (
+    answer === undefined ||
+    answer !== correctAnswer ||
+    elapsedMs === null ||
+    !Number.isFinite(elapsedMs) ||
+    elapsedMs < 0 ||
+    !Number.isFinite(durationMs) ||
+    durationMs <= 0
+  )
+    return 0;
+  if (elapsedMs < 500) return basePoints;
+  return Math.round(
+    (1 - Math.min(elapsedMs, durationMs) / durationMs / 2) * basePoints,
+  );
+}
+export function streak(previous: number, correct: boolean): number {
+  return correct ? previous + 1 : 0;
 }
 export interface RankedPlayer {
   participantId: string;
@@ -87,6 +112,8 @@ export interface QuestionResult {
   answered: boolean;
   correct: boolean;
   pointsAwarded: number;
+  elapsedMs: number | null;
+  streak: number;
   totalScore: number;
 }
 export interface QuestionClosed {
@@ -102,6 +129,7 @@ export interface GameSession {
   status: GameStatus;
   questionTimeSeconds: number;
   currentIndex: number | null;
+  openedAt: number | null;
   closesAt: number | null;
   lastClosed: QuestionClosed | null;
 }
@@ -110,6 +138,7 @@ export interface GameParticipant {
   userId: string;
   displayName: string;
   score: number;
+  streak: number;
   active: boolean;
 }
 export interface GameQuestion {
@@ -122,4 +151,5 @@ export interface GameAnswer {
   participantId: string;
   questionIndex: number;
   answer: boolean;
+  receivedAt: number;
 }

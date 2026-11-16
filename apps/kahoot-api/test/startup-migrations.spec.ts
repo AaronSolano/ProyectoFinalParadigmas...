@@ -71,6 +71,7 @@ suite("arranque sobre PostgreSQL vacío con bloqueo asesor", () => {
             "InitialKahoot1794780000000",
             "DemoSeedHistory1794780001000",
             "LiveGame1794780002000",
+            "SpeedScoring1794780003000",
           ]);
           expect(
             (await db.query("SELECT to_regclass('answers') AS answers"))[0]

@@ -945,4 +945,117 @@ describe('@profelink/web — Fase 5 unit & component suite', () => {
       await mocks.close();
     }
   });
+
+  it('7.1.2a (permisos en UI): un participante no ve controles de anfitrión y un 403 FORBIDDEN al modificar un cuestionario ajeno muestra aviso claro', async () => {
+    saveAuthSession('part-jwt', {
+      id: 'user-part-1',
+      email: 'part@example.com',
+      displayName: 'Participante',
+      createdAt: '2026-11-15T14:00:00.000Z',
+    });
+
+    const participantRender = renderWithProviders(
+      <Routes>
+        <Route path="/play/:code" element={<GameRoomPage roleHint="participant" />} />
+      </Routes>,
+      ['/play/K7M3QX'],
+    );
+
+    expect(screen.queryByTestId('btn-start-session')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('btn-close-question')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('btn-next-question')).not.toBeInTheDocument();
+    participantRender.unmount();
+
+    vi.spyOn(kahootApi, 'listQuizzes').mockResolvedValue([
+      {
+        id: 'quiz-other',
+        ownerId: 'other-owner',
+        title: 'Cuestionario Ajeno',
+        description: 'No editable',
+        questionCount: 2,
+        createdAt: '2026-11-10T14:00:00.000Z',
+        updatedAt: '2026-11-10T14:00:00.000Z',
+      },
+    ]);
+    vi.spyOn(kahootApi, 'deleteQuiz').mockRejectedValueOnce(
+      new ApiProblemError({
+        status: 403,
+        code: 'FORBIDDEN',
+        message: 'No eres propietario de este cuestionario.',
+      }),
+    );
+
+    renderWithProviders(<QuizzesPage />, ['/quizzes']);
+    expect(await screen.findByText('Cuestionario Ajeno')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('btn-delete-quiz-quiz-other'));
+
+    expect(await screen.findByTestId('error-banner')).toHaveTextContent(
+      /No tienes permiso para realizar esta acción/i,
+    );
+  });
+
+  it('7.1.2b (aislamiento de dos salas): dos sesiones simultáneas mantienen participantes, preguntas y resultados separados', async () => {
+    const mocks = await startMockServers({ authPort: 0, kahootPort: 0 });
+    const kahootPort = mocks.kahootServer.address().port;
+
+    const makeJwt = (sub: string, name: string) =>
+      `hdr.${Buffer.from(JSON.stringify({ sub, name, email: `${sub}@example.com` })).toString('base64url')}.sig`;
+
+    const hostAJwt = makeJwt('host-a', 'Host A');
+    const hostBJwt = makeJwt('host-b', 'Host B');
+    const partAJwt = makeJwt('part-a', 'Alice Sala A');
+    const partBJwt = makeJwt('part-b', 'Bruno Sala B');
+
+    const createRoom = async (jwt: string) => {
+      const res = await fetch(`http://localhost:${kahootPort}/api/v1/sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+        body: JSON.stringify({
+          quizId: '7c9e6679-7425-40de-944b-e07fc1f90ae7',
+          questionTimeSeconds: 20,
+        }),
+      });
+      return (await res.json()) as { code: string };
+    };
+
+    const roomA = await createRoom(hostAJwt);
+    const roomB = await createRoom(hostBJwt);
+    expect(roomA.code).not.toBe(roomB.code);
+
+    const sockHostA = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: hostAJwt } });
+    const sockHostB = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: hostBJwt } });
+    const sockPartA = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: partAJwt } });
+    const sockPartB = ioClient(`http://localhost:${kahootPort}/game`, { auth: { token: partBJwt } });
+
+    try {
+      const syncHA = new Promise<any>((r) => sockHostA.once('state_sync', r));
+      const syncHB = new Promise<any>((r) => sockHostB.once('state_sync', r));
+      sockHostA.emit('session:join', { code: roomA.code });
+      sockHostB.emit('session:join', { code: roomB.code });
+      await Promise.all([syncHA, syncHB]);
+
+      let roomBReceivedFromA = false;
+      sockHostB.on('participant:joined', (evt: any) => {
+        if (evt.participant?.displayName === 'Alice Sala A') {
+          roomBReceivedFromA = true;
+        }
+      });
+
+      const syncPA = new Promise<any>((r) => sockPartA.once('state_sync', r));
+      const syncPB = new Promise<any>((r) => sockPartB.once('state_sync', r));
+      sockPartA.emit('session:join', { code: roomA.code });
+      sockPartB.emit('session:join', { code: roomB.code });
+      const [stateA, stateB] = await Promise.all([syncPA, syncPB]);
+
+      expect(stateA.participants.map((p: any) => p.displayName)).toEqual(['Alice Sala A']);
+      expect(stateB.participants.map((p: any) => p.displayName)).toEqual(['Bruno Sala B']);
+      expect(roomBReceivedFromA).toBe(false);
+    } finally {
+      sockHostA.disconnect();
+      sockHostB.disconnect();
+      sockPartA.disconnect();
+      sockPartB.disconnect();
+      await mocks.close();
+    }
+  });
 });

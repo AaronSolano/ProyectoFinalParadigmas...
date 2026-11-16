@@ -10,6 +10,7 @@ test("métricas siguen inicio, recuperación, publicación del cierre y fin sin 
     status: "waiting",
     questionTimeSeconds: 5,
     currentIndex: null,
+    openedAt: null,
     closesAt: null,
     lastClosed: null,
   };
@@ -30,10 +31,11 @@ test("métricas siguen inicio, recuperación, publicación del cierre y fin sin 
     },
     leave: async () => {},
     insertAnswer: async () => true,
-    open: async (index, deadline) => {
+    open: async (index, deadline, openedAt) => {
       Object.assign(session, {
         status: "question_open",
         currentIndex: index,
+        openedAt,
         closesAt: deadline,
       });
     },

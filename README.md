@@ -23,7 +23,7 @@ La especificación completa, con diagramas de arquitectura y de clases, modelo d
 | auth-api (Render), documentación | _Pendiente_ (`/docs`) |
 | kahoot-api (Render), documentación | _Pendiente_ (`/docs`) |
 | Cliente externo desplegado | _Pendiente_ |
-| Imágenes en Docker Hub | `profelink/profelink-auth-api`, `profelink/profelink-kahoot-api`, `profelink/profelink-web` (_pendiente de publicar_) |
+| Imágenes en Docker Hub | [`aaronsc04/profelink-auth-api`](https://hub.docker.com/r/aaronsc04/profelink-auth-api), [`aaronsc04/profelink-kahoot-api`](https://hub.docker.com/r/aaronsc04/profelink-kahoot-api), [`aaronsc04/profelink-web`](https://hub.docker.com/r/aaronsc04/profelink-web) |
 
 En local (con Docker): aplicación en <http://localhost:8080>, documentación Scalar de la autenticación en <http://localhost:3001/docs> y de las actividades en <http://localhost:3002/docs>, Grafana (opcional) en <http://localhost:3000>.
 

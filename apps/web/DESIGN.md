@@ -1,6 +1,6 @@
 ---
 name: RubyMind
-description: Evaluaciones educativas de verdadero/falso en vivo, acompañadas por Ruby.
+description: Evaluaciones educativas de opción múltiple en vivo, acompañadas por Ruby.
 colors:
   bg-page: "#f7f1e8"
   bg-card: "#fffdfa"

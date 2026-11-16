@@ -4,7 +4,7 @@ API NestJS con TypeScript estricto, PostgreSQL y migraciones TypeORM. Implementa
 
 ## Ejecutar
 
-Desde esta carpeta: `npm install --workspaces=false`, `npm run migration:run`, `npm run build`, `npm start`. En el monorepo usar los scripts del workspace `@profelink/kahoot-api` una vez actualizado el lockfile por el orquestador.
+Desde esta carpeta: `npm install --workspaces=false`, `npm run migration:run`, `npm run build`, `npm start`. En el monorepo usar los scripts del workspace `@rubymind/kahoot-api` una vez actualizado el lockfile por el orquestador.
 
 Variables requeridas: `KAHOOT_DATABASE_URL`, `AUTH_BASE_URL` (raíz del host de auth) y `PUBLIC_API_URL` (raíz pública de esta API). Opcionales: `KAHOOT_PORT=3002`, `DATABASE_SSL=false`, `JWT_ISSUER=auth-api`, `JWT_AUDIENCE=kahoot-api`, `CORS_ORIGINS=http://localhost:5173`, `QUESTION_TIME_SECONDS=20`, `IMAGE_STORAGE=disk`, `IMAGE_STORAGE_PATH=./data/images`, `IMAGE_MAX_BYTES=2097152`.
 
@@ -98,12 +98,12 @@ Los cuatro archivos de infraestructura de pruebas pertenecen exclusivamente a F7
 Desde `apps/kahoot-api`, con dependencias de desarrollo instaladas:
 
 ```powershell
-docker compose -p profelink-f7 -f test/compose.yaml --profile load up -d --build --wait
+docker compose -p rubymind-f7 -f test/compose.yaml --profile load up -d --build --wait
 $env:AUTH_BASE_URL='http://127.0.0.1:55435'
 $env:KAHOOT_BASE_URL='http://127.0.0.1:55436'
 $env:LOAD_STEPS='5,10,25'
 npm run load
-docker compose -p profelink-f7 -f test/compose.yaml --profile load down
+docker compose -p rubymind-f7 -f test/compose.yaml --profile load down
 ```
 
 Configurar `LOAD_TIMEOUT_MS` (15000), `LOAD_MAX_P95_MS` (1000) y `LOAD_MAX_ERROR_RATE` (0.01) para ajustar los criterios. El Compose de pruebas utiliza bases e imágenes desechables y claves RSA efímeras; no es el despliegue de infraestructura. El informe verificado y sus límites están en [LOAD-VERIFICATION.md](./LOAD-VERIFICATION.md).
@@ -165,3 +165,16 @@ El servidor guarda `question_opened_at` al abrir cada pregunta y `received_at` a
 La migración `SpeedScoring1794780003000` conserva los puntos históricos de 0/1, inicializa las rachas existentes en 0 y permite puntos de 0 a 1000. Deduce la apertura de preguntas anteriores a partir del plazo y la duración; completa los cierres guardados con los campos del nuevo contrato. En partidas históricas terminadas sin marca de apertura recuperable, el tiempo de respuesta queda en `null`. El rollback rechaza una base con puntos mayores que 1 para evitar pérdida de datos.
 
 Verificación: `game-domain.spec.ts` cubre la fórmula y la racha puras; `live.spec.ts` cubre velocidades distintas, límites, rechazo de tiempos enviados por clientes, rachas, PostgreSQL, reconexión, reinicio y clasificación final; `speed-migration.spec.ts` verifica la actualización desde datos anteriores. El script de carga valida la fórmula nueva y compara los resultados REST con los del cierre. Los informes de capacidad anteriores documentan la versión evaluada entonces; no certifican la capacidad de esta nueva escala.
+
+## PostgreSQL compartido y TLS (Supabase)
+
+| Variable | Valor y comportamiento |
+| --- | --- |
+| `DATABASE_SSL_CA` | Opcional: contenido PEM de la CA raíz, con saltos reales o `\n` escapados. Con `DATABASE_SSL=true` se pasa junto con `rejectUnauthorized: true`; sin CA se conserva la validación del almacén de confianza de Node. Con TLS desactivado se ignora. |
+| `DATABASE_SCHEMA` | `public` por defecto. Para compartir la base `postgres`, configurar `kahoot` en esta API. Acepta identificadores de hasta 63 caracteres (letras, dígitos y `_`, sin dígito inicial ni prefijo `pg_`). |
+
+El esquema se crea si falta, serializando esa creación entre instancias, y la tabla de migraciones de TypeORM vive dentro de él. Cada conexión nueva del pool espera la configuración SQL de `search_path` antes de usarse; no se envían opciones de arranque al pooler. La búsqueda comienza por el esquema del servicio e incluye `public` y `extensions` para resolver tipos de extensiones existentes como `citext`. El usuario de la base necesita permisos para crear el esquema si falta y ejecutar las migraciones. Usar el pooler en modo sesión (puerto 5432 del brief).
+
+La configuración se aplica al servidor, al CLI de migraciones y a los seeds, incluidos los compilados. No se trasladan datos antiguos de `public`: cambiar `DATABASE_SCHEMA` selecciona otro espacio. Los parámetros TLS de la URL (`sslmode`, `sslrootcert`, `sslcert`, `sslkey`, `sslpassword`, `ssl`) se retiran para que no sustituyan `DATABASE_SSL` y `DATABASE_SSL_CA`. No se ofrece una opción para desactivar la verificación del certificado manteniendo TLS.
+
+El despliegue debe pasar `DATABASE_SCHEMA` por separado a cada servicio (`auth`/`kahoot`) y la CA a ambas APIs. La configuración raíz de `.env.example` y Compose corresponde al orquestador.

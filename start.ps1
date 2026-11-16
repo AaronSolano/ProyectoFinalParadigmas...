@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Inicia ProfeLink Kahoot con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
+Inicia RubyMind con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
 
 .DESCRIPTION
   .\start.ps1                       Construye las imagenes en esta maquina y las inicia
@@ -60,14 +60,14 @@ function Set-EnvValue([string]$Key, [string]$Value) {
   [System.IO.File]::WriteAllText((Join-Path $PWD ".env"), (($lines -join "`n") + "`n"), $Utf8NoBom)
 }
 
-# Cada copia del repositorio usa su propio proyecto de Compose (profelink-<carpeta>), de modo que dos copias
+# Cada copia del repositorio usa su propio proyecto de Compose (rubymind-<carpeta>), de modo que dos copias
 # en la misma maquina no se pisan los contenedores, los volumenes ni las imagenes.
 function Get-Slug([string]$Text) {
   $s = ($Text.ToLowerInvariant() -replace "[^a-z0-9]", "-") -replace "-+", "-"
   return $s.Trim("-")
 }
 $slug = Get-Slug (Split-Path -Leaf $PSScriptRoot)
-$ProjectDefault = if ($slug) { "profelink-$slug" } else { "profelink" }
+$ProjectDefault = if ($slug) { "rubymind-$slug" } else { "rubymind" }
 
 # "volume ls" no escribe errores si el volumen no existe (con "inspect" PowerShell 5.1 abortaria).
 function Test-Volume([string]$Name) {
@@ -85,7 +85,7 @@ if (-not (Test-Path -LiteralPath ".env")) {
   Write-Host "Se creo .env desde .env.example"
 }
 
-# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre profelink-<carpeta>.
+# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre rubymind-<carpeta>.
 if ((Get-EnvValue "COMPOSE_PROJECT_NAME") -eq "") { Set-EnvValue "COMPOSE_PROJECT_NAME" $ProjectDefault }
 $env:COMPOSE_PROJECT_NAME = Get-EnvValue "COMPOSE_PROJECT_NAME"
 
@@ -135,7 +135,7 @@ docker @compose run --rm seed-kahoot
 if ($LASTEXITCODE -ne 0) { throw "Fallo el seed de kahoot-api." }
 
 Write-Host ""
-Write-Host "ProfeLink Kahoot esta en marcha."
+Write-Host "RubyMind esta en marcha."
 Write-Host "  Proyecto Compose: $($env:COMPOSE_PROJECT_NAME)"
 Write-Host "  Aplicacion:      $(Get-EnvValue 'PUBLIC_URL')"
 Write-Host "  Usuario demo:    $(Get-EnvValue 'DEMO_EMAIL')"

@@ -16,7 +16,7 @@ import {
   unlockAudioContext,
 } from '../audio/soundEngine';
 import { CountdownTimer } from '../components/CountdownTimer';
-import { TrueFalseButtons } from '../components/TrueFalseButtons';
+import { OptionButtons } from '../components/OptionButtons';
 import { ErrorBanner } from '../components/ErrorBanner';
 import {
   RubyFeedback,
@@ -193,11 +193,11 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     nextQuestion();
   };
 
-  const handleSubmitAnswer = (answer: boolean) => {
+  const handleSubmitAnswer = (option: number) => {
     unlockAudioContext();
     playSubmitAnswerSound();
     if (liveState.currentQuestion) {
-      submitAnswer(liveState.currentQuestion.questionIndex, answer);
+      submitAnswer(liveState.currentQuestion.questionIndex, option);
     }
   };
 
@@ -403,8 +403,9 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
               </button>
             </div>
           ) : (
-            <TrueFalseButtons
+            <OptionButtons
               questionIndex={liveState.currentQuestion.questionIndex}
+              options={liveState.currentQuestion.options}
               hasAnswered={liveState.hasAnswered}
               answerAccepted={liveState.answerAccepted}
               rejectedReason={liveState.rejectedReason}
@@ -441,9 +442,10 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
             data-testid="correct-answer-reveal"
           >
             {t('game.correctAnswerWas', {
-              answer: liveState.lastClosed.correctAnswer
-                ? t('game.trueBtn')
-                : t('game.falseBtn'),
+              answer:
+                liveState.currentQuestion?.options[
+                  liveState.lastClosed.correctOption
+                ] ?? String(liveState.lastClosed.correctOption + 1),
             })}
           </div>
 

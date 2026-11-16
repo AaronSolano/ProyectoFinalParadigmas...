@@ -266,6 +266,7 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
           questionIndex: payload.questionIndex,
           total: payload.total,
           statement: payload.statement,
+          options: payload.options,
           imageUrl: payload.imageUrl,
           closesAt: payload.closesAt,
           openedAt: payload.openedAt,
@@ -364,11 +365,11 @@ export function useGameSocket(code: string, token: string | null, isHostHint = f
   }, [normalizedCode]);
 
   const submitAnswer = useCallback(
-    (questionIndex: number, answer: boolean) => {
+    (questionIndex: number, option: number) => {
       socketRef.current?.emit('answer:submit', {
         code: normalizedCode,
         questionIndex,
-        answer,
+        option,
       });
     },
     [normalizedCode],

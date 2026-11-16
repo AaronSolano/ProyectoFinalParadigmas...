@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Detiene ProfeLink Kahoot.
+Detiene RubyMind.
 
 .DESCRIPTION
   .\stop.ps1          Detiene y elimina los contenedores; CONSERVA los datos (perfiles, cuestionarios, imagenes, resultados)
@@ -16,7 +16,7 @@ if (-not (Test-Path -LiteralPath ".env")) {
   $env:POSTGRES_PASSWORD = "x"; $env:DEMO_PASSWORD = "x"; $env:GRAFANA_ADMIN_PASSWORD = "x"
 }
 
-# Mismo nombre de proyecto que usa start.ps1 (profelink-<carpeta>), salvo que .env ya lo fije.
+# Mismo nombre de proyecto que usa start.ps1 (rubymind-<carpeta>), salvo que .env ya lo fije.
 function Get-Slug([string]$Text) {
   $s = ($Text.ToLowerInvariant() -replace "[^a-z0-9]", "-") -replace "-+", "-"
   return $s.Trim("-")
@@ -30,7 +30,7 @@ if ($fromEnv -ne "") {
   $env:COMPOSE_PROJECT_NAME = $fromEnv
 } else {
   $slug = Get-Slug (Split-Path -Leaf $PSScriptRoot)
-  $env:COMPOSE_PROJECT_NAME = if ($slug) { "profelink-$slug" } else { "profelink" }
+  $env:COMPOSE_PROJECT_NAME = if ($slug) { "rubymind-$slug" } else { "rubymind" }
 }
 Write-Host "Proyecto Compose: $($env:COMPOSE_PROJECT_NAME)"
 

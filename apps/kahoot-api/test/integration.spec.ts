@@ -115,7 +115,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
       await api()
         .post(`/api/v1/quizzes/${id}/questions`)
         .set(auth())
-        .send({ statement, correctAnswer: true })
+        .send({ statement, options: ["Verdadero", "Falso"], correctOption: 0 })
         .expect(201)
     ).body;
     valid("Question", body);
@@ -157,7 +157,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api()
       .put(`/api/v1/quizzes/${q.id}/questions/${b.id}`)
       .set(auth())
-      .send({ statement: "UDP editada", correctAnswer: false, position: 1 })
+      .send({ statement: "UDP editada", options: ["Verdadero", "Falso"], correctOption: 1, position: 1 })
       .expect(200);
     const list = await api()
       .get(`/api/v1/quizzes/${q.id}/questions`)
@@ -169,7 +169,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
         [method](`/api/v1/quizzes/${q.id}/questions/${a.id}`)
         .set(auth(other));
       if (method === "put")
-        call.send({ statement: "hack", correctAnswer: false });
+        call.send({ statement: "hack", options: ["Verdadero", "Falso"], correctOption: 1 });
       await call.expect(403);
     }
     await api().get("/api/v1/quizzes").set(auth(other)).expect(200, []);
@@ -199,7 +199,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api()
       .post(`/api/v1/quizzes/${q.id}/questions`)
       .set(auth())
-      .send({ statement: "TCP", correctAnswer: "false" })
+      .send({ statement: "TCP", options: ["Verdadero", "Falso"], correctOption: "x" })
       .expect(400);
     await api()
       .post("/api/v1/sessions")
@@ -217,7 +217,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
     await api()
       .put(`/api/v1/quizzes/${q.id}/questions/${question1.id}`)
       .set(auth())
-      .send({ statement: "Cambiada", correctAnswer: false })
+      .send({ statement: "Cambiada", options: ["Verdadero", "Falso"], correctOption: 1 })
       .expect(200);
     expect(
       (
@@ -225,7 +225,7 @@ describeDb("REST con PostgreSQL y JWKS reales", () => {
           a.id,
         ])
       )[0],
-    ).toMatchObject({ statement: "TCP", correct_answer: true, position: 0 });
+    ).toMatchObject({ statement: "TCP", correct_option: 0, position: 0 });
     const joins = await Promise.all(
       Array.from({ length: 6 }, () =>
         api()

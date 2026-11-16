@@ -1,7 +1,6 @@
 # ui/kahoot-experience Specification
 
 ## Purpose
-
 Proporciona retroalimentación audiovisual tipo Kahoot durante la partida en vivo, incluyendo barra y anillo de tiempo restante, visualización del tiempo transcurrido al responder, indicadores de racha de aciertos consecutivos y efectos de sonido sincronizados con cada fase del juego con control de silencio.
 
 ## Requirements

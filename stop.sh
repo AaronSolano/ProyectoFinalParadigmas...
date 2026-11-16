@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detiene ProfeLink Kahoot.
+# Detiene RubyMind.
 #   ./stop.sh            Detiene y elimina los contenedores; CONSERVA los datos (perfiles, cuestionarios, imagenes, resultados)
 #   ./stop.sh --purge    Ademas BORRA los volumenes: se pierden todos los datos
 set -euo pipefail
@@ -19,12 +19,12 @@ if [ ! -f .env ]; then
   export POSTGRES_PASSWORD=x DEMO_PASSWORD=x GRAFANA_ADMIN_PASSWORD=x
 fi
 
-# Mismo nombre de proyecto que usa start.sh (profelink-<carpeta>), salvo que .env ya lo fije.
+# Mismo nombre de proyecto que usa start.sh (rubymind-<carpeta>), salvo que .env ya lo fije.
 slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//'; }
 if [ -f .env ] && grep -qE '^COMPOSE_PROJECT_NAME=.+' .env; then
   export COMPOSE_PROJECT_NAME="$(grep -E '^COMPOSE_PROJECT_NAME=' .env | head -n 1 | cut -d= -f2-)"
 else
-  PROJECT_DEFAULT="profelink-$(slug "$(basename "$PWD")")"
+  PROJECT_DEFAULT="rubymind-$(slug "$(basename "$PWD")")"
   PROJECT_DEFAULT="${PROJECT_DEFAULT%-}"
   export COMPOSE_PROJECT_NAME="$PROJECT_DEFAULT"
 fi

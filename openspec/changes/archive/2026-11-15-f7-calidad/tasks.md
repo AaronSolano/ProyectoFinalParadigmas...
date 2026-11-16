@@ -14,8 +14,8 @@
 ## 3. Carga y evidencia
 
 - [x] 3.1 (Codex) Crear el script de carga y verificar que corre contra Compose
-- [ ] 3.2 (Claude Code) Ejecutar la carga por pasos y registrar el máximo de participantes simultáneos y el hardware usado en `docs/evidencia/`
-- [ ] 3.3 (Claude Code) Redactar la evidencia de cada comprobación y las limitaciones conocidas y verificar que cubre los seis casos
+- [x] 3.2 (Claude Code) Ejecutar la carga por pasos y registrar el máximo de participantes simultáneos y el hardware usado en `docs/evidencia/`
+- [x] 3.3 (Claude Code) Redactar la evidencia de cada comprobación y las limitaciones conocidas y verificar que cubre los seis casos
 
 ## Avance verificado de Codex — 15 de noviembre de 2026
 

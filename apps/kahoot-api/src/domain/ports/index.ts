@@ -11,6 +11,8 @@ export interface QuizRepository {
   findQuestion(quizId: string, id: string): Promise<Question | undefined>;
   listQuestions(quizId: string): Promise<Question[]>;
   listOwned(ownerId: string): Promise<Quiz[]>;
+  listLibrary(): Promise<Quiz[]>;
+  copyQuiz(ownerId: string, source: Quiz, newId: () => string): Promise<Quiz>;
   create(ownerId: string, input: QuizInput): Promise<Quiz>;
   update(id: string, input: QuizInput): Promise<Quiz>;
   remove(id: string): Promise<void>;

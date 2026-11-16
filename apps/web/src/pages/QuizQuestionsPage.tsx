@@ -30,7 +30,8 @@ export function QuizQuestionsPage() {
   const queryClient = useQueryClient();
 
   const [statement, setStatement] = useState('');
-  const [correctAnswer, setCorrectAnswer] = useState<boolean>(true);
+  const [options, setOptions] = useState<string[]>(['', '']);
+  const [correctOption, setCorrectOption] = useState<number>(0);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [error, setError] = useState<unknown>(null);
 
@@ -50,11 +51,13 @@ export function QuizQuestionsPage() {
     mutationFn: () =>
       kahootApi.createQuestion(quizId, {
         statement: statement.trim(),
-        correctAnswer,
+        options: options.map((o) => o.trim()),
+        correctOption,
       }),
     onSuccess: () => {
       setStatement('');
-      setCorrectAnswer(true);
+      setOptions(['', '']);
+      setCorrectOption(0);
       setError(null);
       void queryClient.invalidateQueries({ queryKey: ['questions', quizId] });
       void queryClient.invalidateQueries({ queryKey: ['quizzes'] });
@@ -66,12 +69,14 @@ export function QuizQuestionsPage() {
     mutationFn: (questionId: string) =>
       kahootApi.updateQuestion(quizId, questionId, {
         statement: statement.trim(),
-        correctAnswer,
+        options: options.map((o) => o.trim()),
+        correctOption,
       }),
     onSuccess: () => {
       setEditingQuestion(null);
       setStatement('');
-      setCorrectAnswer(true);
+      setOptions(['', '']);
+      setCorrectOption(0);
       setError(null);
       void queryClient.invalidateQueries({ queryKey: ['questions', quizId] });
     },
@@ -142,13 +147,35 @@ export function QuizQuestionsPage() {
   const startEditQuestion = (q: Question) => {
     setEditingQuestion(q);
     setStatement(q.statement);
-    setCorrectAnswer(q.correctAnswer);
+    setOptions(q.options);
+    setCorrectOption(q.correctOption);
   };
 
   const cancelEditQuestion = () => {
     setEditingQuestion(null);
     setStatement('');
-    setCorrectAnswer(true);
+    setOptions(['', '']);
+    setCorrectOption(0);
+  };
+
+  const setOptionText = (index: number, value: string) =>
+    setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
+
+  const addOption = () =>
+    setOptions((prev) => (prev.length < 4 ? [...prev, ''] : prev));
+
+  const removeOption = (index: number) => {
+    setOptions((prev) =>
+      prev.length > 2 ? prev.filter((_, i) => i !== index) : prev,
+    );
+    setCorrectOption((prev) =>
+      prev === index ? 0 : prev > index ? prev - 1 : prev,
+    );
+  };
+
+  const usePresetTrueFalse = () => {
+    setOptions([t('questions.trueOption'), t('questions.falseOption')]);
+    setCorrectOption(0);
   };
 
   return (
@@ -200,29 +227,70 @@ export function QuizQuestionsPage() {
             </div>
 
             <fieldset className="form-field">
-              <legend>{t('questions.correctAnswerLabel')}</legend>
+              <legend>{t('questions.optionsLabel')}</legend>
+              <div className="options-editor">
+                {options.map((option, index) => (
+                  <div key={index} className="options-editor__row">
+                    <label
+                      className="radio-pill"
+                      title={t('questions.markCorrect')}
+                    >
+                      <input
+                        type="radio"
+                        name="correctOption"
+                        data-testid={`radio-correct-${index}`}
+                        checked={correctOption === index}
+                        onChange={() => setCorrectOption(index)}
+                        aria-label={t('questions.markCorrect')}
+                      />
+                    </label>
+                    <input
+                      type="text"
+                      data-testid={`input-option-${index}`}
+                      required
+                      maxLength={120}
+                      value={option}
+                      placeholder={t('questions.optionPlaceholder', {
+                        n: index + 1,
+                      })}
+                      aria-label={t('questions.optionPlaceholder', {
+                        n: index + 1,
+                      })}
+                      onChange={(e) => setOptionText(index, e.target.value)}
+                    />
+                    {options.length > 2 && (
+                      <button
+                        type="button"
+                        data-testid={`btn-remove-option-${index}`}
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => removeOption(index)}
+                      >
+                        {t('questions.removeOptionBtn')}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="quiz-item__desc">{t('questions.optionsHint')}</p>
               <div className="button-row">
-                <label className="radio-pill">
-                  <input
-                    type="radio"
-                    name="correctAnswer"
-                    data-testid="radio-correct-true"
-                    checked={correctAnswer === true}
-                    onChange={() => setCorrectAnswer(true)}
-                  />
-                  <span>{t('questions.trueOption')}</span>
-                </label>
-
-                <label className="radio-pill">
-                  <input
-                    type="radio"
-                    name="correctAnswer"
-                    data-testid="radio-correct-false"
-                    checked={correctAnswer === false}
-                    onChange={() => setCorrectAnswer(false)}
-                  />
-                  <span>{t('questions.falseOption')}</span>
-                </label>
+                {options.length < 4 && (
+                  <button
+                    type="button"
+                    data-testid="btn-add-option"
+                    className="btn btn--secondary btn--sm"
+                    onClick={addOption}
+                  >
+                    {t('questions.addOptionBtn')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  data-testid="btn-preset-true-false"
+                  className="btn btn--ghost btn--sm"
+                  onClick={usePresetTrueFalse}
+                >
+                  {t('questions.presetTrueFalse')}
+                </button>
               </div>
             </fieldset>
 
@@ -280,16 +348,27 @@ export function QuizQuestionsPage() {
             >
               <div className="question-item__header">
                 <span className="badge">#{q.position}</span>
-                <span
-                  className={`badge ${q.correctAnswer ? 'badge--true' : 'badge--false'}`}
-                >
-                  {q.correctAnswer
-                    ? t('questions.trueOption')
-                    : t('questions.falseOption')}
+                <span className="badge badge--true">
+                  {t('questions.correctLabel')}: {q.options[q.correctOption]}
                 </span>
               </div>
 
               <p className="question-item__statement">{q.statement}</p>
+              <ul
+                className="library-options"
+                data-testid={`question-options-${q.id}`}
+              >
+                {q.options.map((option, index) => (
+                  <li
+                    key={index}
+                    className={
+                      index === q.correctOption ? 'library-option--correct' : ''
+                    }
+                  >
+                    {option}
+                  </li>
+                ))}
+              </ul>
 
               {q.imageUrl && (
                 <div className="question-item__image-wrap">

@@ -9,7 +9,7 @@ web
 Docentes que preparan y dirigen evaluaciones; participantes que responden en vivo desde computadoras o teléfonos.
 
 ## Product Purpose
-Crear cuestionarios de verdadero/falso y usarlos en partidas con tiempo, respuestas únicas y clasificación.
+Crear cuestionarios de opción múltiple (2 a 4 opciones, incluido el preset verdadero/falso) y usarlos en partidas con tiempo, respuestas únicas y clasificación. Explorar y copiar cuestionarios de la biblioteca.
 
 ## Capabilities and Constraints
 React/Vite, APIs NestJS independientes y Socket.IO. Se conservan las rutas, contratos, autenticación, funciones y traducciones español/inglés. El servidor decide el estado, tiempo y puntaje. Las respuestas correctas solo se muestran después del cierre.

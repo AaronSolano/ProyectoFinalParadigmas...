@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from './auth/AuthContext';
 import { LanguageSelector } from './components/LanguageSelector';
 import { AuthPage } from './pages/AuthPage';
+import { LibraryPage } from './pages/LibraryPage';
 import { QuizzesPage } from './pages/QuizzesPage';
 import { QuizQuestionsPage } from './pages/QuizQuestionsPage';
 import { JoinRoomPage } from './pages/JoinRoomPage';
@@ -51,6 +52,9 @@ export function App() {
             <>
               <NavLink to="/quizzes" className="nav-link">
                 {t('app.nav.quizzes')}
+              </NavLink>
+              <NavLink to="/library" className="nav-link">
+                {t('app.nav.library')}
               </NavLink>
               <NavLink to="/join" className="nav-link">
                 {t('app.nav.join')}
@@ -112,6 +116,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <QuizQuestionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library"
+            element={
+              <ProtectedRoute>
+                <LibraryPage />
               </ProtectedRoute>
             }
           />

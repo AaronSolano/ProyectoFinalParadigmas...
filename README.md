@@ -1,6 +1,6 @@
-# ProfeLink Kahoot
+# RubyMind
 
-Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400 Paradigmas de Programación, II Ciclo 2026). Un docente crea cuestionarios de Verdadero o Falso con imágenes, abre una sala con código y los participantes responden desde su celular o computadora mientras ven el resultado al instante.
+Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400 Paradigmas de Programación, II Ciclo 2026). Un docente crea cuestionarios de opción múltiple (2 a 4 opciones; Verdadero o Falso es el caso de 2) con imágenes, o usa la **biblioteca** de cuestionarios de cultura general y tecnología, abre una sala con código y los participantes responden desde su celular o computadora mientras ven el resultado al instante.
 
 ## Qué incluye
 
@@ -19,11 +19,13 @@ La especificación completa, con diagramas de arquitectura y de clases, modelo d
 
 | Qué | URL |
 |---|---|
-| Aplicación desplegada (Vercel) | _Pendiente: se completa al terminar el despliegue_ |
-| auth-api (Render), documentación | _Pendiente_ (`/docs`) |
-| kahoot-api (Render), documentación | _Pendiente_ (`/docs`) |
-| Cliente externo desplegado | _Pendiente_ |
-| Imágenes en Docker Hub | [`aaronsc04/profelink-auth-api`](https://hub.docker.com/r/aaronsc04/profelink-auth-api), [`aaronsc04/profelink-kahoot-api`](https://hub.docker.com/r/aaronsc04/profelink-kahoot-api), [`aaronsc04/profelink-web`](https://hub.docker.com/r/aaronsc04/profelink-web) |
+| Aplicación desplegada (Vercel) | <https://rubymind.vercel.app> |
+| auth-api (Render), documentación | <https://profelink-auth-api.onrender.com/docs> |
+| kahoot-api (Render), documentación | <https://profelink-kahoot-api.onrender.com/docs> |
+| Cliente externo desplegado | <https://rubymind-cliente-externo.vercel.app> |
+| Imágenes en Docker Hub | [`aaronsc04/rubymind-auth-api`](https://hub.docker.com/r/aaronsc04/rubymind-auth-api), [`aaronsc04/rubymind-kahoot-api`](https://hub.docker.com/r/aaronsc04/rubymind-kahoot-api), [`aaronsc04/rubymind-web`](https://hub.docker.com/r/aaronsc04/rubymind-web) |
+
+Las APIs de Render usan el plan gratuito: tras 15 minutos sin uso se duermen y la primera petición tarda cerca de un minuto. Abre la aplicación unos minutos antes de una demostración.
 
 En local (con Docker): aplicación en <http://localhost:8080>, documentación Scalar de la autenticación en <http://localhost:3001/docs> y de las actividades en <http://localhost:3002/docs>, Grafana (opcional) en <http://localhost:3000>.
 
@@ -57,6 +59,16 @@ El script crea `.env` desde `.env.example`, genera las contraseñas que falten, 
 
 Detalles de puertos, volúmenes y varias copias en la misma máquina: [infra/README.md](infra/README.md).
 
+### Base local o Supabase
+
+Por defecto todo usa el PostgreSQL local de Compose. Para probar las APIs locales contra Supabase (opcional): copia `.env.supabase.example` a `.env.supabase`, completa los valores y ejecuta
+
+```bash
+docker compose --env-file .env --env-file .env.supabase -f compose.yaml -f compose.supabase.yaml up -d --no-deps auth-api kahoot-api web
+```
+
+`.env.supabase` no se versiona. Este modo requiere las variables `DATABASE_SSL_CA` y `DATABASE_SCHEMA` en las APIs (ver [docs/briefs/codex-supabase-ssl-esquema.md](docs/briefs/codex-supabase-ssl-esquema.md)).
+
 ## Detención
 
 ```bash
@@ -78,10 +90,10 @@ Los participantes se registran desde la propia aplicación con cualquier correo.
 ## Cómo demostrar el juego
 
 1. Abre la aplicación (en local <http://localhost:8080>; para celulares inicia con `--lan`).
-2. Inicia sesión con el usuario demo, o crea un cuestionario nuevo con varias preguntas y al menos una imagen.
+2. Inicia sesión con el usuario demo, abre la **Biblioteca** (10 cuestionarios de cultura general y tecnología, listos para usar o copiar) o crea un cuestionario nuevo con varias preguntas y al menos una imagen.
 3. Crea una sala con ese cuestionario. Aparece un **código de seis caracteres**.
 4. En otros dispositivos regístrate o inicia sesión, elige unirte e ingresa el código. El anfitrión ve quiénes entran.
-5. El anfitrión inicia la partida. Cada pregunta se muestra con su imagen y dos botones, Verdadero y Falso, con cuenta regresiva.
+5. El anfitrión inicia la partida. Cada pregunta se muestra con su imagen y de 2 a 4 botones de respuesta, con cuenta regresiva.
 6. Al cerrarse la pregunta (por tiempo o por el anfitrión) se revela la respuesta correcta y el resultado. El anfitrión avanza a la siguiente.
 7. Al terminar se muestra la clasificación y los resultados quedan guardados.
 8. **Reconexión:** en un participante apaga la red o recarga la página durante la pregunta. Al volver regresa a la misma sala con su puntaje, sin duplicarse. Con `--debug-controls` hay un botón que lo simula.
@@ -96,7 +108,7 @@ CORS_ORIGINS=http://localhost:8080,http://localhost:5174
 
 # 2. Iniciar el cliente (Node 22)
 npm install
-npm start -w @profelink/external-client      # http://localhost:5174
+npm start -w @rubymind/external-client      # http://localhost:5174
 ```
 
 Abre <http://localhost:5174>, inicia sesión con la cuenta demo, escribe el código de una sesión terminada y consulta su clasificación. La configuración (URL de las APIs, correo, código por defecto) se cambia con variables `EXTERNAL_*` o en `apps/external-client/config.json`; la contraseña solo se escribe en el formulario. Más detalle en [apps/external-client/README.md](apps/external-client/README.md).
@@ -111,7 +123,7 @@ npm run spec:validate   # valida las especificaciones OpenSpec
 ```
 
 - Las pruebas de integración de las APIs usan PostgreSQL real si defines `AUTH_TEST_DATABASE_URL` y `TEST_DATABASE_URL`; sin ellas se omiten.
-- Pruebas e2e con Playwright contra la solución en Compose: `npm run test:e2e:pw -w @profelink/web` (con `./start.sh` ya en marcha).
+- Pruebas e2e con Playwright contra la solución en Compose: `npm run test:e2e:pw -w @rubymind/web` (con `./start.sh` ya en marcha).
 - Prueba de carga y evidencia de participantes simultáneos: [apps/kahoot-api/LOAD-VERIFICATION.md](apps/kahoot-api/LOAD-VERIFICATION.md).
 
 ## Estructura del repositorio y forma de trabajo

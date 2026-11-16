@@ -17,6 +17,17 @@
     "statement": {
       "type": "string"
     },
+    "options": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 4,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 120
+      },
+      "description": "Opciones de respuesta (2 a 4) en el orden en que se muestran. Verdadero/Falso es una pregunta de 2 opciones."
+    },
     "imageUrl": {
       "type": [
         "string",
@@ -48,6 +59,7 @@
     "questionIndex",
     "total",
     "statement",
+    "options",
     "imageUrl",
     "closesAt",
     "serverTime",
@@ -59,7 +71,13 @@
     {
       "questionIndex": 0,
       "total": 5,
-      "statement": "Costa Rica no tiene ejército permanente.",
+      "statement": "¿Cuál es la capital de Costa Rica?",
+      "options": [
+        "Alajuela",
+        "San José",
+        "Cartago",
+        "Heredia"
+      ],
       "imageUrl": "http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png",
       "closesAt": "2026-11-15T15:00:30.000Z",
       "serverTime": "2026-11-15T15:00:00.000Z",

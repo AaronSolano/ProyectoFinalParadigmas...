@@ -49,8 +49,8 @@ test("dist arranca sin packages y valida un evento usando solo los contratos emp
       const {database}=require('./data/database');
       const {createApp}=require('./app');
       (async()=>{
-        assert.equal(new GameSchemas().valid('answer:submit',{code:'ABC234',questionIndex:0,answer:true}),true);
-        assert.equal(new GameSchemas().valid('answer:submit',{code:'ABC234',questionIndex:0,answer:'true'}),false);
+        assert.equal(new GameSchemas().valid('answer:submit',{code:'ABC234',questionIndex:0,option:0}),true);
+        assert.equal(new GameSchemas().valid('answer:submit',{code:'ABC234',questionIndex:0,option:'0'}),false);
         const config=loadConfig({KAHOOT_DATABASE_URL:'postgresql://unused:unused@127.0.0.1/unused',AUTH_BASE_URL:'http://127.0.0.1:1',PUBLIC_API_URL:'http://127.0.0.1:3002'});
         const {app}=await createApp(config,database(config));
         try {

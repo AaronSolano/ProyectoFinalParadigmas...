@@ -1,6 +1,6 @@
 export const DICTIONARY = {
   es: {
-    appTitle: 'ProfeLink — Cliente Externo',
+    appTitle: 'RubyMind — Cliente Externo',
     appSubtitle: 'Consulta independiente de sesiones y resultados por API REST',
     langLabel: 'Idioma',
     configHeading: 'Configuración y credenciales',
@@ -38,7 +38,7 @@ export const DICTIONARY = {
     },
   },
   en: {
-    appTitle: 'ProfeLink — External Client',
+    appTitle: 'RubyMind — External Client',
     appSubtitle: 'Independent session and results viewer via REST API',
     langLabel: 'Language',
     configHeading: 'Configuration & Credentials',

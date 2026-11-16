@@ -1,4 +1,4 @@
-# Especificación de ProfeLink Kahoot
+# Especificación de RubyMind
 
 Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400, II Ciclo 2026). Este documento resume el alcance, las reglas, la arquitectura y los contratos. El detalle vive en los documentos enlazados y las especificaciones formales en `openspec/specs/`.
 
@@ -26,7 +26,7 @@ Evaluaciones en vivo tipo Kahoot para ProfeLink (EIF400, II Ciclo 2026). Este do
 - Un cliente externo que consume la API por red.
 
 **Fuera del alcance**
-- Tipos de pregunta distintos de Verdadero o Falso.
+- Tipos de pregunta distintos de la opción múltiple de 2 a 4 opciones con una sola correcta (por ejemplo, respuesta abierta o de varias correctas).
 - Recuperación de contraseña, roles administrativos y verificación de correo.
 - Escalar la partida en vivo a varias instancias del servicio de actividades (ver los límites en la sección 9).
 
@@ -106,9 +106,9 @@ Diagramas completos: [arquitectura](diagramas/arquitectura.md) y [clases](diagra
 ```mermaid
 classDiagram
   class Quiz { id; ownerId; title; description }
-  class Question { id; quizId; position; statement; correctAnswer; imageUrl }
+  class Question { id; quizId; position; statement; options; correctOption; imageUrl }
   class Session { id; code; quizId; hostId; status; currentQuestion }
-  class SessionQuestion { sessionId; position; statement; correctAnswer; imageUrl }
+  class SessionQuestion { sessionId; position; statement; options; correctOption; imageUrl }
   class Participant { id; sessionId; userId; displayName; score; streak }
   class Answer { participantId; questionIndex; answer; receivedAt; points }
   class SessionResult { sessionId; participantId; position; score; correctAnswers }
@@ -186,7 +186,7 @@ Socket.IO, namespace `/game` de kahoot-api. El catálogo completo, con esquemas 
 | `participant:joined`, `participant:left` | Sala |
 | `session:started`, `question:opened` | Sala (sin la respuesta correcta) |
 | `answer:accepted`, `answer:rejected` | Solo el emisor |
-| `question:closed` | Sala (**único** evento con `correctAnswer`) |
+| `question:closed` | Sala (**único** evento con `correctOption`) |
 | `session:finished` | Sala (clasificación final) |
 | `error` | Solo el emisor del comando fallido |
 
@@ -226,7 +226,7 @@ Los resultados, los participantes probados y las limitaciones conocidas se regis
 | Entregable | Dónde |
 |---|---|
 | Código de frontend y backend, Dockerfiles, Compose, `.env.example`, script de inicio | `apps/`, `infra/`, `compose.yaml`, `compose.build.yaml`, `.env.example`, `start.sh`, `start.ps1` |
-| Imágenes en Docker Hub | `aaronsc04/profelink-{auth-api,kahoot-api,web}` |
+| Imágenes en Docker Hub | `aaronsc04/rubymind-{auth-api,kahoot-api,web}` |
 | README con URLs, inicio, cuentas de prueba y demostración | [README.md](../README.md) |
 | Especificación con alcance, reglas, diagramas, modelo de datos, API y eventos | Este documento y los enlazados |
 | Spec OpenSpec archivada en los PR | `openspec/changes/archive/` y `openspec/specs/` |

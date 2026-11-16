@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Imagen de auth-api. Contexto de construccion: raiz del repositorio.
-#   docker build -f infra/docker/auth-api.Dockerfile -t profelink-auth-api .
+#   docker build -f infra/docker/auth-api.Dockerfile -t rubymind-auth-api .
 ARG NODE_IMAGE=node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 # Manifiestos: permiten cachear la instalacion de dependencias.
@@ -17,11 +17,11 @@ FROM manifests AS build
 RUN npm ci --workspaces --include-workspace-root
 COPY apps/auth-api/tsconfig.json apps/auth-api/tsconfig.json
 COPY apps/auth-api/src apps/auth-api/src
-RUN npm run build -w @profelink/auth-api
+RUN npm run build -w @rubymind/auth-api
 
 # Solo dependencias de produccion.
 FROM manifests AS prod-deps
-RUN npm ci --omit=dev --omit=optional --omit=peer --workspace=@profelink/auth-api
+RUN npm ci --omit=dev --omit=optional --omit=peer --workspace=@rubymind/auth-api
 
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production

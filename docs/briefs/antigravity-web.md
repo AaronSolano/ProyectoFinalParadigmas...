@@ -16,7 +16,7 @@ Lee en este orden:
 - **Solo puedes editar `apps/web/**`.** No modifiques `packages/contracts`, `openspec/`, `docs/`, `infra/` ni las APIs. Si el contrato es insuficiente o contradictorio, no lo cambies: documéntalo en el PR.
 
 ## Stack fijado
-React 18 + Vite + TypeScript estricto, paquete `@profelink/web`. React Router, TanStack Query, `socket.io-client`, `i18next` + `react-i18next` (diccionarios `es` y `en`), Vitest + Testing Library. Estilos con CSS modules o Tailwind (elige uno y sé consistente). Tipos del cliente de API **generados** desde el OpenAPI con `openapi-typescript` (script `npm run gen:api -w @profelink/web`); no escribas a mano tipos que ya estén en el contrato.
+React 18 + Vite + TypeScript estricto, paquete `@rubymind/web`. React Router, TanStack Query, `socket.io-client`, `i18next` + `react-i18next` (diccionarios `es` y `en`), Vitest + Testing Library. Estilos con CSS modules o Tailwind (elige uno y sé consistente). Tipos del cliente de API **generados** desde el OpenAPI con `openapi-typescript` (script `npm run gen:api -w @rubymind/web`); no escribas a mano tipos que ya estén en el contrato.
 
 ## Configuración
 Solo por variables Vite: `VITE_AUTH_API_URL` (3001) y `VITE_KAHOOT_API_URL` (3002). Nada de URLs fijas en el código. El socket se conecta a `${VITE_KAHOOT_API_URL}/game` con `auth: { token }`.
@@ -40,7 +40,7 @@ Solo por variables Vite: `VITE_AUTH_API_URL` (3001) y `VITE_KAHOOT_API_URL` (300
 - Mobile-first: probar en 360×640; sin scroll horizontal; botones de juego de al menos 56 px de alto y alto contraste; foco visible y etiquetas accesibles.
 
 ## Mocks para trabajar sin backend
-- REST: `npx @stoplight/prism-cli mock packages/contracts/openapi/kahoot-api.yaml -p 4010` (y otro para `auth-api` en 4011). Documenta en el README del paquete el script `npm run mock -w @profelink/web`.
+- REST: `npx @stoplight/prism-cli mock packages/contracts/openapi/kahoot-api.yaml -p 4010` (y otro para `auth-api` en 4011). Documenta en el README del paquete el script `npm run mock -w @rubymind/web`.
 - Tiempo real: un pequeño servidor Socket.IO de mock (en `apps/web/mocks/`) que emita la secuencia del catálogo (`state_sync` → `question:opened` → `question:closed` → `session:finished`) y permita simular una desconexión.
 
 ## Tareas (de `openspec/changes/f5-frontend/tasks.md`)

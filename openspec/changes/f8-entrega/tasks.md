@@ -1,7 +1,7 @@
 ## 1. Cliente externo
 
-- [x] 1.1 (Antigravity) Crear `apps/external-client` que consulte una sesión y sus resultados por configuración y verificar contra la API local
-- [x] 1.2 (Antigravity) Verificar que el cliente no importa código de las APIs ni accede a la base de datos
+- [ ] 1.1 (Antigravity) Crear `apps/external-client` que consulte una sesión y sus resultados por configuración y verificar contra la API local
+- [ ] 1.2 (Antigravity) Verificar que el cliente no importa código de las APIs ni accede a la base de datos
 
 ## 2. Despliegue
 

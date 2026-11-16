@@ -63,11 +63,11 @@ PostgreSQL no se publica fuera de la red interna de Compose.
 
 ## Varias copias del repositorio en la misma máquina
 
-Cada copia usa su **propio proyecto de Compose**, `profelink-<nombre de la carpeta>`, que `start.sh` / `start.ps1` guardan en `.env` como `COMPOSE_PROJECT_NAME`. Así dos copias (por ejemplo dos carpetas de trabajo, o la de un compañero y la tuya) **no se pisan** los contenedores, los volúmenes ni las imágenes.
+Cada copia usa su **propio proyecto de Compose**, `rubymind-<nombre de la carpeta>`, que `start.sh` / `start.ps1` guardan en `.env` como `COMPOSE_PROJECT_NAME`. Así dos copias (por ejemplo dos carpetas de trabajo, o la de un compañero y la tuya) **no se pisan** los contenedores, los volúmenes ni las imágenes.
 
 - Los volúmenes se llaman `<proyecto>_pgdata`, `<proyecto>_auth_keys`, etc., y las imágenes construidas en local `<proyecto>-<servicio>:local`.
 - Si dos copias corren **a la vez**, cada una necesita puertos distintos y su propia `PUBLIC_URL`: `WEB_PORT`, `AUTH_PORT`, `KAHOOT_PORT` y `GRAFANA_PORT` en su `.env`.
-- Un `.env` anterior que no tenga `COMPOSE_PROJECT_NAME` pasa a usar `profelink-<carpeta>`. Los datos que pudiera haber en el proyecto histórico `profelink` **no se migran ni se tocan**; si ya no se necesitan: `docker compose -p profelink down -v`.
+- Un `.env` anterior que no tenga `COMPOSE_PROJECT_NAME` pasa a usar `rubymind-<carpeta>`. Los datos que pudiera haber en el proyecto histórico `profelink` **no se migran ni se tocan**; si ya no se necesitan: `docker compose -p profelink down -v`.
 - `./stop.sh` y `.\stop.ps1` muestran el proyecto que están deteniendo.
 
 ## Consumir las APIs desde otro origen (CORS)
@@ -93,11 +93,11 @@ Con `--observability` hay tres señales, todas en Grafana (`http://localhost:300
 
 | Señal | Cómo llega | Dónde verla |
 |---|---|---|
-| **Métricas** | Las APIs las envían por OTLP al Collector (`OTEL_EXPORTER_OTLP_ENDPOINT`); Prometheus las recoge del Collector | Panel **ProfeLink - Resumen** |
+| **Métricas** | Las APIs las envían por OTLP al Collector (`OTEL_EXPORTER_OTLP_ENDPOINT`); Prometheus las recoge del Collector | Panel **RubyMind - Resumen** |
 | **Trazas** | Igual, del Collector a Tempo | *Explore → Tempo* |
-| **Registros** | Alloy lee la salida estándar de los contenedores del proyecto y la envía a Loki | Panel **ProfeLink - Resumen** (errores, volumen y registros recientes) y *Explore → Loki*, con la etiqueta `service` (`auth-api`, `kahoot-api`, `web`, `postgres`…) |
+| **Registros** | Alloy lee la salida estándar de los contenedores del proyecto y la envía a Loki | Panel **RubyMind - Resumen** (errores, volumen y registros recientes) y *Explore → Loki*, con la etiqueta `service` (`auth-api`, `kahoot-api`, `web`, `postgres`…) |
 
-El panel **ProfeLink - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, salas activas, respuestas aceptadas y rechazadas (con la razón), latencia P95 de cierre de pregunta, desconexiones por control de flujo y los paneles de registros.
+El panel **RubyMind - Resumen** incluye solicitudes por segundo, latencia P95, errores 4xx y 5xx, conexiones activas, eventos del juego por tipo y resultado, salas activas, respuestas aceptadas y rechazadas (con la razón), latencia P95 de cierre de pregunta, desconexiones por control de flujo y los paneles de registros.
 
 Sin el perfil, la variable de OTLP queda vacía y las APIs no exportan nada.
 
@@ -125,7 +125,7 @@ docker login
 docker compose -f compose.yaml push auth-api kahoot-api web
 ```
 
-Los nombres son `${DOCKERHUB_USER}/profelink-auth-api`, `profelink-kahoot-api` y `profelink-web`. Para iniciar desde ellas: `./start.sh --images`.
+Los nombres son `${DOCKERHUB_USER}/rubymind-auth-api`, `rubymind-kahoot-api` y `rubymind-web`. Para iniciar desde ellas: `./start.sh --images`.
 
 ## Solución de problemas
 

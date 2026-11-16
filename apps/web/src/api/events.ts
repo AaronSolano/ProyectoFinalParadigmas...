@@ -9,6 +9,7 @@ export interface LiveCurrentQuestion {
   questionIndex: number;
   total: number;
   statement: string;
+  options: string[];
   imageUrl: string | null;
   closesAt: string;
   openedAt: string;
@@ -36,6 +37,7 @@ export interface QuestionOpenedEvent {
   questionIndex: number;
   total: number;
   statement: string;
+  options: string[];
   imageUrl: string | null;
   closesAt: string;
   serverTime: string;
@@ -45,7 +47,7 @@ export interface QuestionOpenedEvent {
 
 export interface QuestionClosedEvent {
   questionIndex: number;
-  correctAnswer: boolean;
+  correctOption: number;
   results: LiveQuestionResult[];
   ranking: LiveRankingEntry[];
 }

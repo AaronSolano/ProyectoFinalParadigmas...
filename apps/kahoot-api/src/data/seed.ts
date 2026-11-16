@@ -141,12 +141,13 @@ export async function seedDemo(
         }
       }
       await manager.query(
-        "INSERT INTO questions(id,quiz_id,statement,correct_answer,image_filename,position) VALUES($1,$2,$3,$4,$5,$6)",
+        "INSERT INTO questions(id,quiz_id,statement,options,correct_option,image_filename,position) VALUES($1,$2,$3,$4::jsonb,$5,$6,$7)",
         [
           question.id,
           DEMO_QUIZ_ID,
           question.statement,
-          question.answer,
+          JSON.stringify(["Verdadero", "Falso"]),
+          question.answer ? 0 : 1,
           filename,
           ++nextPosition,
         ],

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inicia ProfeLink Kahoot con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
+# Inicia RubyMind con Docker Compose. Requisitos: Git, Docker y Docker Compose v2.
 #
 #   ./start.sh                       Construye las imagenes en esta maquina y las inicia
 #   ./start.sh --images              Usa las imagenes publicadas en Docker Hub (no construye)
@@ -50,10 +50,10 @@ set_env() { # set_env CLAVE VALOR  (agrega la clave si no existe)
   cat "$tmp" > .env; rm -f "$tmp"
 }
 
-# Cada copia del repositorio usa su propio proyecto de Compose (profelink-<carpeta>), de modo que dos copias
+# Cada copia del repositorio usa su propio proyecto de Compose (rubymind-<carpeta>), de modo que dos copias
 # en la misma maquina no se pisan los contenedores, los volumenes ni las imagenes.
 slug() { printf '%s' "$1" | tr 'A-Z' 'a-z' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//'; }
-PROJECT_DEFAULT="profelink-$(slug "$(basename "$PWD")")"
+PROJECT_DEFAULT="rubymind-$(slug "$(basename "$PWD")")"
 PROJECT_DEFAULT="${PROJECT_DEFAULT%-}"
 volume_exists() { [ -n "$(docker volume ls -q --filter "name=^$1$")" ]; }
 
@@ -69,7 +69,7 @@ if [ ! -f .env ]; then
   echo "Se creo .env desde .env.example"
 fi
 
-# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre profelink-<carpeta>.
+# Nunca se comparte el proyecto con otra copia: sin nombre en .env se usa siempre rubymind-<carpeta>.
 [ -n "$(get_env COMPOSE_PROJECT_NAME)" ] || set_env COMPOSE_PROJECT_NAME "$PROJECT_DEFAULT"
 export COMPOSE_PROJECT_NAME="$(get_env COMPOSE_PROJECT_NAME)"
 
@@ -111,7 +111,7 @@ echo "Cargando datos de demostracion (idempotente)..."
 "${COMPOSE[@]}" run --rm seed-kahoot
 
 echo
-echo "ProfeLink Kahoot esta en marcha."
+echo "RubyMind esta en marcha."
 echo "  Proyecto Compose: ${COMPOSE_PROJECT_NAME}"
 echo "  Aplicacion:      $(get_env PUBLIC_URL)"
 echo "  Usuario demo:    $(get_env DEMO_EMAIL)"

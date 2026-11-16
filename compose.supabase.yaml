@@ -1,0 +1,25 @@
+# Modo opcional: las APIs locales usan la base de Supabase en lugar del PostgreSQL de Compose.
+# El modo por defecto (sin este archivo) sigue siendo la base local. No reemplaza a start.sh.
+#
+#   cp .env.supabase.example .env.supabase     # y completa los valores (no se versiona)
+#   docker compose --env-file .env --env-file .env.supabase \
+#     -f compose.yaml -f compose.supabase.yaml up -d --no-deps auth-api kahoot-api web
+#
+# Requiere que las APIs soporten DATABASE_SSL_CA y DATABASE_SCHEMA (brief docs/briefs/codex-supabase-ssl-esquema.md).
+services:
+  auth-api:
+    depends_on: !reset []
+    environment:
+      AUTH_DATABASE_URL: ${SUPABASE_DATABASE_URL:?Define SUPABASE_DATABASE_URL en .env.supabase}
+      DATABASE_SSL: "true"
+      DATABASE_SSL_CA: ${SUPABASE_SSL_CA:?Define SUPABASE_SSL_CA en .env.supabase}
+      DATABASE_SCHEMA: auth
+  kahoot-api:
+    depends_on:
+      auth-api:
+        condition: service_healthy
+    environment:
+      KAHOOT_DATABASE_URL: ${SUPABASE_DATABASE_URL:?Define SUPABASE_DATABASE_URL en .env.supabase}
+      DATABASE_SSL: "true"
+      DATABASE_SSL_CA: ${SUPABASE_SSL_CA:?Define SUPABASE_SSL_CA en .env.supabase}
+      DATABASE_SCHEMA: kahoot

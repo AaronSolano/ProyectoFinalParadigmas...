@@ -19,6 +19,35 @@ export async function ownedQuiz(
   requireOwner(user, quiz.ownerId);
   return quiz;
 }
+/** Un cuestionario se puede usar (por ejemplo, abrir una sala) si es propio o de la biblioteca compartida. */
+export async function usableQuiz(
+  repo: QuizRepository,
+  id: string,
+  user: string,
+  lock = false,
+) {
+  const quiz = await repo.findById(id, lock);
+  if (!quiz) throw new Problem(404, "NOT_FOUND", "Cuestionario no encontrado.");
+  if (!quiz.isLibrary) requireOwner(user, quiz.ownerId);
+  return quiz;
+}
+async function libraryQuiz(repo: QuizRepository, id: string) {
+  const quiz = await repo.findById(id);
+  if (!quiz || !quiz.isLibrary)
+    throw new Problem(404, "NOT_FOUND", "Cuestionario no encontrado en la biblioteca.");
+  return quiz;
+}
+function validateOptions(input: QuestionInput) {
+  if (input.correctOption >= input.options.length)
+    throw new Problem(
+      400,
+      "VALIDATION_ERROR",
+      "La opción correcta debe ser una de las opciones.",
+    );
+  const unique = new Set(input.options.map((o) => o.trim().toLowerCase()));
+  if (unique.size !== input.options.length)
+    throw new Problem(400, "VALIDATION_ERROR", "Las opciones no pueden repetirse.");
+}
 async function question(repo: QuizRepository, quizId: string, id: string) {
   const found = await repo.findQuestion(quizId, id);
   if (!found) throw new Problem(404, "NOT_FOUND", "Pregunta no encontrada.");
@@ -35,6 +64,19 @@ export class QuizUseCases {
   ) {}
   listQuizzes(user: string) {
     return this.quizzes.listOwned(user);
+  }
+  listLibrary() {
+    return this.quizzes.listLibrary();
+  }
+  async libraryQuestions(id: string) {
+    await libraryQuiz(this.quizzes, id);
+    return this.quizzes.listQuestions(id);
+  }
+  copyFromLibrary(user: string, id: string) {
+    return this.work.transaction(async ({ quizzes }) => {
+      const source = await libraryQuiz(quizzes, id);
+      return quizzes.copyQuiz(user, source, () => this.ids.uuid());
+    });
   }
   getQuiz(user: string, id: string) {
     return ownedQuiz(this.quizzes, id, user);
@@ -73,6 +115,7 @@ export class QuizUseCases {
     input: QuestionInput,
     id?: string,
   ) {
+    validateOptions(input);
     return this.work.transaction(async ({ quizzes }) => {
       await ownedQuiz(quizzes, quizId, user, true);
       const rows = await quizzes.listQuestions(quizId);

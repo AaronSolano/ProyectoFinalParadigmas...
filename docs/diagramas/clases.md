@@ -25,7 +25,8 @@ classDiagram
         +UUID id
         +UUID quizId
         +string statement
-        +bool correctAnswer
+        +string[] options
+        +int correctOption
         +string imageFilename
         +int position
         +Date createdAt
@@ -52,7 +53,8 @@ classDiagram
         +UUID sessionId
         +int position
         +string statement
-        +bool correctAnswer
+        +string[] options
+        +int correctOption
         +string imageFilename
     }
 
@@ -111,7 +113,7 @@ classDiagram
     }
 
     class ScoreCalculator {
-        +score(answer, correctAnswer) int
+        +score(option, correctOption) int
         +rank(participants) SessionResult[]
     }
 

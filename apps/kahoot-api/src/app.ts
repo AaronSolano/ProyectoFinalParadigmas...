@@ -39,6 +39,7 @@ import {
 } from "./modules/images/storage";
 import { PublicController } from "./presentation/public.controller";
 import { QuizzesController } from "./presentation/quizzes.controller";
+import { LibraryController } from "./presentation/library.controller";
 import { SessionsController } from "./presentation/sessions.controller";
 import { Problem } from "./domain/problem";
 import { IoAdapter } from "@nestjs/platform-socket.io";
@@ -104,7 +105,12 @@ export async function createApp(
         limits: { fileSize: config.imageMaxBytes, files: 1 },
       }),
     ],
-    controllers: [QuizzesController, SessionsController, PublicController],
+    controllers: [
+      QuizzesController,
+      LibraryController,
+      SessionsController,
+      PublicController,
+    ],
     providers: [
       { provide: GameService, useValue: game },
       GameGateway,

@@ -5,6 +5,8 @@ export function quizView(q: Quiz) {
     ownerId: q.ownerId,
     title: q.title,
     description: q.description,
+    category: q.category,
+    isLibrary: q.isLibrary,
     questionCount: q.questionCount,
     createdAt: q.createdAt,
     updatedAt: q.updatedAt,
@@ -15,7 +17,8 @@ export function questionView(q: Question, publicUrl: string) {
     id: q.id,
     quizId: q.quizId,
     statement: q.statement,
-    correctAnswer: q.correctAnswer,
+    options: q.options,
+    correctOption: q.correctOption,
     imageUrl: q.imageFilename
       ? `${publicUrl}/api/v1/images/${q.imageFilename}`
       : null,

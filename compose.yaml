@@ -1,4 +1,4 @@
-# ProfeLink Kahoot: solucion completa con Docker Compose.
+# RubyMind: solucion completa con Docker Compose.
 #
 #   Iniciar con imagenes publicadas en Docker Hub:   docker compose up -d --wait
 #   Construir las imagenes en esta maquina:          docker compose -f compose.yaml -f compose.build.yaml up -d --build --wait
@@ -7,7 +7,7 @@
 #   Detener y BORRAR los datos:                       docker compose down -v
 #
 # Lo normal es usar ./start.sh o .\start.ps1, que preparan el archivo .env.
-name: ${COMPOSE_PROJECT_NAME:-profelink}
+name: ${COMPOSE_PROJECT_NAME:-rubymind}
 
 x-api-common: &api-common
   restart: unless-stopped
@@ -34,7 +34,7 @@ services:
 
   auth-api:
     <<: *api-common
-    image: ${DOCKERHUB_USER:-profelink}/profelink-auth-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-rubymind}/rubymind-auth-api:${IMAGE_TAG:-latest}
     environment:
       AUTH_PORT: 3001
       AUTH_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/auth
@@ -55,7 +55,7 @@ services:
 
   kahoot-api:
     <<: *api-common
-    image: ${DOCKERHUB_USER:-profelink}/profelink-kahoot-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-rubymind}/rubymind-kahoot-api:${IMAGE_TAG:-latest}
     environment:
       KAHOOT_PORT: 3002
       KAHOOT_DATABASE_URL: postgresql://${POSTGRES_USER:-kahoot}:${POSTGRES_PASSWORD}@postgres:5432/kahoot
@@ -84,7 +84,7 @@ services:
 
   web:
     restart: unless-stopped
-    image: ${DOCKERHUB_USER:-profelink}/profelink-web:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-rubymind}/rubymind-web:${IMAGE_TAG:-latest}
     depends_on:
       auth-api:
         condition: service_healthy
@@ -98,7 +98,7 @@ services:
   # start.sh / start.ps1 los ejecutan con: docker compose run --rm seed-auth seed-kahoot
   seed-auth:
     profiles: [seed]
-    image: ${DOCKERHUB_USER:-profelink}/profelink-auth-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-rubymind}/rubymind-auth-api:${IMAGE_TAG:-latest}
     restart: "no"
     command: ["node", "dist/data/seed.js"]
     environment:
@@ -114,7 +114,7 @@ services:
 
   seed-kahoot:
     profiles: [seed]
-    image: ${DOCKERHUB_USER:-profelink}/profelink-kahoot-api:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USER:-rubymind}/rubymind-kahoot-api:${IMAGE_TAG:-latest}
     restart: "no"
     command: ["node", "dist/seed.js"]
     environment:
@@ -167,7 +167,7 @@ services:
     restart: unless-stopped
     user: "0:0"
     environment:
-      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-profelink}
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-rubymind}
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
@@ -202,7 +202,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Define GRAFANA_ADMIN_PASSWORD en .env (use start.sh o start.ps1)}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/profelink-overview.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/rubymind-overview.json
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro

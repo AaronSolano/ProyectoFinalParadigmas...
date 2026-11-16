@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Imagen de kahoot-api. Contexto de construccion: raiz del repositorio.
-#   docker build -f infra/docker/kahoot-api.Dockerfile -t profelink-kahoot-api .
+#   docker build -f infra/docker/kahoot-api.Dockerfile -t rubymind-kahoot-api .
 ARG NODE_IMAGE=node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 FROM ${NODE_IMAGE} AS manifests
@@ -20,10 +20,10 @@ COPY apps/kahoot-api/scripts apps/kahoot-api/scripts
 # Los recursos de demostracion se copian a dist/assets durante la compilacion (scripts/copy-schemas.cjs).
 COPY apps/kahoot-api/assets apps/kahoot-api/assets
 COPY packages/contracts packages/contracts
-RUN npm run build -w @profelink/kahoot-api
+RUN npm run build -w @rubymind/kahoot-api
 
 FROM manifests AS prod-deps
-RUN npm ci --omit=dev --omit=optional --omit=peer --workspace=@profelink/kahoot-api
+RUN npm ci --omit=dev --omit=optional --omit=peer --workspace=@rubymind/kahoot-api
 
 FROM ${NODE_IMAGE} AS runtime
 ENV NODE_ENV=production

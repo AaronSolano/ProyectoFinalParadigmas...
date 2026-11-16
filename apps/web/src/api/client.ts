@@ -187,6 +187,21 @@ export const kahootApi = {
     });
   },
 
+  listLibrary(): Promise<Quiz[]> {
+    const { kahootApiUrl } = getAppEnv();
+    return requestJson<Quiz[]>(kahootApiUrl, '/library', { method: 'GET' });
+  },
+
+  listLibraryQuestions(quizId: string): Promise<Question[]> {
+    const { kahootApiUrl } = getAppEnv();
+    return requestJson<Question[]>(kahootApiUrl, `/library/${quizId}/questions`, { method: 'GET' });
+  },
+
+  copyLibraryQuiz(quizId: string): Promise<Quiz> {
+    const { kahootApiUrl } = getAppEnv();
+    return requestJson<Quiz>(kahootApiUrl, `/library/${quizId}/copy`, { method: 'POST' });
+  },
+
   createQuestion(quizId: string, input: QuestionInput): Promise<Question> {
     const { kahootApiUrl } = getAppEnv();
     return requestJson<Question>(kahootApiUrl, `/quizzes/${quizId}/questions`, {

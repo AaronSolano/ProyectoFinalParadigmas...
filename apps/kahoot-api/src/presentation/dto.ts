@@ -1,5 +1,7 @@
 import {
-  IsBoolean,
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
   IsInt,
   IsString,
   IsUUID,
@@ -19,7 +21,14 @@ export class QuizInput {
 }
 export class QuestionInput {
   @IsString() @Length(1, 500) @Matches(/\S/) statement!: string;
-  @IsBoolean() correctAnswer!: boolean;
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(4)
+  @IsString({ each: true })
+  @Length(1, 120, { each: true })
+  @Matches(/\S/, { each: true })
+  options!: string[];
+  @IsInt() @Min(0) @Max(3) correctOption!: number;
   @ValidateIf((_, v) => v !== undefined) @IsInt() @Min(1) position?: number;
 }
 export class SessionInput {

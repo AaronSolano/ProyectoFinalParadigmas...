@@ -54,7 +54,7 @@ describeDb("Seed idempotente PostgreSQL", () => {
     const initial = await questions();
     expect(initial).toHaveLength(5);
     expect(
-      new Set(initial.map((q: { correct_answer: boolean }) => q.correct_answer))
+      new Set(initial.map((q: { correct_option: number }) => q.correct_option))
         .size,
     ).toBe(2);
     const illustrated = initial.filter(
@@ -82,7 +82,7 @@ describeDb("Seed idempotente PostgreSQL", () => {
   it("conserva ediciones y no recrea preguntas borradas; avisa", async () => {
     await seedDemo(db, images);
     await db.query(
-      "UPDATE questions SET statement='Mi edición',correct_answer=false WHERE id=$1",
+      "UPDATE questions SET statement='Mi edición',correct_option=1 WHERE id=$1",
       [DEMO_QUESTION_ID],
     );
     await db.query("DELETE FROM questions WHERE id=$1", [DEMO_QUESTIONS[4].id]);
@@ -109,7 +109,7 @@ describeDb("Seed idempotente PostgreSQL", () => {
     );
     if (includeQuestion)
       await db.query(
-        "INSERT INTO questions(id,quiz_id,statement,correct_answer,position) VALUES($1,$2,'Pregunta anterior editada',false,1)",
+        "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position) VALUES($1,$2,'Pregunta anterior editada','[\"Verdadero\",\"Falso\"]'::jsonb,1,1)",
         [DEMO_QUESTION_ID, DEMO_QUIZ_ID],
       );
   }
@@ -124,7 +124,7 @@ describeDb("Seed idempotente PostgreSQL", () => {
     expect(updated).toHaveLength(5);
     expect(updated[0]).toMatchObject({
       statement: "Pregunta anterior editada",
-      correct_answer: false,
+      correct_option: 1,
     });
     expect(
       updated.filter(

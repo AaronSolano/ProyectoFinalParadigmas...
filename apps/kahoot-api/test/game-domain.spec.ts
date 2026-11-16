@@ -61,17 +61,17 @@ describe("reglas de partida puras", () => {
     expect(answerRejection({ ...valid, status: "finished" })).toBe("closed");
   });
   test.each([
-    [true, true, 1000],
-    [false, false, 1000],
-    [true, false, 0],
-    [false, true, 0],
-    [undefined, true, 0],
-    [undefined, false, 0],
+    [0, 0, 1000],
+    [1, 1, 1000],
+    [0, 1, 0],
+    [1, 0, 0],
+    [undefined, 0, 0],
+    [undefined, 1, 0],
   ])("puntaje %s / %s = %s", (answer, correct, result) => {
     expect(
       points({
-        answer: answer as boolean | undefined,
-        correctAnswer: correct as boolean,
+        option: answer as number | undefined,
+        correctOption: correct as number,
         elapsedMs: 0,
         durationMs: 5000,
       }),
@@ -91,8 +91,8 @@ describe("reglas de partida puras", () => {
   ])("puntaje por velocidad a %s ms = %s", (elapsedMs, expected) => {
     expect(
       points({
-        answer: true,
-        correctAnswer: true,
+        option: 0,
+        correctOption: 0,
         elapsedMs,
         durationMs: 5000,
       }),
@@ -101,16 +101,16 @@ describe("reglas de partida puras", () => {
   test("duración inválida no genera puntos; base configurable respeta la fórmula", () => {
     expect(
       points({
-        answer: true,
-        correctAnswer: true,
+        option: 0,
+        correctOption: 0,
         elapsedMs: 500,
         durationMs: 0,
       }),
     ).toBe(0);
     expect(
       points({
-        answer: true,
-        correctAnswer: true,
+        option: 0,
+        correctOption: 0,
         elapsedMs: 2500,
         durationMs: 5000,
         basePoints: 800,
@@ -118,8 +118,8 @@ describe("reglas de partida puras", () => {
     ).toBe(600);
     expect(
       points({
-        answer: true,
-        correctAnswer: true,
+        option: 0,
+        correctOption: 0,
         elapsedMs: 499,
         durationMs: 5000,
         basePoints: 800,

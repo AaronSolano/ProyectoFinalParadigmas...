@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 
+const AUTH_API_URL = (process.env.E2E_AUTH_API_URL || 'http://127.0.0.1:3001').replace(/\/+$/, '');
+const KAHOOT_API_URL = (process.env.E2E_KAHOOT_API_URL || 'http://127.0.0.1:3002').replace(/\/+$/, '');
 const WEB_URL = process.env.E2E_WEB_URL || 'http://localhost:8080';
 const DEMO_EMAIL = process.env.DEMO_EMAIL || 'docente.demo@example.com';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'Demo2026seg';
@@ -35,7 +37,7 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
       const hostQuizBtn = hostPage.locator('[data-testid^="btn-host-quiz-"]').first();
       await hostQuizBtn.click();
-      await hostPage.locator('[data-testid^="btn-confirm-host-"]').first().click();
+      await hostPage.locator('[data-testid="btn-confirm-create-room"]').first().click();
       await expect(hostPage.getByTestId('room-code-display')).toBeVisible();
       const code = (await hostPage.getByTestId('room-code-display').textContent()).trim();
 
@@ -82,11 +84,11 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await loginInPage(hostBPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
 
       await hostAPage.locator('[data-testid^="btn-host-quiz-"]').first().click();
-      await hostAPage.locator('[data-testid^="btn-confirm-host-"]').first().click();
+      await hostAPage.locator('[data-testid="btn-confirm-create-room"]').first().click();
       const codeA = (await hostAPage.getByTestId('room-code-display').textContent()).trim();
 
       await hostBPage.locator('[data-testid^="btn-host-quiz-"]').first().click();
-      await hostBPage.locator('[data-testid^="btn-confirm-host-"]').first().click();
+      await hostBPage.locator('[data-testid="btn-confirm-create-room"]').first().click();
       const codeB = (await hostBPage.getByTestId('room-code-display').textContent()).trim();
       expect(codeA).not.toBe(codeB);
 
@@ -134,8 +136,8 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
       await hostPage.locator('[data-testid^="btn-host-quiz-"]').first().click();
       // Configurar 5 segundos por pregunta para probar también expiración/respuesta tardía en la pregunta 2
-      await hostPage.locator('[data-testid^="input-qtime-"]').first().fill('5');
-      await hostPage.locator('[data-testid^="btn-confirm-host-"]').first().click();
+      await hostPage.locator('[data-testid="input-question-time"]').first().fill('5');
+      await hostPage.locator('[data-testid="btn-confirm-create-room"]').first().click();
       const code = (await hostPage.getByTestId('room-code-display').textContent()).trim();
 
       await registerAndLoginInPage(partPage, {
@@ -146,6 +148,7 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await partPage.goto(`${WEB_URL}/join`);
       await partPage.getByTestId('input-room-code').fill(code);
       await partPage.getByTestId('btn-join-room').click();
+      await expect(partPage.getByTestId('lobby-view')).toBeVisible();
 
       await hostPage.getByTestId('btn-start-session').click();
       await expect(partPage.getByTestId('question-open-view')).toBeVisible();
@@ -154,18 +157,18 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await expect(partPage.getByTestId('correct-answer-reveal')).toHaveCount(0);
 
       // Un solo envío permitido: tras responder se deshabilitan los botones
-      await partPage.getByTestId('btn-answer-true').click();
-      await expect(partPage.getByTestId('btn-answer-true')).toBeDisabled();
-      await expect(partPage.getByTestId('btn-answer-false')).toBeDisabled();
+      await partPage.getByTestId('btn-answer-0').click();
+      await expect(partPage.getByTestId('btn-answer-0')).toBeDisabled();
+      await expect(partPage.getByTestId('btn-answer-1')).toBeDisabled();
 
       // Al cerrar la pregunta se revela la respuesta correcta y el puntaje
       await hostPage.getByTestId('btn-close-question').click();
       await expect(partPage.getByTestId('correct-answer-reveal')).toBeVisible();
-      await expect(partPage.getByTestId('participant-score')).not.toContainText('0 pts');
+      await expect(partPage.getByTestId('participant-score')).not.toHaveText(/(^|\s)0 pts/);
 
       // Reconexión: recargar o reconectar conserva el puntaje y no duplica al participante
       await partPage.reload();
-      await expect(partPage.getByTestId('participant-score')).not.toContainText('0 pts');
+      await expect(partPage.getByTestId('participant-score')).not.toHaveText(/(^|\s)0 pts/);
       await expect(partPage.getByTestId('question-ranking-list').locator('li')).toHaveCount(1);
 
       // Respuesta tardía (tras vencer el tiempo de 5 s de la pregunta 2): la pregunta cierra sola
@@ -185,10 +188,73 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
     }
   });
 
+  test('2.6 Biblioteca y opción múltiple: se abre una sala con un cuestionario de la biblioteca y se responde con 4 opciones', async ({
+    browser,
+  }) => {
+    const hostContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const partContext = await browser.newContext({ viewport: { width: 360, height: 640 } });
+    const hostPage = await hostContext.newPage();
+    const partPage = await partContext.newPage();
+
+    try {
+      await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      await hostPage.getByRole('link', { name: /biblioteca|library/i }).click();
+      await expect(hostPage).toHaveURL(/\/library$/);
+      await expect(hostPage.locator('[data-testid^="library-card-"]')).toHaveCount(10);
+      await expect(hostPage.getByText('Cultura general')).toBeVisible();
+      await expect(hostPage.getByText('Tecnología')).toBeVisible();
+
+      await hostPage.locator('[data-testid^="btn-host-library-"]').first().click();
+      await hostPage.locator('[data-testid="input-question-time"]').fill('10');
+      await hostPage.locator('[data-testid="btn-confirm-create-room"]').click();
+      const code = (await hostPage.getByTestId('room-code-display').textContent()).trim();
+
+      await registerAndLoginInPage(partPage, {
+        displayName: 'Opciones User',
+        email: `opciones.${Date.now()}@example.com`,
+        password: 'Clave2026seg',
+      });
+      await partPage.goto(`${WEB_URL}/join`);
+      await partPage.getByTestId('input-room-code').fill(code);
+      await partPage.getByTestId('btn-join-room').click();
+      await expect(partPage.getByTestId('lobby-view')).toBeVisible();
+
+      await hostPage.getByTestId('btn-start-session').click();
+      await expect(partPage.getByTestId('question-open-view')).toBeVisible();
+
+      // Cuatro opciones visibles; el cuestionario es el primero de la biblioteca por categoría y título
+      for (const index of [0, 1, 2, 3]) {
+        await expect(partPage.getByTestId(`btn-answer-${index}`)).toBeVisible();
+      }
+      await expect(partPage.getByTestId('correct-answer-reveal')).toHaveCount(0);
+
+      const choices = await partPage.locator('[data-testid^="btn-answer-"]').allTextContents();
+      expect(choices.length).toBe(4);
+
+      await partPage.getByTestId('btn-answer-1').click();
+      await expect(partPage.getByTestId('btn-answer-0')).toBeDisabled();
+
+      await hostPage.getByTestId('btn-close-question').click();
+      await expect(partPage.getByTestId('correct-answer-reveal')).toBeVisible();
+      const reveal = await partPage.getByTestId('correct-answer-reveal').textContent();
+      // La respuesta revelada es el texto de una de las opciones mostradas
+      expect(choices.some((c) => reveal.includes(c.replace(/^[^\wÁÉÍÓÚÑáéíóúñ]+/, '').trim()))).toBe(true);
+    } finally {
+      await hostContext.close();
+      await partContext.close();
+    }
+  });
+
   test('2.5 Persistencia tras reiniciar contenedores de API', async ({ page }) => {
     execFileSync('docker', ['compose', 'restart', 'auth-api', 'kahoot-api'], {
       stdio: 'inherit',
     });
+    // Esperar a que ambas APIs vuelvan a responder antes de usar la interfaz
+    for (const url of [`${AUTH_API_URL}/api/v1/health`, `${KAHOOT_API_URL}/api/v1/health`]) {
+      await expect
+        .poll(async () => (await fetch(url).catch(() => null))?.status, { timeout: 60000 })
+        .toBe(200);
+    }
     await loginInPage(page, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
     await expect(page.getByText('Programación y paradigmas')).toBeVisible();
   });

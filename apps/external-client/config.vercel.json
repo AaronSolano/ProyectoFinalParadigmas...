@@ -1,0 +1,6 @@
+{
+  "authApiUrl": "https://profelink-auth-api.onrender.com",
+  "kahootApiUrl": "https://profelink-kahoot-api.onrender.com",
+  "email": "",
+  "sessionCode": ""
+}

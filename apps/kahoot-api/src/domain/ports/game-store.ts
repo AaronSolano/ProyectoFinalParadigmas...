@@ -16,7 +16,7 @@ export interface GameTransaction {
   insertAnswer(
     participantId: string,
     index: number,
-    answer: boolean,
+    option: number,
     receivedAt: number,
   ): Promise<boolean>;
   open(index: number, closesAt: number, now: number): Promise<void>;

@@ -1,5 +1,5 @@
 {
-  "name": "@profelink/contracts",
+  "name": "@rubymind/contracts",
   "version": "1.0.0",
   "private": true,
   "description": "Contratos compartidos: OpenAPI, eventos en vivo y tipos",

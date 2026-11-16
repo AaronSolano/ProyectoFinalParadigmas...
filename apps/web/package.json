@@ -1,5 +1,5 @@
 {
-  "name": "@profelink/web",
+  "name": "@rubymind/web",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -11,10 +11,7 @@
     "test": "vitest run",
     "test:e2e": "node e2e/run-live-e2e.mjs",
     "test:e2e:pw": "playwright test -c playwright.config.mjs",
-    "gen:api": "openapi-typescript ../../packages/contracts/openapi/auth-api.yaml -o src/api/generated/auth-api.d.ts && openapi-typescript ../../packages/contracts/openapi/kahoot-api.yaml -o src/api/generated/kahoot-api.d.ts",
-    "mock": "node mocks/mock-server.mjs",
-    "mock:prism:auth": "npx @stoplight/prism-cli mock ../../packages/contracts/openapi/auth-api.yaml -p 4011 --cors",
-    "mock:prism:kahoot": "npx @stoplight/prism-cli mock ../../packages/contracts/openapi/kahoot-api.yaml -p 4010 --cors"
+    "gen:api": "openapi-typescript ../../packages/contracts/openapi/auth-api.yaml -o src/api/generated/auth-api.d.ts && openapi-typescript ../../packages/contracts/openapi/kahoot-api.yaml -o src/api/generated/kahoot-api.d.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",

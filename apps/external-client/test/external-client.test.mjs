@@ -221,7 +221,7 @@ test('1.1 sirve index.html y /config.js estático con la configuración inyectad
     const htmlRes = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(htmlRes.status, 200);
     const html = await htmlRes.text();
-    assert.match(html, /ProfeLink — Cliente Externo/);
+    assert.match(html, /RubyMind — Cliente Externo/);
 
     const cfgRes = await fetch(`http://127.0.0.1:${port}/config.js`);
     assert.equal(cfgRes.status, 200);

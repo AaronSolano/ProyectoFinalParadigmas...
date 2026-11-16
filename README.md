@@ -108,7 +108,7 @@ CORS_ORIGINS=http://localhost:8080,http://localhost:5174
 
 # 2. Iniciar el cliente (Node 22)
 npm install
-npm start -w @profelink/external-client      # http://localhost:5174
+npm start -w @rubymind/external-client      # http://localhost:5174
 ```
 
 Abre <http://localhost:5174>, inicia sesión con la cuenta demo, escribe el código de una sesión terminada y consulta su clasificación. La configuración (URL de las APIs, correo, código por defecto) se cambia con variables `EXTERNAL_*` o en `apps/external-client/config.json`; la contraseña solo se escribe en el formulario. Más detalle en [apps/external-client/README.md](apps/external-client/README.md).
@@ -123,7 +123,7 @@ npm run spec:validate   # valida las especificaciones OpenSpec
 ```
 
 - Las pruebas de integración de las APIs usan PostgreSQL real si defines `AUTH_TEST_DATABASE_URL` y `TEST_DATABASE_URL`; sin ellas se omiten.
-- Pruebas e2e con Playwright contra la solución en Compose: `npm run test:e2e:pw -w @profelink/web` (con `./start.sh` ya en marcha).
+- Pruebas e2e con Playwright contra la solución en Compose: `npm run test:e2e:pw -w @rubymind/web` (con `./start.sh` ya en marcha).
 - Prueba de carga y evidencia de participantes simultáneos: [apps/kahoot-api/LOAD-VERIFICATION.md](apps/kahoot-api/LOAD-VERIFICATION.md).
 
 ## Estructura del repositorio y forma de trabajo

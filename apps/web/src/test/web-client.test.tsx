@@ -63,7 +63,7 @@ function renderWithProviders(ui: React.ReactElement, initialEntries = ['/']) {
   );
 }
 
-describe('@profelink/web — Fase 5 unit & component suite', () => {
+describe('@rubymind/web — Fase 5 unit & component suite', () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();

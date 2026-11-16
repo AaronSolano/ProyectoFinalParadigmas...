@@ -21,7 +21,7 @@ for (const name of ['auth-api', 'kahoot-api']) {
   execFileSync(process.execPath, [bin, path.join(root, 'openapi', `${name}.yaml`), '-o', out], { stdio: 'ignore' });
   const current = path.join(root, 'src', 'generated', `${name}.d.ts`);
   if (!fs.existsSync(current) || norm(fs.readFileSync(current, 'utf8')) !== norm(fs.readFileSync(out, 'utf8'))) {
-    console.error(`DESACTUALIZADO src/generated/${name}.d.ts: ejecuta "npm run gen:types -w @profelink/contracts"`);
+    console.error(`DESACTUALIZADO src/generated/${name}.d.ts: ejecuta "npm run gen:types -w @rubymind/contracts"`);
     stale++;
   }
 }

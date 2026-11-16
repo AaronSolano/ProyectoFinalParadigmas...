@@ -17,7 +17,7 @@ Lee en este orden:
 - **Solo puedes editar `apps/auth-api/**`.** No modifiques `packages/contracts`, `openspec/`, `docs/`, `infra/` ni otras apps. Si el contrato es insuficiente o contradictorio, **no lo cambies**: descríbelo en el PR y sigue con el contrato vigente.
 
 ## Stack fijado (no cambiar)
-- NestJS 10+ con TypeScript estricto, Node 20+, npm workspaces (el paquete se llama `@profelink/auth-api`).
+- NestJS 10+ con TypeScript estricto, Node 20+, npm workspaces (el paquete se llama `@rubymind/auth-api`).
 - PostgreSQL con **TypeORM** y **migraciones versionadas** (sin `synchronize` en producción).
 - Argon2 para hash de contraseñas (`argon2`); si no compila en Docker, usa `bcrypt` y déjalo anotado en el PR.
 - JWT **RS256** con la librería `jose` o `@nestjs/jwt`; claves por variables de entorno (PEM).
@@ -46,7 +46,7 @@ Prefijo global `/api/v1`, puerto `AUTH_PORT` (3001).
 - Errores con forma `Problem {status, code, message, details?}`; códigos: `VALIDATION_ERROR`, `EMAIL_TAKEN`, `INVALID_CREDENTIALS`, `UNAUTHORIZED`.
 
 ## Variables de entorno
-Usa los nombres de `.env.example`: `AUTH_PORT`, `AUTH_DATABASE_URL`, `DATABASE_SSL`, `JWT_EXPIRES_IN`, `JWT_AUDIENCE`, `JWT_ISSUER`, `OTEL_EXPORTER_OTLP_ENDPOINT`. Para RS256 agrega **solo en `apps/auth-api`** y documenta en el PR: `JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` (PEM, con `\n` escapados) y `JWT_KEY_ID`. Si faltan, el servicio **no arranca** con un error claro. Incluye un script `npm run keys:generate -w @profelink/auth-api` que imprima un par de claves para pegar en `.env`. **Nunca versiones claves ni `.env`.**
+Usa los nombres de `.env.example`: `AUTH_PORT`, `AUTH_DATABASE_URL`, `DATABASE_SSL`, `JWT_EXPIRES_IN`, `JWT_AUDIENCE`, `JWT_ISSUER`, `OTEL_EXPORTER_OTLP_ENDPOINT`. Para RS256 agrega **solo en `apps/auth-api`** y documenta en el PR: `JWT_PRIVATE_KEY` y `JWT_PUBLIC_KEY` (PEM, con `\n` escapados) y `JWT_KEY_ID`. Si faltan, el servicio **no arranca** con un error claro. Incluye un script `npm run keys:generate -w @rubymind/auth-api` que imprima un par de claves para pegar en `.env`. **Nunca versiones claves ni `.env`.**
 
 ## Tareas (de `openspec/changes/f2-auth/tasks.md`)
 1. Crear el proyecto NestJS en `apps/auth-api` con las capas y verificar que arranca y responde `/health`.
@@ -54,7 +54,7 @@ Usa los nombres de `.env.example`: `AUTH_PORT`, `AUTH_DATABASE_URL`, `DATABASE_S
 3. Registro con validación y hash; pruebas unitarias (correo duplicado, contraseña débil, hash distinto del texto plano).
 4. Login con JWT; 401 uniforme.
 5. JWKS público; prueba de integración que **valida un token usando solo la clave pública**, sin acceso a la base.
-6. OpenAPI/Scalar publicado en `/docs` (o ruta equivalente) y **prueba que compara el documento generado con `packages/contracts/openapi/auth-api.yaml`** (mismas rutas y métodos). Reutiliza `compare()` de `packages/contracts/scripts/verify-contract.mjs` o ejecuta `node packages/contracts/scripts/verify-contract.mjs auth-api <openapi.json>` (falla si hay un endpoint no declarado). Los tipos del contrato están en `@profelink/contracts/auth-api`.
+6. OpenAPI/Scalar publicado en `/docs` (o ruta equivalente) y **prueba que compara el documento generado con `packages/contracts/openapi/auth-api.yaml`** (mismas rutas y métodos). Reutiliza `compare()` de `packages/contracts/scripts/verify-contract.mjs` o ejecuta `node packages/contracts/scripts/verify-contract.mjs auth-api <openapi.json>` (falla si hay un endpoint no declarado). Los tipos del contrato están en `@rubymind/contracts/auth-api`.
 7. OpenTelemetry: trazas y métricas HTTP al colector (si no hay colector, no debe fallar).
 
 ## Definición de terminado

@@ -19,7 +19,7 @@ ARG VITE_ENABLE_DEBUG_CONTROLS=false
 ENV VITE_AUTH_API_URL="" \
     VITE_KAHOOT_API_URL="" \
     VITE_ENABLE_DEBUG_CONTROLS=${VITE_ENABLE_DEBUG_CONTROLS}
-RUN npm run build -w @profelink/web
+RUN npm run build -w @rubymind/web
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 COPY infra/docker/web-nginx.conf /etc/nginx/conf.d/default.conf

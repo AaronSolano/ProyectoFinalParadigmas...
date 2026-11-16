@@ -7,7 +7,7 @@
 - Solo `apps/kahoot-api/**`. No toques `packages/contracts`, `openspec/`, `docs/`, `infra/` ni el `package-lock.json` raíz.
 - El servidor es la única fuente de tiempo y puntaje: el cliente nunca envía `elapsedMs` ni puntos.
 - Respeta N-Capas: la fórmula y la racha son funciones puras en `src/domain/game.ts`, sin HTTP, Socket.IO ni TypeORM.
-- Tras cada tarea: `npm run lint`, `npm test` y `npm run build` en `@profelink/kahoot-api`, y el verificador de contrato (`npm run verify:contract -w @profelink/contracts`).
+- Tras cada tarea: `npm run lint`, `npm test` y `npm run build` en `@rubymind/kahoot-api`, y el verificador de contrato (`npm run verify:contract -w @rubymind/contracts`).
 
 ## Tareas (OpenSpec `kahoot-velocidad-tiempo-sonido`)
 ### 2.1 Dominio

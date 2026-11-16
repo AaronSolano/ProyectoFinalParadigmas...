@@ -1,4 +1,4 @@
-# `@profelink/external-client` — Cliente Externo Independiente (Fase 8)
+# `@rubymind/external-client` — Cliente Externo Independiente (Fase 8)
 
 Aplicación web estática ligera (**HTML + JavaScript ES Module + CSS**, sin dependencias de las APIs ni acceso a base de datos) que demuestra el consumo independiente de `auth-api` y `kahoot-api` usando exclusivamente los endpoints documentados en `packages/contracts/openapi/`:
 
@@ -33,13 +33,13 @@ Cualquier otro origen no listado en `CORS_ORIGINS` queda bloqueado por las APIs.
 
 ```bash
 # Iniciar el servidor estático (por defecto en http://localhost:5174)
-npm start -w @profelink/external-client
+npm start -w @rubymind/external-client
 
 # Verificar sintaxis e independencia (sin imports de APIs ni acceso a BD)
-npm run lint -w @profelink/external-client
+npm run lint -w @rubymind/external-client
 
 # Ejecutar pruebas automatizadas (1.1 consumo HTTP, seguridad de configuración y 1.2 independencia)
-npm test -w @profelink/external-client
+npm test -w @rubymind/external-client
 ```
 
 ## Despliegue en Vercel

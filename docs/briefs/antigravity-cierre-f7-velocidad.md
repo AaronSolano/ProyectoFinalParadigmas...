@@ -5,7 +5,7 @@
 ## Reglas
 - Solo `apps/web/**` y `apps/external-client/**`. No toques `packages/contracts`, `openspec/` (salvo marcar tus tareas), `docs/`, `infra/` ni el `package-lock.json` raíz; si agregas dependencias avísame y regenero el lockfile con `npm install`.
 - El cliente nunca decide puntajes: solo muestra `elapsedMs`, `pointsAwarded` y `streak` que manda el servidor.
-- Antes de cada PR: `npm run lint`, `npm test` y `npm run build` en `@profelink/web`.
+- Antes de cada PR: `npm run lint`, `npm test` y `npm run build` en `@rubymind/web`.
 
 ## Bloque 1 — Ajustes al PR #31 (prioridad, antes que nada)
 1. Declara `@playwright/test` en `devDependencies` de `apps/web/package.json`. Hoy `npm run test:e2e:pw` falla en un clon limpio.

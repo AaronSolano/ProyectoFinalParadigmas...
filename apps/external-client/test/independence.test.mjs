@@ -11,9 +11,9 @@ const FORBIDDEN_PATTERNS = [
   /apps[\\/]auth-api/i,
   /apps[\\/]kahoot-api/i,
   /apps[\\/]web/i,
-  /@profelink[\\/]auth-api/i,
-  /@profelink[\\/]kahoot-api/i,
-  /@profelink[\\/]web/i,
+  /@rubymind[\\/]auth-api/i,
+  /@rubymind[\\/]kahoot-api/i,
+  /@rubymind[\\/]web/i,
   /\bfrom\s+['"]pg['"]/i,
   /\brequire\(\s*['"]pg['"]\s*\)/i,
   /\bfrom\s+['"]typeorm['"]/i,
@@ -51,7 +51,7 @@ export async function verifyIndependence() {
 
   for (const depName of Object.keys(allDeps)) {
     assert.ok(
-      !depName.startsWith('@profelink/') && depName !== 'pg' && depName !== 'typeorm',
+      !depName.startsWith('@rubymind/') && depName !== 'pg' && depName !== 'typeorm',
       `Dependencia prohibida detectada en apps/external-client/package.json: ${depName}`,
     );
   }

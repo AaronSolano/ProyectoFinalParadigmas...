@@ -1,4 +1,4 @@
-# `@profelink/web` — Cliente Web React (Fase 5)
+# `@rubymind/web` — Cliente Web React (Fase 5)
 
 Interfaz web responsive (computadora y celular) en **español e inglés** para creadores, anfitriones y participantes de la plataforma de evaluaciones en vivo Verdadero/Falso de ProfeLink.
 
@@ -28,20 +28,20 @@ VITE_KAHOOT_API_URL=http://localhost:4010
 
 ```bash
 # Generar tipos TypeScript desde los contratos OpenAPI
-npm run gen:api -w @profelink/web
+npm run gen:api -w @rubymind/web
 
 # Iniciar servidor de desarrollo Vite (http://localhost:5173)
-npm run dev -w @profelink/web
+npm run dev -w @rubymind/web
 
 # Iniciar servidor mock (REST + Socket.IO /game en 4011 y 4010)
-npm run mock -w @profelink/web
+npm run mock -w @rubymind/web
 
 # Alternativa con Prism CLI para mocks OpenAPI puros
-npm run mock:prism:auth -w @profelink/web
-npm run mock:prism:kahoot -w @profelink/web
+npm run mock:prism:auth -w @rubymind/web
+npm run mock:prism:kahoot -w @rubymind/web
 
 # Verificación de tipos, pruebas de componentes y compilación
-npm run lint -w @profelink/web
-npm test -w @profelink/web
-npm run build -w @profelink/web
+npm run lint -w @rubymind/web
+npm test -w @rubymind/web
+npm run build -w @rubymind/web
 ```

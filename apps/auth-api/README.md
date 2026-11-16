@@ -4,7 +4,7 @@ Servicio NestJS independiente. Las reglas de contraseña y los puertos viven en 
 
 ## Desarrollo
 
-Desde esta carpeta: `npm install --workspaces=false`, `npm run build`, `npm run lint`, `npm test`. Desde un monorepo instalado también se pueden ejecutar los scripts con `-w @profelink/auth-api`. La instalación del monorepo y su lockfile los integra el orquestador.
+Desde esta carpeta: `npm install --workspaces=false`, `npm run build`, `npm run lint`, `npm test`. Desde un monorepo instalado también se pueden ejecutar los scripts con `-w @rubymind/auth-api`. La instalación del monorepo y su lockfile los integra el orquestador.
 
 Configurar `AUTH_DATABASE_URL`, `DATABASE_SSL` (`true` exige un certificado válido), `AUTH_PORT` (3001), `JWT_ISSUER` (`auth-api`), `JWT_AUDIENCE` (`kahoot-api`), `JWT_EXPIRES_IN` (`1h`), `CORS_ORIGINS` (orígenes separados por coma). Las variables se leen del entorno del proceso; cargar `.env` mediante el entorno de despliegue o `node --env-file=... dist/main.js`.
 

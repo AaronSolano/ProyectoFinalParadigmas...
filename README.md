@@ -19,11 +19,13 @@ La especificación completa, con diagramas de arquitectura y de clases, modelo d
 
 | Qué | URL |
 |---|---|
-| Aplicación desplegada (Vercel) | _Pendiente: se completa al terminar el despliegue_ |
-| auth-api (Render), documentación | _Pendiente_ (`/docs`) |
-| kahoot-api (Render), documentación | _Pendiente_ (`/docs`) |
+| Aplicación desplegada (Vercel) | <https://profelink-kahoot.vercel.app> |
+| auth-api (Render), documentación | <https://profelink-auth-api.onrender.com/docs> |
+| kahoot-api (Render), documentación | <https://profelink-kahoot-api.onrender.com/docs> |
 | Cliente externo desplegado | _Pendiente_ |
 | Imágenes en Docker Hub | [`aaronsc04/profelink-auth-api`](https://hub.docker.com/r/aaronsc04/profelink-auth-api), [`aaronsc04/profelink-kahoot-api`](https://hub.docker.com/r/aaronsc04/profelink-kahoot-api), [`aaronsc04/profelink-web`](https://hub.docker.com/r/aaronsc04/profelink-web) |
+
+Las APIs de Render usan el plan gratuito: tras 15 minutos sin uso se duermen y la primera petición tarda cerca de un minuto. Abre la aplicación unos minutos antes de una demostración.
 
 En local (con Docker): aplicación en <http://localhost:8080>, documentación Scalar de la autenticación en <http://localhost:3001/docs> y de las actividades en <http://localhost:3002/docs>, Grafana (opcional) en <http://localhost:3000>.
 

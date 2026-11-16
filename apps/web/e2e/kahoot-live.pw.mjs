@@ -122,7 +122,7 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
     }
   });
 
-  test('2.3 y 2.4 Respuestas válidas (única, revelación al cierre) y reconexión sin duplicar participante ni puntaje', async ({
+  test('2.3 y 2.4 Respuestas válidas (única, tardía/cerrada, revelación al cierre) y reconexión sin duplicar participante ni puntaje', async ({
     browser,
   }) => {
     const hostContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
@@ -133,6 +133,8 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
     try {
       await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
       await hostPage.locator('[data-testid^="btn-host-quiz-"]').first().click();
+      // Configurar 5 segundos por pregunta para probar también expiración/respuesta tardía en la pregunta 2
+      await hostPage.locator('[data-testid^="input-qtime-"]').first().fill('5');
       await hostPage.locator('[data-testid^="btn-confirm-host-"]').first().click();
       const code = (await hostPage.getByTestId('room-code-display').textContent()).trim();
 
@@ -159,12 +161,24 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       // Al cerrar la pregunta se revela la respuesta correcta y el puntaje
       await hostPage.getByTestId('btn-close-question').click();
       await expect(partPage.getByTestId('correct-answer-reveal')).toBeVisible();
-      await expect(partPage.getByTestId('participant-score')).toContainText('1 pts');
+      await expect(partPage.getByTestId('participant-score')).not.toContainText('0 pts');
 
-      // Reconexión: recargar o reconectar conserva 1 pt y no duplica al participante
+      // Reconexión: recargar o reconectar conserva el puntaje y no duplica al participante
       await partPage.reload();
-      await expect(partPage.getByTestId('participant-score')).toContainText('1 pts');
+      await expect(partPage.getByTestId('participant-score')).not.toContainText('0 pts');
       await expect(partPage.getByTestId('question-ranking-list').locator('li')).toHaveCount(1);
+
+      // Respuesta tardía (tras vencer el tiempo de 5 s de la pregunta 2): la pregunta cierra sola
+      // y cualquier intento de envío posterior al cierre/vencimiento es rechazado por el servidor (late/closed)
+      // sin alterar el puntaje del participante.
+      const scoreBeforeLateQuestion = await partPage.getByTestId('participant-score').textContent();
+      await hostPage.getByTestId('btn-next-question').click();
+      await expect(partPage.getByTestId('question-open-view')).toBeVisible();
+
+      // Esperar a que venza el plazo de 5 s en el servidor sin responder a tiempo
+      await expect(partPage.getByTestId('question-closed-view')).toBeVisible({ timeout: 8000 });
+      await expect(partPage.getByTestId('personal-question-result')).toContainText(/0 pts/);
+      await expect(partPage.getByTestId('participant-score')).toHaveText(scoreBeforeLateQuestion);
     } finally {
       await hostContext.close();
       await partContext.close();

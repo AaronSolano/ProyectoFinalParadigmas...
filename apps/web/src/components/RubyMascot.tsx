@@ -16,10 +16,14 @@ export function RubyMascot({
   mood = 'welcome',
   className = '',
   label,
+  animated = true,
+  paused = false,
 }: {
   mood?: RubyMood;
   className?: string;
   label?: string;
+  animated?: boolean;
+  paused?: boolean;
 }) {
   const positions: Record<RubyMood, string> = {
     welcome: '0% 0%',
@@ -35,10 +39,18 @@ export function RubyMascot({
   return (
     <span
       className={`ruby-mascot ruby-mascot--${mood} ${className}`}
-      style={{ backgroundPosition: positions[mood] } as CSSProperties}
+      data-animated={animated}
+      data-paused={paused}
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
-    />
+    >
+      <span
+        key={mood}
+        className="ruby-mascot__sprite"
+        style={{ backgroundPosition: positions[mood] } as CSSProperties}
+        aria-hidden="true"
+      />
+    </span>
   );
 }

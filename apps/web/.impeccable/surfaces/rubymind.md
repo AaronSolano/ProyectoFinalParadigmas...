@@ -30,3 +30,7 @@ MOTION: Feedback de presión 160ms, entradas de estados 240ms ease-out. Celebrat
 El umbral de cercanía `RUBY_NEAR_PODIUM_POINTS` es visual y ajustable; no altera puntaje ni posiciones. El host celebra un cierre de pregunta con resultados y algún acierto, o muestra sad si nadie acertó. La comparación de racha y posición toma una baseline observada para esa ronda; no fabrica historia tras reconectar. El contrato no incluye una cuenta regresiva previa real.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+
+## Movimiento del personaje
+
+Movimiento en el sprite interno, sin mover textos ni controles: saludo 1100ms, ánimo/motivación/empatía/sorpresa 700ms y celebración 900ms. Espera con respiración sutil 3600ms en bucle, con pausa/reanudar accesible. No se articula la cola por separado. Durante pregunta Ruby queda inmóvil; movimiento reducido desactiva el personaje y el confeti.

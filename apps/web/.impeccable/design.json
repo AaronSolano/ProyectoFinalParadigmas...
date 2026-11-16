@@ -27,11 +27,6 @@
         "purpose": "Entrada de lobby, resultados y destacados."
       },
       {
-        "name": "ruby-entrance",
-        "value": "480ms",
-        "purpose": "Saludo y salto de celebración en resultados confirmados y final; sin bucles."
-      },
-      {
         "name": "reduced-state",
         "value": "120ms ease-out",
         "purpose": "Solo opacidad para estados con movimiento reducido."
@@ -50,6 +45,31 @@
         "name": "ruby-advance-cue",
         "value": "900ms",
         "purpose": "Máximo de indicación al pedir iniciar/avanzar; se limpia con cambios de estado, error o conexión. No es cuenta regresiva."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Respiración leve de Ruby en espera."
+      },
+      {
+        "name": "ruby-greeting-duration",
+        "value": "1100ms",
+        "purpose": "Balanceo de bienvenida, una pasada."
+      },
+      {
+        "name": "ruby-idle-duration",
+        "value": "3600ms",
+        "purpose": "Respiración del lobby en bucle, con pausa/reanudar accesible."
+      },
+      {
+        "name": "ruby-reaction-duration",
+        "value": "700ms",
+        "purpose": "Ánimo, empatía y sorpresa, una pasada; no se ejecutan en pregunta."
+      },
+      {
+        "name": "ruby-celebration-duration",
+        "value": "900ms",
+        "purpose": "Dos pequeños saltos amortiguados tras resultado confirmado."
       }
     ],
     "breakpoints": [

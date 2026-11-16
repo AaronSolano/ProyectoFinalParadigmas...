@@ -18,6 +18,8 @@ export const en = {
       },
     },
     ruby: {
+      pauseMotion: 'Pause Ruby’s motion',
+      resumeMotion: 'Resume Ruby’s motion',
       welcome: 'Hi! Let’s learn together!',
       idle: 'Everyone at their own pace. I’m watching for new arrivals.',
       cheer: 'Let’s go! Another chance to learn.',

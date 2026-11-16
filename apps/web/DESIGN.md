@@ -248,7 +248,9 @@ En la clasificación final, las posiciones (1–3) celebran. Fuera del podio, un
 
 El feedback usa Ruby de (180px) en lobby, (130px) en resultado, (195px) al finalizar, (64px) en pregunta y (85px) junto al ranking. Los mensajes usan marrón secundario; en pregunta son más pequeños (0.78rem), con ancho máximo (28ch).
 
-La bienvenida y el salto de celebración duran (480ms), con curva `cubic-bezier(0.23, 1, 0.32, 1)`. La celebración de resultados incorpora ocho piezas de confeti, de (650ms) cada una, con retrasos entre (0–180ms), en canela, verde y azul. No hay bucles. Lobby, resultados y destacados entran con opacidad y desplazamiento de (6px), durante (240ms). Con movimiento reducido se eliminan salto, confeti, transformaciones y transiciones, conservando únicamente una aparición de opacidad de estados (120ms).
+El movimiento se aplica a `.ruby-mascot__sprite`, separado del encuadre y del texto. La bienvenida balancea a Ruby una vez (1100ms); el lobby usa una respiración leve en ciclos de (3600ms), con botón Pausar/Reanudar accesible en español e inglés. Animar/motivar, empatía/tristeza y sorpresa tienen reacciones de una sola pasada (700ms); la celebración hace dos pequeños saltos amortiguados en (900ms). Las reacciones usan `--ease-out`; la espera usa `--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1)`. No se usa JavaScript por fotograma ni una librería nueva. Ruby permanece inmóvil durante la pregunta (`animated=false`), también en la indicación inicial de esa pregunta.
+
+La celebración conserva ocho piezas de confeti de (650ms), con retrasos (0–180ms), en canela, verde y azul. Lobby, resultados y destacados entran con opacidad y desplazamiento de (6px), durante (240ms). Con movimiento reducido se eliminan los movimientos del personaje y el confeti, se oculta el control innecesario de pausa y se conserva únicamente la aparición de opacidad de estados (120ms).
 
 ## Do's and Don'ts
 
@@ -262,6 +264,6 @@ La bienvenida y el salto de celebración duran (480ms), con curva `cubic-bezier(
 
 ### Don't:
 - **Don't** usar a Ruby para culpabilizar por una respuesta incorrecta.
-- **Don't** añadir movimiento continuo ni animar clasificación, cifras o enunciados durante una pregunta.
+- **Don't** animar clasificación, cifras, enunciados ni el cuerpo de Ruby durante una pregunta. El movimiento continuo del lobby siempre tiene pausa.
 - **Don't** comunicar selección, error o acierto solamente mediante color.
 - **Don't** sustituir la mascota o la paleta confirmadas por otra identidad.

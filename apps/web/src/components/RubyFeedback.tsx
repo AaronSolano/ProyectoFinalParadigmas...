@@ -7,13 +7,16 @@ export function RubyFeedback({
   className = '',
   messageKey,
   celebrate = false,
+  animated = true,
 }: {
   mood: RubyMood;
   className?: string;
   messageKey?: string;
   celebrate?: boolean;
+  animated?: boolean;
 }) {
   const { t } = useTranslation();
+  const [paused, setPaused] = useState(false);
   return (
     <div
       className={`ruby-feedback ${className}`}
@@ -23,7 +26,7 @@ export function RubyFeedback({
       <div
         className={`ruby-feedback__art ${celebrate && mood === 'celebrate' ? 'ruby-feedback__art--celebrating' : ''}`}
       >
-        <RubyMascot mood={mood} />
+        <RubyMascot mood={mood} animated={animated} paused={paused} />
         {mood === 'think' && (
           <span className="ruby-question-mark" aria-hidden="true">
             ?
@@ -40,6 +43,16 @@ export function RubyFeedback({
       <p className="ruby-feedback__message">
         {t(messageKey ?? `ruby.${mood}`)}
       </p>
+      {mood === 'idle' && animated && (
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm ruby-motion-control"
+          aria-pressed={paused}
+          onClick={() => setPaused((value) => !value)}
+        >
+          {t(paused ? 'ruby.resumeMotion' : 'ruby.pauseMotion')}
+        </button>
+      )}
     </div>
   );
 }
@@ -70,6 +83,7 @@ export function RubyQuestionCompanion({
     <RubyFeedback
       mood={cheering ? 'cheer' : 'think'}
       className="ruby-feedback--question"
+      animated={false}
     />
   );
 }

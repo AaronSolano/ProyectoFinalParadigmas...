@@ -634,6 +634,7 @@ paths:
                       hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
                       status: finished
                       questionTimeSeconds: 20
+                      autoAdvanceSeconds: 5
                       participantCount: 12
                       createdAt: '2026-11-15T14:00:00.000Z'
                       startedAt: '2026-11-15T14:05:00.000Z'
@@ -679,6 +680,7 @@ paths:
                     hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
                     status: waiting
                     questionTimeSeconds: 30
+                    autoAdvanceSeconds: 5
                     participantCount: 0
                     createdAt: '2026-11-15T14:00:00.000Z'
                     startedAt: null
@@ -730,6 +732,7 @@ paths:
                     hostId: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
                     status: waiting
                     questionTimeSeconds: 20
+                    autoAdvanceSeconds: 5
                     participantCount: 3
                     createdAt: '2026-11-15T14:00:00.000Z'
                     startedAt: null
@@ -1212,7 +1215,7 @@ components:
 
     Session:
       type: object
-      required: [id, code, quizId, hostId, status, questionTimeSeconds, participantCount, createdAt, startedAt, finishedAt]
+      required: [id, code, quizId, hostId, status, questionTimeSeconds, autoAdvanceSeconds, participantCount, createdAt, startedAt, finishedAt]
       properties:
         id:
           type: string
@@ -1233,6 +1236,11 @@ components:
           minimum: 5
           maximum: 120
           description: Tiempo limite por pregunta, en segundos.
+        autoAdvanceSeconds:
+          type: integer
+          minimum: 0
+          maximum: 60
+          description: Segundos tras cerrar una pregunta para pasar sola a la siguiente; `0` lo desactiva (solo avanza el anfitrion).
         participantCount:
           type: integer
           minimum: 0
@@ -1261,6 +1269,12 @@ components:
           maximum: 120
           default: 20
           description: Tiempo limite por pregunta, en segundos.
+        autoAdvanceSeconds:
+          type: integer
+          minimum: 0
+          maximum: 60
+          default: 5
+          description: Segundos tras cerrar una pregunta para pasar sola a la siguiente; `0` lo desactiva. Lo elige quien crea la sala.
 
     JoinInput:
       type: object

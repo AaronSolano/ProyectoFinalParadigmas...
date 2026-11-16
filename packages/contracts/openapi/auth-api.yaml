@@ -83,6 +83,38 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '409':
           $ref: '#/components/responses/EmailTaken'
+  /auth/guest:
+    post:
+      operationId: createGuest
+      tags: [Autenticación]
+      summary: Entrar como invitado (sin cuenta)
+      description: |
+        Emite un token efímero para una persona que solo quiere unirse a una sala con un apodo, sin
+        registrarse ni iniciar sesión. No se guarda ningún perfil ni correo. El token lleva el claim
+        `guest: true` y **solo sirve para unirse a salas y jugar**: `kahoot-api` responde 403 si se usa
+        para crear cuestionarios, abrir salas o consultar la biblioteca. Vigencia por defecto: 6 horas
+        (`JWT_GUEST_EXPIRES_IN`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestRequest'
+            examples:
+              apodo:
+                summary: Apodo válido
+                value:
+                  displayName: Mapache
+      responses:
+        '201':
+          description: Invitado creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuestResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
   /auth/login:
     post:
       operationId: login
@@ -271,6 +303,40 @@ components:
           examples: [3600]
         profile:
           $ref: '#/components/schemas/Profile'
+    GuestRequest:
+      type: object
+      required: [displayName]
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 40
+          description: Apodo con el que aparece en la sala.
+    GuestResponse:
+      type: object
+      required: [accessToken, tokenType, expiresIn, guest]
+      properties:
+        accessToken:
+          type: string
+          description: JWT RS256 con el claim `guest` en `true` (sin correo).
+        tokenType:
+          type: string
+          const: Bearer
+        expiresIn:
+          type: integer
+          minimum: 1
+          description: Vigencia del token en segundos.
+          examples: [21600]
+        guest:
+          type: object
+          required: [id, displayName]
+          properties:
+            id:
+              type: string
+              format: uuid
+            displayName:
+              type: string
     HealthStatus:
       type: object
       required: [status, service]

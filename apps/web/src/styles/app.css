@@ -1623,7 +1623,7 @@ input[type='radio'] {
   padding: 0.75rem 1rem;
   border-radius: 0.6rem;
   background: var(--bg-elevated);
-  border-left: 4px solid var(--focus-ring);
+  border: 1px solid var(--border-color);
 }
 .answer-explanation p { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
 .auto-advance-note { margin: 0.5rem 0; text-align: center; font-weight: 700; opacity: 0.85; }

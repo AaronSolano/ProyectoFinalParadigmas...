@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Imagen de kahoot-api. Contexto de construccion: raiz del repositorio.
-#   docker build -f infra/docker/kahoot-api.Dockerfile -t profelink-kahoot-api .
+#   docker build -f infra/docker/kahoot-api.Dockerfile -t rubymind-kahoot-api .
 ARG NODE_IMAGE=node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 FROM ${NODE_IMAGE} AS manifests

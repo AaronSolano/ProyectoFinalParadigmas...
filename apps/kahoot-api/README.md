@@ -98,12 +98,12 @@ Los cuatro archivos de infraestructura de pruebas pertenecen exclusivamente a F7
 Desde `apps/kahoot-api`, con dependencias de desarrollo instaladas:
 
 ```powershell
-docker compose -p profelink-f7 -f test/compose.yaml --profile load up -d --build --wait
+docker compose -p rubymind-f7 -f test/compose.yaml --profile load up -d --build --wait
 $env:AUTH_BASE_URL='http://127.0.0.1:55435'
 $env:KAHOOT_BASE_URL='http://127.0.0.1:55436'
 $env:LOAD_STEPS='5,10,25'
 npm run load
-docker compose -p profelink-f7 -f test/compose.yaml --profile load down
+docker compose -p rubymind-f7 -f test/compose.yaml --profile load down
 ```
 
 Configurar `LOAD_TIMEOUT_MS` (15000), `LOAD_MAX_P95_MS` (1000) y `LOAD_MAX_ERROR_RATE` (0.01) para ajustar los criterios. El Compose de pruebas utiliza bases e imágenes desechables y claves RSA efímeras; no es el despliegue de infraestructura. El informe verificado y sus límites están en [LOAD-VERIFICATION.md](./LOAD-VERIFICATION.md).

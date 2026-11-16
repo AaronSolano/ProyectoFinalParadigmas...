@@ -13,7 +13,7 @@ Estado de cada comprobación obligatoria del enunciado. Una fila pasa a "Verific
 
 ## Corrida e2e
 
-- Fecha: 2026-11-15. Pila levantada con `./start.sh --images --debug-controls` (imágenes `aaronsc04/profelink-*:latest` con puntaje por velocidad) en puertos alternos.
+- Fecha: 2026-11-15. Pila levantada con `./start.sh --images --debug-controls` (imágenes `aaronsc04/rubymind-*:latest` con puntaje por velocidad) en puertos alternos.
 - `npm run test:e2e:pw -w @profelink/web`: 4 de 4 pasan (2.1 a 2.5). `npm run test:e2e -w @profelink/web` (canal en vivo y persistencia): pasa.
 - La primera corrida encontró fallos reales corregidos en el mismo PR: selectores de prueba desactualizados, carrera al iniciar sin esperar el lobby, aserciones del puntaje de 1 punto, y nginx que conservaba la IP vieja de las APIs tras reiniciarlas (ahora resuelve el DNS de Docker con TTL de 5 s).
 

@@ -23,7 +23,7 @@ La especificación completa, con diagramas de arquitectura y de clases, modelo d
 | auth-api (Render), documentación | <https://profelink-auth-api.onrender.com/docs> |
 | kahoot-api (Render), documentación | <https://profelink-kahoot-api.onrender.com/docs> |
 | Cliente externo desplegado | <https://profelink-cliente-externo.vercel.app> |
-| Imágenes en Docker Hub | [`aaronsc04/profelink-auth-api`](https://hub.docker.com/r/aaronsc04/profelink-auth-api), [`aaronsc04/profelink-kahoot-api`](https://hub.docker.com/r/aaronsc04/profelink-kahoot-api), [`aaronsc04/profelink-web`](https://hub.docker.com/r/aaronsc04/profelink-web) |
+| Imágenes en Docker Hub | [`aaronsc04/rubymind-auth-api`](https://hub.docker.com/r/aaronsc04/rubymind-auth-api), [`aaronsc04/rubymind-kahoot-api`](https://hub.docker.com/r/aaronsc04/rubymind-kahoot-api), [`aaronsc04/rubymind-web`](https://hub.docker.com/r/aaronsc04/rubymind-web) |
 
 Las APIs de Render usan el plan gratuito: tras 15 minutos sin uso se duermen y la primera petición tarda cerca de un minuto. Abre la aplicación unos minutos antes de una demostración.
 

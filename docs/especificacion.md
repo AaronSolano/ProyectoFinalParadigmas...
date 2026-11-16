@@ -226,7 +226,7 @@ Los resultados, los participantes probados y las limitaciones conocidas se regis
 | Entregable | Dónde |
 |---|---|
 | Código de frontend y backend, Dockerfiles, Compose, `.env.example`, script de inicio | `apps/`, `infra/`, `compose.yaml`, `compose.build.yaml`, `.env.example`, `start.sh`, `start.ps1` |
-| Imágenes en Docker Hub | `aaronsc04/profelink-{auth-api,kahoot-api,web}` |
+| Imágenes en Docker Hub | `aaronsc04/rubymind-{auth-api,kahoot-api,web}` |
 | README con URLs, inicio, cuentas de prueba y demostración | [README.md](../README.md) |
 | Especificación con alcance, reglas, diagramas, modelo de datos, API y eventos | Este documento y los enlazados |
 | Spec OpenSpec archivada en los PR | `openspec/changes/archive/` y `openspec/specs/` |

@@ -2,7 +2,7 @@
 # Imagen de la web: compila con Vite y sirve el resultado con nginx (sin privilegios).
 # Se construye SIN URLs de API: nginx reenvia /api/v1 y /socket.io al backend, de modo que
 # la misma imagen funciona en cualquier host o IP.
-#   docker build -f infra/docker/web.Dockerfile -t profelink-web .
+#   docker build -f infra/docker/web.Dockerfile -t rubymind-web .
 ARG NODE_IMAGE=node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 FROM ${NODE_IMAGE} AS build

@@ -5,17 +5,17 @@
 # repositorio en la misma maquina no se sobrescriban las imagenes entre si.
 services:
   auth-api:
-    image: ${COMPOSE_PROJECT_NAME:-profelink}-auth-api:local
+    image: ${COMPOSE_PROJECT_NAME:-rubymind}-auth-api:local
     build:
       context: .
       dockerfile: infra/docker/auth-api.Dockerfile
   kahoot-api:
-    image: ${COMPOSE_PROJECT_NAME:-profelink}-kahoot-api:local
+    image: ${COMPOSE_PROJECT_NAME:-rubymind}-kahoot-api:local
     build:
       context: .
       dockerfile: infra/docker/kahoot-api.Dockerfile
   web:
-    image: ${COMPOSE_PROJECT_NAME:-profelink}-web:local
+    image: ${COMPOSE_PROJECT_NAME:-rubymind}-web:local
     build:
       context: .
       dockerfile: infra/docker/web.Dockerfile
@@ -23,6 +23,6 @@ services:
         VITE_ENABLE_DEBUG_CONTROLS: ${VITE_ENABLE_DEBUG_CONTROLS:-false}
   # Los seeds usan la misma imagen que su API.
   seed-auth:
-    image: ${COMPOSE_PROJECT_NAME:-profelink}-auth-api:local
+    image: ${COMPOSE_PROJECT_NAME:-rubymind}-auth-api:local
   seed-kahoot:
-    image: ${COMPOSE_PROJECT_NAME:-profelink}-kahoot-api:local
+    image: ${COMPOSE_PROJECT_NAME:-rubymind}-kahoot-api:local

@@ -31,6 +31,17 @@
     "serverTime": {
       "type": "string",
       "format": "date-time"
+    },
+    "openedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Instante de apertura según el reloj del servidor."
+    },
+    "durationSeconds": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 240,
+      "description": "Duración total de la pregunta en segundos (closesAt - openedAt)."
     }
   },
   "required": [
@@ -39,7 +50,9 @@
     "statement",
     "imageUrl",
     "closesAt",
-    "serverTime"
+    "serverTime",
+    "openedAt",
+    "durationSeconds"
   ],
   "additionalProperties": false,
   "examples": [
@@ -49,7 +62,9 @@
       "statement": "Costa Rica no tiene ejército permanente.",
       "imageUrl": "http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png",
       "closesAt": "2026-11-15T15:00:30.000Z",
-      "serverTime": "2026-11-15T15:00:00.000Z"
+      "serverTime": "2026-11-15T15:00:00.000Z",
+      "openedAt": "2026-11-15T15:00:00.000Z",
+      "durationSeconds": 30
     }
   ]
 }

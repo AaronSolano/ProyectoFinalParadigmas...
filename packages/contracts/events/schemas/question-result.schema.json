@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://profelink.local/contracts/events/schemas/question-result.schema.json",
   "title": "Resultado por participante",
-  "description": "Resultado de un participante en una pregunta cerrada. Un participante sin respuesta aparece con answered=false, correct=false y pointsAwarded=0.",
+  "description": "Resultado de un participante en una pregunta cerrada. Un participante sin respuesta aparece con answered=false, correct=false, pointsAwarded=0, elapsedMs=null. El servidor calcula todo; el cliente nunca decide puntajes.",
   "type": "object",
   "properties": {
     "participantId": {
@@ -17,15 +17,26 @@
     },
     "pointsAwarded": {
       "type": "integer",
-      "enum": [
-        0,
-        1
-      ],
-      "description": "1 por acierto, 0 por error o sin respuesta."
+      "minimum": 0,
+      "maximum": 1000,
+      "description": "0 por error o sin respuesta; por acierto 1000 si elapsedMs < 500 y, en otro caso, round((1 - (elapsedMs/duración)/2) * 1000), es decir 500..1000."
     },
     "totalScore": {
       "type": "integer",
       "minimum": 0
+    },
+    "elapsedMs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Milisegundos entre la apertura de la pregunta y la recepción de la respuesta, medidos por el servidor. null si no respondió."
+    },
+    "streak": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Racha de aciertos consecutivos tras esta pregunta (0 tras un error o sin respuesta). No otorga puntos extra."
     }
   },
   "required": [
@@ -33,6 +44,8 @@
     "answered",
     "correct",
     "pointsAwarded",
+    "elapsedMs",
+    "streak",
     "totalScore"
   ],
   "additionalProperties": false,
@@ -41,8 +54,10 @@
       "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",
       "answered": true,
       "correct": true,
-      "pointsAwarded": 1,
-      "totalScore": 2
+      "pointsAwarded": 850,
+      "elapsedMs": 6000,
+      "streak": 2,
+      "totalScore": 1850
     }
   ]
 }

@@ -1,0 +1,14 @@
+{
+  "name": "@profelink/external-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cliente externo independiente (HTML + JS estático) que consulta sesiones y resultados vía contratos HTTP públicos de auth-api y kahoot-api.",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "lint": "node --check app.js && node --check server.mjs && node test/independence.test.mjs",
+    "test": "node --test test/independence.test.mjs test/external-client.test.mjs",
+    "build": "node test/independence.test.mjs"
+  }
+}

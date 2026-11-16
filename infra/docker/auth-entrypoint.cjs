@@ -1,9 +1,12 @@
 // Arranque de auth-api dentro del contenedor:
 //  1. Usa las claves JWT del entorno; si faltan, las lee de /keys o las genera y las guarda alli
 //     (asi los tokens siguen siendo validos tras reiniciar y no hay secretos en el repositorio).
-//  2. Aplica las migraciones pendientes.
-//  3. Inicia el servicio.
+//  2. Aplica las migraciones pendientes (idempotente: las versiones de auth-api que ya migran al arrancar
+//     encuentran la base al dia).
+//  3. Inicia el servicio COMO PROCESO PRINCIPAL (hijo de este). No se usa require("./dist/main"): las
+//     versiones recientes de main.ts solo arrancan si "require.main === module".
 const fs = require("node:fs");
+const { spawn } = require("node:child_process");
 const path = require("node:path");
 const { generateKeyPairSync } = require("node:crypto");
 
@@ -43,10 +46,26 @@ async function migrate() {
   }
 }
 
+function startApp() {
+  const child = spawn(process.execPath, [path.join(__dirname, "dist", "main.js")], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  // Docker detiene el contenedor con SIGTERM al proceso 1 (este): se reenvia para un cierre ordenado.
+  for (const signal of ["SIGTERM", "SIGINT"]) {
+    process.on(signal, () => child.kill(signal));
+  }
+  child.on("error", (error) => {
+    console.error("auth-api no pudo iniciar:", error.message);
+    process.exit(1);
+  });
+  child.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
+}
+
 (async () => {
   ensureKeys();
   await migrate();
-  require("./dist/main");
+  startApp();
 })().catch((error) => {
   console.error(
     "auth-api no pudo iniciar:",

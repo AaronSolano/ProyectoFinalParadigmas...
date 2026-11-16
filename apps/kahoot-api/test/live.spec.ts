@@ -1,3 +1,4 @@
+import * as liveLogs from "../src/live-log";
 import { createServer, Server } from "node:http";
 import { AddressInfo } from "node:net";
 import { randomUUID } from "node:crypto";
@@ -12,6 +13,7 @@ import { createApp } from "../src/app";
 import { database } from "../src/data/database";
 import { loadConfig, Config } from "../src/config/config";
 import { GameSchemas } from "../src/presentation/game-schemas";
+import * as telemetry from "../src/telemetry";
 
 export function event(
   socket: Socket,
@@ -161,6 +163,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     await built.game.recover();
   });
   afterEach(async () => {
+    jest.restoreAllMocks();
     for (const s of sockets.splice(0)) s.disconnect();
     await built.game.onModuleDestroy();
     expect(violations).toEqual([]);
@@ -188,6 +191,9 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
     }
   });
   test("inundar answer:submit desconecta solo al emisor y otro participante sigue jugando", async () => {
+    const logs = jest.spyOn(liveLogs, "liveEventLog");
+    const limited = jest.spyOn(telemetry, "recordLiveRateLimited");
+    const answers = jest.spyOn(telemetry, "recordAnswer");
     const { code } = await room(1),
       h = await ready(),
       flood = await ready(ana),
@@ -201,6 +207,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       flood.emit("answer:submit", { code, questionIndex: 999, answer: true });
     expect(await disconnected).toBe("io server disconnect");
     expect(flood.connected).toBe(false);
+    expect(limited).toHaveBeenCalledTimes(1);
     expect(normal.connected).toBe(true);
     expect(
       await command(
@@ -220,6 +227,11 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       closed.results.find((r: any) => r.participantId === me.participantId),
     ).toMatchObject({ pointsAwarded: 1, totalScore: 1 });
     expect((await enter(normal, code)).myScore).toBe(1);
+    expect(answers).toHaveBeenCalledWith("accepted", "none");
+    expect(logs).toHaveBeenCalledWith("answer:submit", "rate_limited");
+    expect(logs).toHaveBeenCalledWith("answer:submit", "ok");
+    expect(logs.mock.calls.every((args) => args.length === 2)).toBe(true);
+    logs.mockRestore();
   });
   test("permisos, validación estricta y control solo después de unirse", async () => {
     const { code } = await room(),

@@ -35,3 +35,21 @@ Las tareas verificadas se informan al orquestador: este paquete no modifica los 
 Después de las migraciones ejecutar `npm run seed` (código compilado: `npm run seed:production`). Configurar `DEMO_PASSWORD` explícitamente, con letras, números y al menos 8 caracteres. Opcionales: `DEMO_PROFILE_ID` (por defecto `00000000-0000-4000-8000-000000000001`), `DEMO_EMAIL` (`docente.demo@example.com`), `DEMO_DISPLAY_NAME` (`Docente demo`). El seed de kahoot debe usar el mismo `DEMO_PROFILE_ID` para el propietario del cuestionario de demostración.
 
 La segunda ejecución conserva identidad y hash originales; no reinicia contraseñas. Un correo o UUID ocupado por otra identidad produce un error claro. No se necesitan claves JWT para ejecutar migraciones o seed. El arranque Compose lo coordina infraestructura invocando migraciones y seed antes de `npm start`.
+
+## Registros estructurados
+
+Cada solicitud HTTP emite una línea JSON a stdout, sin requerir OpenTelemetry ni un colector. Se registra al terminar la respuesta; una conexión cerrada antes de completarla se registra una sola vez con estado 499. No se serializan cuerpos, cabeceras, cookies, errores, URLs ni consultas. No se registran correos, contraseñas, tokens, IP ni nombres de participantes.
+
+| Campo | Contenido |
+| --- | --- |
+| `ts` | Instante UTC en formato ISO 8601 |
+| `level` | `info` para <400, `warn` para 4xx, `error` para 5xx |
+| `service` | Nombre fijo de la API |
+| `method` | Método HTTP conocido; `OTHER` para otros |
+| `route` | Plantilla de Express (por ejemplo `/api/v1/auth/login`); `unmatched` si no hay ruta, incluso en middleware de documentación |
+| `status` | Estado HTTP; 499 si el cliente interrumpe la respuesta |
+| `duration_ms` | Tiempo transcurrido desde la entrada hasta terminar o cerrar la respuesta, en milisegundos |
+| `requestId` | UUID nuevo generado por el servidor por solicitud; no se copia de cabeceras del cliente |
+## Migraciones al arrancar
+
+`RUN_MIGRATIONS` vale `true` por defecto. Antes de escuchar HTTP se aplican las migraciones pendientes bajo un bloqueo asesor de PostgreSQL, incluida la creación de la tabla de migraciones; dos instancias pueden arrancar simultáneamente sobre una base vacía. Usa `RUN_MIGRATIONS=false` si el despliegue ejecuta las migraciones por separado. Las claves JWT se proporcionan mediante la configuración del despliegue.

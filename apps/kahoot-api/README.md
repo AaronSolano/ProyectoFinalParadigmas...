@@ -107,3 +107,51 @@ docker compose -p profelink-f7 -f test/compose.yaml --profile load down
 ```
 
 Configurar `LOAD_TIMEOUT_MS` (15000), `LOAD_MAX_P95_MS` (1000) y `LOAD_MAX_ERROR_RATE` (0.01) para ajustar los criterios. El Compose de pruebas utiliza bases e imágenes desechables y claves RSA efímeras; no es el despliegue de infraestructura. El informe verificado y sus límites están en [LOAD-VERIFICATION.md](./LOAD-VERIFICATION.md).
+
+## Métricas para paneles de juego — Codex, F6
+
+Todas usan el servicio `kahoot-api`. Los atributos nuevos tienen valores de una lista cerrada; no contienen códigos de sala, IDs, nombres ni tokens. Una sesión se considera activa desde `session:start` hasta finalizar, incluido el intervalo entre preguntas. Al arrancar, el valor se recupera desde PostgreSQL, tanto para preguntas abiertas como cerradas.
+
+| Nombre OTel                    | Tipo          | Unidad      | Atributos                                                                |
+| ------------------------------ | ------------- | ----------- | ------------------------------------------------------------------------ |
+| `game.sessions.active`         | Gauge         | `{session}` | Ninguno                                                                  |
+| `game.answers`                 | Counter       | `{answer}`  | `outcome`: `accepted`/`rejected`; `reason`: lista cerrada indicada abajo |
+| `game.question.close.duration` | Histogram     | `s`         | Ninguno                                                                  |
+| `game.live.rate_limited`       | Counter       | `{socket}`  | Ninguno                                                                  |
+| `game.connections.active`      | UpDownCounter | `1`         | Ninguno                                                                  |
+| `game.events`                  | Counter       | `1`         | `game.event`, `game.outcome`                                             |
+| `game.event.duration`          | Histogram     | `s`         | `game.event`, `game.outcome`                                             |
+
+`game.answers` cuenta respuestas aceptadas/rechazadas y errores de comandos `answer:submit`. Las aceptadas usan `reason=none`. Las rechazadas usan `already_answered`, `late`, `closed`, `not_in_session`, `invalid_state`, `invalid_payload`, `room_not_found`, `internal_error` u `other` para cualquier razón no reconocida. Los paquetes descartados por el límite de flujo no cuentan como respuestas procesadas.
+
+`game.question.close.duration` mide desde `closesAt` hasta que el servidor publica `question:closed`, después del commit, incluyendo espera en la cola y persistencia. Un cierre manual anterior al plazo se registra como 0, nunca negativo. No mide el tiempo de recepción en cada navegador. `game.live.rate_limited` cuenta una vez cada socket desconectado por exceso repetido; no cuenta cada paquete descartado.
+
+Pruebas: `game-telemetry.spec.ts` verifica exportación OTLP real, valores, unidades y atributos; `game-metrics.spec.ts` verifica recuperación, inicio/fin y medición después de publicar; `live.spec.ts` verifica el contador al desconectar un emisor que inunda la sala y el conteo de respuestas de otro participante.
+
+## Registros estructurados
+
+Cada solicitud HTTP emite una línea JSON a stdout, sin requerir OpenTelemetry ni un colector. Se registra al terminar la respuesta; una conexión cerrada antes de completarla se registra una sola vez con estado 499. No se serializan cuerpos, cabeceras, cookies, errores, URLs ni consultas. No se registran correos, contraseñas, tokens, IP ni nombres de participantes.
+
+| Campo | Contenido |
+| --- | --- |
+| `ts` | Instante UTC en formato ISO 8601 |
+| `level` | `info` para <400, `warn` para 4xx, `error` para 5xx |
+| `service` | Nombre fijo de la API |
+| `method` | Método HTTP conocido; `OTHER` para otros |
+| `route` | Plantilla de Express (por ejemplo `/api/v1/quizzes/:quizId`); `unmatched` si no hay ruta, incluso en middleware de documentación |
+| `status` | Estado HTTP; 499 si el cliente interrumpe la respuesta |
+| `duration_ms` | Tiempo transcurrido desde la entrada hasta terminar o cerrar la respuesta, en milisegundos |
+| `requestId` | UUID nuevo generado por el servidor por solicitud; no se copia de cabeceras del cliente |
+
+El canal `/game` emite una línea por evento entrante procesado (también si falla la validación) y por paquete descartado por el control de flujo. Los eventos desconocidos se registran como `unknown`, sin conservar su nombre original. Son registros del procesamiento en el servidor, no una confirmación de recepción en el cliente. No contienen código de sala, ids, contenido de respuestas ni mensajes de error.
+
+| Campo del canal en vivo | Contenido |
+| --- | --- |
+| `ts` | Instante UTC ISO 8601 |
+| `level` | `info` para `ok`/`ignored`; `warn` para los demás resultados |
+| `service` | `kahoot-api` |
+| `event` | `session:join`, `session:leave`, `session:start`, `question:next`, `question:close`, `answer:submit` o `unknown` |
+| `outcome` | `ok`, `rejected`, `error`, `rate_limited` o `ignored` |
+## Assets del seed compilado
+
+El build copia los assets de demostración a dist/assets. El seed compilado usa ese directorio si existe y conserva la ruta del repositorio como respaldo para desarrollo.

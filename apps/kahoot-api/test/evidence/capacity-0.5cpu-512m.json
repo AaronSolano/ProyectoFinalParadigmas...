@@ -1,0 +1,71 @@
+{
+  "run": "109d8cf5-68ab-4b50-87ff-d6c8a11039ea",
+  "date": "2026-11-15T22:44:01.872Z",
+  "environment": {
+    "platform": "linux",
+    "release": "6.18.33.2-microsoft-standard-WSL2",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logicalCpus": 16,
+    "ramBytes": 8170135552,
+    "node": "v22.23.5"
+  },
+  "thresholds": {
+    "maxP95Ms": 1000,
+    "maxErrorRate": 0.01,
+    "timeoutMs": 15000
+  },
+  "steps": [
+    {
+      "participants": 5,
+      "connected": 5,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 14.267840999999976,
+      "p95CloseMs": 8.10434399999997,
+      "passed": true
+    },
+    {
+      "participants": 50,
+      "connected": 50,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 311.6065859999999,
+      "p95CloseMs": 33.03446799999983,
+      "passed": true
+    },
+    {
+      "participants": 100,
+      "connected": 100,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 277.2911690000001,
+      "p95CloseMs": 57.50943699999971,
+      "passed": true
+    },
+    {
+      "participants": 200,
+      "connected": 200,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 698.3605939999998,
+      "p95CloseMs": 145.2179070000002,
+      "passed": true
+    },
+    {
+      "participants": 400,
+      "connected": 400,
+      "failures": 0,
+      "invalidPayloads": 0,
+      "errorRate": 0,
+      "p95AnswerMs": 2692.1247920000023,
+      "p95CloseMs": 379.75922400000127,
+      "passed": true
+    }
+  ],
+  "maxVerifiedParticipants": 400,
+  "exitCode": 0
+}

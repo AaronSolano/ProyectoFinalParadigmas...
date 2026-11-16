@@ -1,3 +1,4 @@
+import { httpRequestLog } from './request-log';
 import 'reflect-metadata';
 import {
   BadRequestException,
@@ -38,6 +39,7 @@ export async function createApp(config: Settings, profiles: Profiles) {
     }),
   );
   app.useGlobalFilters(new ProblemFilter());
+  app.use(httpRequestLog);
   app.enableCors({ origin: config.corsOrigins });
   app.use(httpTelemetry);
   const document = SwaggerModule.createDocument(

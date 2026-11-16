@@ -505,7 +505,7 @@ export interface components {
             displayName: string;
             /** Format: date-time */
             joinedAt: string;
-            /** @description Puntaje acumulado (1 punto por respuesta correcta). */
+            /** @description Puntaje acumulado (0..1000 por pregunta, segun la velocidad de la respuesta correcta). */
             score: number;
         };
         RankingEntry: {

@@ -1,0 +1,12 @@
+services:
+  postgres:
+    ports: !reset []
+  auth:
+    ports: !reset []
+  kahoot:
+    ports: !reset []
+    cpus: 0.5
+    mem_limit: 512m
+    memswap_limit: 512m
+    environment:
+      PUBLIC_API_URL: http://kahoot:3002

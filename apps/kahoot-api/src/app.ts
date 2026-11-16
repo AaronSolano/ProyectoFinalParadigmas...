@@ -1,3 +1,4 @@
+import { httpRequestLog } from "./request-log";
 import "reflect-metadata";
 import {
   ArgumentsHost,
@@ -8,7 +9,7 @@ import {
   ValidationPipe,
 } from "@nestjs/common";
 import { MulterModule } from "@nestjs/platform-express";
-import { httpTelemetry } from "./telemetry";
+import { httpTelemetry, gameMetrics } from "./telemetry";
 import { NestFactory } from "@nestjs/core";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
@@ -86,6 +87,7 @@ export async function createApp(
     new PostgresGameStore(db),
     config.publicUrl,
     gameClock,
+    gameMetrics,
   );
   const images =
     storage ??
@@ -182,6 +184,7 @@ export async function createApp(
     }
   }
   app.useWebSocketAdapter(new ConfiguredIoAdapter(app));
+  app.use(httpRequestLog);
   app.enableCors({ origin: config.cors });
   app.use(httpTelemetry);
   app.useGlobalFilters(new ProblemFilter());

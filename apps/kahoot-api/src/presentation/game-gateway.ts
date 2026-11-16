@@ -1,3 +1,4 @@
+import { liveEventLog, isLiveEvent } from "../live-log";
 import { Inject } from "@nestjs/common";
 import {
   WebSocketGateway,
@@ -11,7 +12,12 @@ import { Config } from "../config/config";
 import { GameError } from "../domain/game";
 import { GameSchemas } from "./game-schemas";
 import { LiveEventBudget } from "./live-event-budget";
-import { connectionsChanged, recordGameEvent } from "../telemetry";
+import {
+  connectionsChanged,
+  recordGameEvent,
+  recordAnswer,
+  recordLiveRateLimited,
+} from "../telemetry";
 @WebSocketGateway({ namespace: "/game", maxHttpBufferSize: 16384 })
 export class GameGateway implements OnGatewayInit {
   @WebSocketServer() server!: Namespace;
@@ -45,8 +51,16 @@ export class GameGateway implements OnGatewayInit {
       socket.use((_packet, next) => {
         if (!socket.connected) return;
         const decision = budget.take();
-        if (decision === "allow") next();
-        else if (decision === "disconnect") socket.disconnect(true);
+        if (decision === "allow") {
+          if (!isLiveEvent(String(_packet[0])))
+            liveEventLog("unknown", "ignored");
+          next();
+        } else {
+          liveEventLog(String(_packet[0]), "rate_limited");
+          if (decision !== "disconnect") return;
+          recordLiveRateLimited();
+          socket.disconnect(true);
+        }
       });
       connectionsChanged(1);
       socket.once("disconnect", () => connectionsChanged(-1));
@@ -66,7 +80,7 @@ export class GameGateway implements OnGatewayInit {
   }
   private async dispatch(socket: Socket, event: string, payload: unknown) {
     const started = performance.now();
-    let outcome = "ok";
+    let outcome: "ok" | "rejected" | "error" = "ok";
     try {
       if (!this.schemas.valid(event, payload))
         throw new GameError(
@@ -95,6 +109,10 @@ export class GameGateway implements OnGatewayInit {
           socket.rooms.has(room),
         );
         socket.emit(result.event, result.payload);
+        recordAnswer(
+          result.event === "answer:accepted" ? "accepted" : "rejected",
+          "reason" in result.payload ? result.payload.reason : "none",
+        );
         outcome = result.event === "answer:rejected" ? "rejected" : "ok";
       } else if (event === "session:leave") {
         await this.game.leave(
@@ -127,11 +145,17 @@ export class GameGateway implements OnGatewayInit {
     } catch (error) {
       outcome = "error";
       const known = error instanceof GameError;
+      if (event === "answer:submit")
+        recordAnswer(
+          "rejected",
+          known ? error.code.toLowerCase() : "internal_error",
+        );
       socket.emit("error", {
         code: known ? error.code : "INTERNAL_ERROR",
         message: known ? error.message : "Error interno del servicio.",
       });
     } finally {
+      liveEventLog(event, outcome);
       recordGameEvent(event, outcome, (performance.now() - started) / 1000);
     }
   }

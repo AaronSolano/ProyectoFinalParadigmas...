@@ -175,7 +175,9 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       // y cualquier intento de envío posterior al cierre/vencimiento es rechazado por el servidor (late/closed)
       // sin alterar el puntaje del participante.
       const scoreBeforeLateQuestion = await partPage.getByTestId('participant-score').textContent();
-      await hostPage.getByTestId('btn-next-question').click();
+      // El servidor también avanza solo a los 5 s: el anfitrión puede adelantarse o dejar que pase
+      const next = hostPage.getByTestId('btn-next-question');
+      if (await next.isVisible()) await next.click().catch(() => undefined);
       await expect(partPage.getByTestId('question-open-view')).toBeVisible();
 
       // Esperar a que venza el plazo de 5 s en el servidor sin responder a tiempo
@@ -240,6 +242,82 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       // La respuesta revelada es el texto de una de las opciones mostradas
       expect(choices.some((c) => reveal.includes(c.replace(/^[^\wÁÉÍÓÚÑáéíóúñ]+/, '').trim()))).toBe(true);
     } finally {
+      await hostContext.close();
+      await partContext.close();
+    }
+  });
+
+  test('2.7 Avance automático y explicación opcional: se muestra solo si existe y la sala pasa sola a los 5 s', async ({
+    browser,
+  }) => {
+    const hostContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const partContext = await browser.newContext({ viewport: { width: 360, height: 640 } });
+    const hostPage = await hostContext.newPage();
+    const partPage = await partContext.newPage();
+    let cleanup = async () => undefined;
+
+    try {
+      // Preparación por API: cuestionario con una pregunta con explicación y otra sin ella
+      const login = await (
+        await fetch(`${AUTH_API_URL}/api/v1/auth/login`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+        })
+      ).json();
+      const headers = { 'content-type': 'application/json', authorization: `Bearer ${login.accessToken}` };
+      const api = (path, body) =>
+        fetch(`${KAHOOT_API_URL}/api/v1${path}`, { method: 'POST', headers, body: JSON.stringify(body) }).then((r) => r.json());
+      const quiz = await api('/quizzes', { title: `Explicaciones ${Date.now()}` });
+      cleanup = () =>
+        fetch(`${KAHOOT_API_URL}/api/v1/quizzes/${quiz.id}`, { method: 'DELETE', headers }).then(() => undefined);
+      await api(`/quizzes/${quiz.id}/questions`, {
+        statement: '¿Cuál es la capital de Costa Rica?',
+        options: ['Alajuela', 'San José', 'Cartago'],
+        correctOption: 1,
+        explanation: 'San José es la capital desde 1823.',
+      });
+      await api(`/quizzes/${quiz.id}/questions`, {
+        statement: '¿Cuántos continentes se reconocen habitualmente?',
+        options: ['5', '7'],
+        correctOption: 1,
+      });
+      const session = await api('/sessions', { quizId: quiz.id, questionTimeSeconds: 10 });
+
+      await loginInPage(hostPage, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      await hostPage.goto(`${WEB_URL}/host/${session.code}`);
+      await expect(hostPage.getByTestId('room-code-display')).toBeVisible();
+
+      await registerAndLoginInPage(partPage, {
+        displayName: 'Explica User',
+        email: `explica.${Date.now()}@example.com`,
+        password: 'Clave2026seg',
+      });
+      await partPage.goto(`${WEB_URL}/join`);
+      await partPage.getByTestId('input-room-code').fill(session.code);
+      await partPage.getByTestId('btn-join-room').click();
+      await expect(partPage.getByTestId('lobby-view')).toBeVisible();
+
+      await hostPage.getByTestId('btn-start-session').click();
+      await expect(partPage.getByTestId('question-open-view')).toBeVisible();
+      // La explicación no se revela mientras la pregunta está abierta
+      await expect(partPage.getByTestId('answer-explanation')).toHaveCount(0);
+      await partPage.getByTestId('btn-answer-1').click();
+
+      await hostPage.getByTestId('btn-close-question').click();
+      await expect(partPage.getByTestId('answer-explanation')).toContainText('San José es la capital desde 1823.');
+      await expect(partPage.getByTestId('auto-advance-countdown')).toBeVisible();
+
+      // Sin pulsar "siguiente", pasa a la segunda pregunta pasados ~5 s
+      await expect(partPage.getByTestId('question-open-view')).toBeVisible({ timeout: 12000 });
+      await expect(partPage.getByText('¿Cuántos continentes')).toBeVisible();
+
+      await hostPage.getByTestId('btn-close-question').click();
+      await expect(partPage.getByTestId('correct-answer-reveal')).toBeVisible();
+      // La pregunta sin explicación no muestra ningún bloque de explicación
+      await expect(partPage.getByTestId('answer-explanation')).toHaveCount(0);
+    } finally {
+      await cleanup();
       await hostContext.close();
       await partContext.close();
     }

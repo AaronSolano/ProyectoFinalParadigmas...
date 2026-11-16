@@ -52,6 +52,15 @@ export class PostgresGameStore implements GameStore {
       closesAt: new Date(r.question_closes_at).getTime(),
     }));
   }
+  async closedSessions() {
+    const rows = await this.db.query(
+      `SELECT code,current_question_index FROM sessions WHERE game_state='question_closed'`,
+    );
+    return rows.map((r: any) => ({
+      code: r.code,
+      index: r.current_question_index,
+    }));
+  }
   async activeSessionCount(): Promise<number> {
     return Number(
       (
@@ -91,6 +100,7 @@ class PostgresGameTransaction implements GameTransaction {
       statement: r.statement,
       options: r.options,
       correctOption: r.correct_option,
+      explanation: r.explanation ?? null,
       imageFilename: r.image_filename,
     }));
   }

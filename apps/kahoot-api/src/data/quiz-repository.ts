@@ -42,8 +42,8 @@ export class PostgresQuizRepository
     )[0];
     for (const q of await this.rawQuestions(source.id))
       await this.query(
-        "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position) VALUES($1,$2,$3,$4::jsonb,$5,$6)",
-        [newId(), copy.id, q.statement, JSON.stringify(q.options), q.correct_option, q.position],
+        "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position,explanation) VALUES($1,$2,$3,$4::jsonb,$5,$6,$7)",
+        [newId(), copy.id, q.statement, JSON.stringify(q.options), q.correct_option, q.position, q.explanation],
       );
     return this.quiz(copy);
   }
@@ -80,6 +80,7 @@ export class PostgresQuizRepository
       JSON.stringify(input.options),
       input.correctOption,
       position,
+      input.explanation?.trim() || null,
     ]);
   }
   async updateQuestion(id: string, input: QuestionInput) {
@@ -88,6 +89,7 @@ export class PostgresQuizRepository
       input.statement,
       JSON.stringify(input.options),
       input.correctOption,
+      input.explanation?.trim() || null,
     ]);
   }
   async setQuestionPosition(id: string, position: number) {
@@ -175,13 +177,13 @@ export class PostgresQuizRepository
   }
   private rawInsertQuestion(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position) VALUES($1,$2,$3,$4::jsonb,$5,$6)",
+      "INSERT INTO questions(id,quiz_id,statement,options,correct_option,position,explanation) VALUES($1,$2,$3,$4::jsonb,$5,$6,$7)",
       params,
     );
   }
   private rawUpdateQuestionContent(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "UPDATE questions SET statement=$2,options=$3::jsonb,correct_option=$4,updated_at=now() WHERE id=$1",
+      "UPDATE questions SET statement=$2,options=$3::jsonb,correct_option=$4,explanation=$5,updated_at=now() WHERE id=$1",
       params,
     );
   }

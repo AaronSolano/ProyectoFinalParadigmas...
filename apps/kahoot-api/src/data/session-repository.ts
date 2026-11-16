@@ -52,6 +52,7 @@ export class PostgresSessionRepository
           q.statement,
           JSON.stringify(q.options),
           q.correctOption,
+          q.explanation,
           q.imageFilename,
         ]);
       return this.session(row);
@@ -110,7 +111,7 @@ export class PostgresSessionRepository
   }
   private rawInsertSnapshotQuestion(params: unknown[]): Promise<Row[]> {
     return this.query(
-      "INSERT INTO session_questions(session_id,position,statement,options,correct_option,image_filename) VALUES($1,$2,$3,$4::jsonb,$5,$6)",
+      "INSERT INTO session_questions(session_id,position,statement,options,correct_option,explanation,image_filename) VALUES($1,$2,$3,$4::jsonb,$5,$6,$7)",
       params,
     );
   }

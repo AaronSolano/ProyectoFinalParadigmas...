@@ -119,6 +119,8 @@ export interface QuestionResult {
 export interface QuestionClosed {
   questionIndex: number;
   correctOption: number;
+  explanation: string | null;
+  nextQuestionAt: string | null;
   results: QuestionResult[];
   ranking: RankingEntry[];
 }
@@ -146,6 +148,7 @@ export interface GameQuestion {
   statement: string;
   options: string[];
   correctOption: number;
+  explanation: string | null;
   imageFilename: string | null;
 }
 export interface GameAnswer {

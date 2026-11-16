@@ -15,6 +15,7 @@ export interface Question {
   statement: string;
   options: string[];
   correctOption: number;
+  explanation: string | null;
   imageFilename: string | null;
   position: number;
   createdAt: Date;
@@ -40,6 +41,7 @@ export interface SessionQuestion {
   statement: string;
   options: string[];
   correctOption: number;
+  explanation: string | null;
   imageFilename: string | null;
 }
 export interface Participant {

@@ -15,6 +15,7 @@ export interface Config {
   supabaseKey: string;
   supabaseBucket: string;
   questionTime: number;
+  autoAdvanceSeconds: number;
   cors: string[];
   runMigrations: boolean;
   liveMaxEventsPerSecond: number;
@@ -64,6 +65,7 @@ export function loadConfig(env = process.env): Config {
     supabaseKey: storage === "supabase" ? required("SUPABASE_SERVICE_KEY") : "",
     supabaseBucket: env.SUPABASE_BUCKET ?? "question-images",
     questionTime: integer("QUESTION_TIME_SECONDS", 20, 5, 120),
+    autoAdvanceSeconds: integer("AUTO_ADVANCE_SECONDS", 5, 0, 60),
     cors: (env.CORS_ORIGINS ?? "http://localhost:5173").split(","),
     runMigrations: env.RUN_MIGRATIONS !== "false",
     liveMaxEventsPerSecond: integer("LIVE_MAX_EVENTS_PER_SECOND", 20, 1, 10000),

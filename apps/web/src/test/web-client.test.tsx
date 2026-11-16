@@ -265,6 +265,7 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
         statement: 'TCP es orientado a conexión.',
         options: ['Verdadero', 'Falso'],
         correctOption: 0,
+        explanation: null,
         imageUrl: null,
         position: 1,
         createdAt: '2026-11-10T14:05:00.000Z',

@@ -509,6 +509,8 @@ export interface components {
             options: string[];
             /** @description Indice (base 0) de la opcion correcta dentro de `options`. */
             correctOption: number;
+            /** @description Explicacion breve y opcional de la respuesta. Si existe, se muestra a los participantes al cerrar la pregunta; si es `null`, no se muestra nada. */
+            explanation: string | null;
             /** @description URL publica y absoluta de la imagen (se construye con `PUBLIC_API_URL`; ver `GET /images/{filename}`), accesible desde otros dispositivos, o `null` si no tiene. */
             imageUrl: string | null;
             /** @description Posicion de la pregunta dentro del cuestionario (base 1). */
@@ -524,6 +526,8 @@ export interface components {
             options: string[];
             /** @description Indice (base 0) de la opcion correcta; debe ser menor que el numero de opciones. */
             correctOption: number;
+            /** @description Explicacion breve y opcional de la respuesta (maximo 300 caracteres). Omitirla o enviar `null` o texto vacio la deja sin explicacion. */
+            explanation?: string | null;
             /** @description Posicion deseada. Si se omite al crear, se agrega al final. */
             position?: number;
         };

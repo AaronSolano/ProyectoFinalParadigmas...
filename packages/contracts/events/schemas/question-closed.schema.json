@@ -16,6 +16,22 @@
       "maximum": 3,
       "description": "Índice (base 0) de la opción correcta."
     },
+    "explanation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 300,
+      "description": "Explicación breve de la respuesta que escribió el docente; null si la pregunta no tiene. Solo viaja al cerrar la pregunta."
+    },
+    "nextQuestionAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Instante (reloj del servidor) en que la sala pasará sola a la siguiente pregunta; null si el avance automático está desactivado. El anfitrión puede avanzar antes."
+    },
     "results": {
       "type": "array",
       "items": {
@@ -32,6 +48,8 @@
   "required": [
     "questionIndex",
     "correctOption",
+    "explanation",
+    "nextQuestionAt",
     "results",
     "ranking"
   ],
@@ -40,6 +58,8 @@
     {
       "questionIndex": 0,
       "correctOption": 1,
+      "explanation": "San José es la capital desde 1823.",
+      "nextQuestionAt": "2026-11-15T15:00:35.000Z",
       "results": [
         {
           "participantId": "5b0f6c1e-5c1e-4b53-9d2a-0a6f5e8d1a11",

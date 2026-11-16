@@ -29,6 +29,10 @@ export class QuestionInput {
   @Matches(/\S/, { each: true })
   options!: string[];
   @IsInt() @Min(0) @Max(3) correctOption!: number;
+  @ValidateIf((_, v) => v !== undefined && v !== null)
+  @IsString()
+  @MaxLength(300)
+  explanation?: string | null;
   @ValidateIf((_, v) => v !== undefined) @IsInt() @Min(1) position?: number;
 }
 export class SessionInput {

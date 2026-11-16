@@ -68,6 +68,7 @@ describe('opciones múltiples y biblioteca', () => {
       statement: '¿Capital de Costa Rica?',
       options: ['Alajuela', 'San José', 'Cartago', 'Heredia'],
       correctOption: 1,
+      explanation: null,
     });
   });
 
@@ -97,6 +98,7 @@ describe('opciones múltiples y biblioteca', () => {
         statement: '¿Cuál es la capital de Australia?',
         options: ['Sídney', 'Melbourne', 'Canberra', 'Perth'],
         correctOption: 2,
+        explanation: null,
         imageUrl: null,
         position: 1,
         createdAt: '2026-11-10T14:00:00.000Z',

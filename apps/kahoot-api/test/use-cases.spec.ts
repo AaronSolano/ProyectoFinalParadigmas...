@@ -76,6 +76,7 @@ class MemoryQuizzes implements QuizRepository {
     this.questions.set(id, {
       id,
       quizId,
+      explanation: null,
       ...input,
       position,
       imageFilename: null,
@@ -150,6 +151,7 @@ class MemorySessions implements SessionRepository {
         statement: q.statement,
         options: q.options,
         correctOption: q.correctOption,
+        explanation: q.explanation ?? null,
         imageFilename: q.imageFilename,
       })),
     );

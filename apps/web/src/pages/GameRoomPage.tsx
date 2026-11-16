@@ -56,6 +56,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
   const prevStatusRef = useRef<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
+  const [nextInSeconds, setNextInSeconds] = useState<number | null>(null);
   const roundBaseline = useRef<{
     code: string;
     questionIndex: number;
@@ -75,6 +76,23 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     retryReconnect,
     clearError,
   } = useGameSocket(normalizedCode, token, roleHint === 'host');
+
+  const nextQuestionAt =
+    liveState.status === 'question_closed' ? (liveState.lastClosed?.nextQuestionAt ?? null) : null;
+  useEffect(() => {
+    if (!nextQuestionAt) {
+      setNextInSeconds(null);
+      return;
+    }
+    const target = new Date(nextQuestionAt).getTime();
+    const tick = () =>
+      setNextInSeconds(
+        Math.max(0, Math.ceil((target - (Date.now() + liveState.clockOffsetMs)) / 1000)),
+      );
+    tick();
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [nextQuestionAt, liveState.clockOffsetMs]);
 
   const isHost = liveState.isHost || roleHint === 'host';
   const myQuestionResult =
@@ -448,6 +466,19 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
                 ] ?? String(liveState.lastClosed.correctOption + 1),
             })}
           </div>
+
+          {liveState.lastClosed.explanation && (
+            <div className="answer-explanation" data-testid="answer-explanation">
+              <strong>{t('game.explanationTitle')}</strong>
+              <p>{liveState.lastClosed.explanation}</p>
+            </div>
+          )}
+
+          {nextInSeconds !== null && (
+            <p className="auto-advance-note" role="status" data-testid="auto-advance-countdown">
+              {t('game.nextIn', { seconds: nextInSeconds })}
+            </p>
+          )}
 
           {!isHost && myQuestionResult && (
             <div

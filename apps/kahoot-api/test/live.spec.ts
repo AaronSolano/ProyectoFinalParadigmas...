@@ -152,6 +152,7 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
       AUTH_BASE_URL: `http://127.0.0.1:${(jwks.address() as AddressInfo).port}`,
       PUBLIC_API_URL: "http://localhost:3002",
       IMAGE_STORAGE_PATH: root,
+      AUTO_ADVANCE_SECONDS: "0",
     });
     now = Date.now();
     await start();
@@ -466,6 +467,71 @@ suite("partida Socket.IO con PostgreSQL real y contratos canónicos", () => {
           .expect(200)
       ).body,
     ).toEqual(results);
+  });
+  test("avance automático: tras cerrar pasa sola a la siguiente y la explicación opcional solo viaja al cierre", async () => {
+    const original = config;
+    config = { ...config, autoAdvanceSeconds: 1 };
+    try {
+      await built.app.close();
+      await db.destroy();
+      await start();
+      const quiz = (
+        await api().post("/api/v1/quizzes").set(auth()).send({ title: "Auto" }).expect(201)
+      ).body;
+      const withNote = (
+        await api()
+          .post(`/api/v1/quizzes/${quiz.id}/questions`)
+          .set(auth())
+          .send({
+            statement: "Con explicación",
+            options: ["A", "B", "C"],
+            correctOption: 2,
+            explanation: "  Porque C es la correcta.  ",
+          })
+          .expect(201)
+      ).body;
+      expect(withNote.explanation).toBe("Porque C es la correcta.");
+      await api()
+        .post(`/api/v1/quizzes/${quiz.id}/questions`)
+        .set(auth())
+        .send({ statement: "Sin explicación", options: ["A", "B"], correctOption: 0 })
+        .expect(201);
+      await api()
+        .post(`/api/v1/quizzes/${quiz.id}/questions`)
+        .set(auth())
+        .send({ statement: "Larga", options: ["A", "B"], correctOption: 0, explanation: "x".repeat(301) })
+        .expect(400);
+      const code = (
+        await api()
+          .post("/api/v1/sessions")
+          .set(auth())
+          .send({ quizId: quiz.id, questionTimeSeconds: 5 })
+          .expect(201)
+      ).body.code as string;
+      const h = await ready(),
+        p = await ready(ana);
+      await enter(h, code);
+      await enter(p, code);
+      const opened = await command(h, "session:start", { code }, "question:opened");
+      expect(JSON.stringify(opened)).not.toContain("Porque C");
+      const closed = await command(h, "question:close", { code }, "question:closed");
+      expect(closed.correctOption).toBe(2);
+      expect(closed.explanation).toBe("Porque C es la correcta.");
+      expect(typeof closed.nextQuestionAt).toBe("string");
+      // Sin que nadie pulse "siguiente", la sala avanza sola
+      const auto = await event(p, "question:opened", 6000);
+      expect(auto.questionIndex).toBe(1);
+      const second = await command(h, "question:close", { code }, "question:closed");
+      expect(second.explanation).toBeNull();
+      // Tras la última pregunta también termina sola
+      const finished = await event(p, "session:finished", 6000);
+      expect(finished.ranking).toHaveLength(1);
+    } finally {
+      await built.app.close();
+      await db.destroy();
+      config = original;
+      await start();
+    }
   });
   test("velocidad y rachas persisten en PostgreSQL, reconexión, reinicio y resultados finales", async () => {
     const { code } = await room(4);

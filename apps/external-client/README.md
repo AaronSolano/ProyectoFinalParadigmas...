@@ -41,3 +41,7 @@ npm run lint -w @profelink/external-client
 # Ejecutar pruebas automatizadas (1.1 consumo HTTP, seguridad de configuración y 1.2 independencia)
 npm test -w @profelink/external-client
 ```
+
+## Despliegue en Vercel
+
+Proyecto aparte con **Root Directory = `apps/external-client`**. `vercel.json` copia `config.vercel.json` sobre `config.json` al compilar (las URLs de las APIs en Render, sin credenciales), de modo que `config.json` sigue apuntando a `localhost` para el uso local. El origen de Vercel debe estar en `CORS_ORIGINS` de `auth-api` y `kahoot-api`.

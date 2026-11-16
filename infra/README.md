@@ -103,6 +103,23 @@ Sin el perfil, la variable de OTLP queda vacía y las APIs no exportan nada.
 
 > **Nota de seguridad:** Alloy monta `/var/run/docker.sock` en solo lectura para descubrir los contenedores. Es aceptable en una máquina de desarrollo o de clase; en un servidor público conviene desactivar el perfil o usar otro recolector.
 
+### Observabilidad en la versión desplegada (Grafana Cloud)
+
+Las APIs de Render envían OTLP/HTTP directo a Grafana Cloud (plan gratuito); no hace falta Collector, Prometheus ni Tempo propios. El código no cambia: el SDK de OpenTelemetry lee `OTEL_EXPORTER_OTLP_HEADERS` del entorno.
+
+1. Crear una cuenta en <https://grafana.com> y un stack. En *Connections → OpenTelemetry (OTLP)* generar un token y copiar el **OTLP endpoint** (`https://otlp-gateway-prod-<region>.grafana.net/otlp`) y el **Instance ID**.
+2. Calcular el header: `Basic ` + base64(`INSTANCE_ID:TOKEN`). En PowerShell: `[Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("INSTANCE_ID:TOKEN"))`.
+3. En Render, en **auth-api** y en **kahoot-api** (*Environment*), agregar:
+   ```
+   OTEL_EXPORTER_OTLP_ENDPOINT=https://otlp-gateway-prod-<region>.grafana.net/otlp
+   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic%20<BASE64>
+   ```
+   (el espacio del header va como `%20`). El token vive solo en Render, nunca en el repositorio. Guardar para que redespliegue.
+4. En Grafana Cloud: *Dashboards → New → Import* y subir `infra/observability/grafana-cloud/rubymind-overview-cloud.json`; elegir el datasource Prometheus del stack (`grafanacloud-…-prom`).
+5. Probar: abrir la app desplegada, jugar una partida y esperar ~1 minuto (la exportación es cada 10 s). Las trazas se ven en *Explore → Tempo* (`grafanacloud-…-traces`).
+
+Diferencias con el modo local: la etiqueta `service_name` se llama `job` en Grafana Cloud, y el panel no incluye registros (Alloy/Loki solo existen en local; los logs de las APIs se ven en el panel de Render). Con el plan gratuito de Render las APIs se duermen: antes de presentar, abrir la app unos minutos antes para que haya datos.
+
 ## Archivos
 
 | Ruta | Contenido |

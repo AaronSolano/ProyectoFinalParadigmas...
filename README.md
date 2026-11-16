@@ -57,6 +57,16 @@ El script crea `.env` desde `.env.example`, genera las contraseñas que falten, 
 
 Detalles de puertos, volúmenes y varias copias en la misma máquina: [infra/README.md](infra/README.md).
 
+### Base local o Supabase
+
+Por defecto todo usa el PostgreSQL local de Compose. Para probar las APIs locales contra Supabase (opcional): copia `.env.supabase.example` a `.env.supabase`, completa los valores y ejecuta
+
+```bash
+docker compose --env-file .env --env-file .env.supabase -f compose.yaml -f compose.supabase.yaml up -d --no-deps auth-api kahoot-api web
+```
+
+`.env.supabase` no se versiona. Este modo requiere las variables `DATABASE_SSL_CA` y `DATABASE_SCHEMA` en las APIs (ver [docs/briefs/codex-supabase-ssl-esquema.md](docs/briefs/codex-supabase-ssl-esquema.md)).
+
 ## Detención
 
 ```bash

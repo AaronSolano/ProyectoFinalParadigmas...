@@ -13,3 +13,9 @@
 - [x] 3.1 (Antigravity) Actualizar tipos de eventos (`src/api/events.ts`), `useGameSocket.ts` y `mocks/mock-server.mjs` en `apps/web` con `openedAt`, `durationSeconds`, `elapsedMs`, `streak` y la fórmula de puntos `500..1000`, y verificar que el servidor mock y la compilación (`npm run build --workspace=web`) pasen sin errores
 - [x] 3.2 (Antigravity) Implementar `apps/web/src/audio/soundEngine.ts` con Web Audio API (sonidos de lobby, cuenta regresiva, pulso de pregunta con urgencia en `<= 5 s`, envío de respuesta, tiempo agotado, acierto escalado por racha `1..5+`, error y podio) y botón de silencio persistente en `localStorage`, y verificar mediante pruebas unitarias en Vitest
 - [x] 3.3 (Antigravity) Actualizar `CountdownTimer.tsx` y `GameRoomPage.tsx` (junto con `es.ts` y `en.ts`) para mostrar barra/anillo de progreso de tiempo, tiempo transcurrido al responder (`elapsedMs` en segundos), insignia de racha (`🔥`) y desglose de puntos ganados, y verificar con `npm test --workspace=web` y `npm run lint --workspace=web`
+
+## Evidencia de cierre
+
+- **Contratos (1.1 y 1.2 — Claude Code, PR #35):** Esquemas de eventos y OpenAPI actualizados con `openedAt`, `durationSeconds`, `elapsedMs`, `streak` y puntajes en escala `0..1000`.
+- **Backend `kahoot-api` (2.1 y 2.2 — Codex, PR #39):** Cálculo puro de puntaje por velocidad (`500..1000` y `1000` si `< 500 ms`), persistencia de `question_opened_at` y `streak`, y pruebas unitarias/integración aprobadas.
+- **Frontend `apps/web` (3.1 a 3.3 — Antigravity, PR #38):** Motor de sonido Web Audio API (`src/audio/soundEngine.ts`) con control de silencio persistente, anillo/barra de progreso con estado urgente en `<= 5 s`, visualización de tiempo de respuesta en segundos, desglose de puntos por velocidad e insignia de racha en español e inglés, verificado con `npm run lint`, `npm test` (16/16 pruebas pasando tras merge) y `npm run build`.

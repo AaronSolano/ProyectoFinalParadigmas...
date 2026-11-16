@@ -75,6 +75,17 @@
             "closesAt": {
               "type": "string",
               "format": "date-time"
+            },
+            "openedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Instante de apertura según el reloj del servidor."
+            },
+            "durationSeconds": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 240,
+              "description": "Duración total de la pregunta en segundos (closesAt - openedAt)."
             }
           },
           "required": [
@@ -82,7 +93,9 @@
             "total",
             "statement",
             "imageUrl",
-            "closesAt"
+            "closesAt",
+            "openedAt",
+            "durationSeconds"
           ],
           "additionalProperties": false
         }
@@ -176,11 +189,13 @@
         "total": 5,
         "statement": "El agua hierve a 100 °C al nivel del mar.",
         "imageUrl": null,
-        "closesAt": "2026-11-15T15:00:30.000Z"
+        "closesAt": "2026-11-15T15:00:30.000Z",
+        "openedAt": "2026-11-15T15:00:00.000Z",
+        "durationSeconds": 30
       },
       "closesAt": "2026-11-15T15:00:30.000Z",
       "serverTime": "2026-11-15T15:00:12.345Z",
-      "myScore": 1,
+      "myScore": 1000,
       "hasAnswered": false
     }
   ]

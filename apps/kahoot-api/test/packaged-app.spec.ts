@@ -61,14 +61,23 @@ test("dist arranca sin packages y valida un evento usando solo los contratos emp
         } finally {await app.close();}
       })().catch(()=>{process.exitCode=1;});
     `;
-    expect(
-      execFileSync(process.execPath, ["-e", code], {
-        cwd: dist,
-        env: { ...process.env, NODE_ENV: "production" },
-        timeout: 15000,
-        encoding: "utf8",
-      }),
-    ).toBe("packaged-ok");
+    const output = execFileSync(process.execPath, ["-e", code], {
+      cwd: dist,
+      env: { ...process.env, NODE_ENV: "production" },
+      timeout: 15000,
+      encoding: "utf8",
+    });
+    const lines = output.split("\n");
+    expect(lines.pop()).toBe("packaged-ok");
+    expect(lines.map((line) => JSON.parse(line))).toMatchObject([
+      {
+        service: "kahoot-api",
+        method: "GET",
+        route: "/api/v1/health",
+        status: 200,
+      },
+      { service: "kahoot-api", method: "GET", route: "unmatched", status: 200 },
+    ]);
     // A production deployment with missing bundled schemas must fail, never read the repo.
     await rm(join(dist, "schemas"), { recursive: true });
     expect(() =>

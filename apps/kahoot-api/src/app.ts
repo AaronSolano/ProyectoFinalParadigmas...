@@ -1,3 +1,4 @@
+import { httpRequestLog } from "./request-log";
 import "reflect-metadata";
 import {
   ArgumentsHost,
@@ -183,6 +184,7 @@ export async function createApp(
     }
   }
   app.useWebSocketAdapter(new ConfiguredIoAdapter(app));
+  app.use(httpRequestLog);
   app.enableCors({ origin: config.cors });
   app.use(httpTelemetry);
   app.useGlobalFilters(new ProblemFilter());

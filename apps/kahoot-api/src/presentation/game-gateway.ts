@@ -1,3 +1,4 @@
+import { liveEventLog, isLiveEvent } from "../live-log";
 import { Inject } from "@nestjs/common";
 import {
   WebSocketGateway,
@@ -50,8 +51,13 @@ export class GameGateway implements OnGatewayInit {
       socket.use((_packet, next) => {
         if (!socket.connected) return;
         const decision = budget.take();
-        if (decision === "allow") next();
-        else if (decision === "disconnect") {
+        if (decision === "allow") {
+          if (!isLiveEvent(String(_packet[0])))
+            liveEventLog("unknown", "ignored");
+          next();
+        } else {
+          liveEventLog(String(_packet[0]), "rate_limited");
+          if (decision !== "disconnect") return;
           recordLiveRateLimited();
           socket.disconnect(true);
         }
@@ -74,7 +80,7 @@ export class GameGateway implements OnGatewayInit {
   }
   private async dispatch(socket: Socket, event: string, payload: unknown) {
     const started = performance.now();
-    let outcome = "ok";
+    let outcome: "ok" | "rejected" | "error" = "ok";
     try {
       if (!this.schemas.valid(event, payload))
         throw new GameError(
@@ -149,6 +155,7 @@ export class GameGateway implements OnGatewayInit {
         message: known ? error.message : "Error interno del servicio.",
       });
     } finally {
+      liveEventLog(event, outcome);
       recordGameEvent(event, outcome, (performance.now() - started) / 1000);
     }
   }

@@ -18,13 +18,28 @@ import {
 import { CountdownTimer } from '../components/CountdownTimer';
 import { TrueFalseButtons } from '../components/TrueFalseButtons';
 import { ErrorBanner } from '../components/ErrorBanner';
+import {
+  RubyFeedback,
+  RubyQuestionCompanion,
+} from '../components/RubyFeedback';
+import {
+  closedQuestionMood,
+  droppedInRanking,
+  finalRubyMood,
+} from '../components/rubyReactions';
 
 interface GameRoomPageProps {
   roleHint: 'host' | 'participant';
 }
 
-export function formatElapsedSeconds(elapsedMs: number | null | undefined): string | null {
-  if (typeof elapsedMs !== 'number' || Number.isNaN(elapsedMs) || elapsedMs < 0) {
+export function formatElapsedSeconds(
+  elapsedMs: number | null | undefined,
+): string | null {
+  if (
+    typeof elapsedMs !== 'number' ||
+    Number.isNaN(elapsedMs) ||
+    elapsedMs < 0
+  ) {
     return null;
   }
   return (elapsedMs / 1000).toFixed(2);
@@ -40,6 +55,13 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   const { enableDebugControls } = getAppEnv();
   const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
   const prevStatusRef = useRef<string | null>(null);
+  const [advancing, setAdvancing] = useState(false);
+  const roundBaseline = useRef<{
+    code: string;
+    questionIndex: number;
+    position?: number;
+    streak: number;
+  } | null>(null);
 
   const {
     liveState,
@@ -57,12 +79,75 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   const isHost = liveState.isHost || roleHint === 'host';
   const myQuestionResult =
     liveState.participantId && liveState.lastClosed
-      ? liveState.lastClosed.results.find((r) => r.participantId === liveState.participantId)
+      ? liveState.lastClosed.results.find(
+          (r) => r.participantId === liveState.participantId,
+        )
       : undefined;
 
   const answeredCount = liveState.lastClosed
     ? liveState.lastClosed.results.filter((r) => r.answered).length
     : 0;
+
+  useEffect(() => {
+    if (liveState.status === 'question_open' && liveState.currentQuestion) {
+      const questionIndex = liveState.currentQuestion.questionIndex;
+      if (
+        roundBaseline.current?.code !== normalizedCode ||
+        roundBaseline.current.questionIndex !== questionIndex
+      ) {
+        roundBaseline.current = {
+          code: normalizedCode,
+          questionIndex,
+          position: liveState.ranking.find(
+            (entry) => entry.participantId === liveState.participantId,
+          )?.position,
+          streak: liveState.myStreak,
+        };
+      }
+    }
+  }, [
+    normalizedCode,
+    liveState.status,
+    liveState.currentQuestion,
+    liveState.ranking,
+    liveState.participantId,
+    liveState.myStreak,
+  ]);
+
+  useEffect(() => {
+    setAdvancing(false);
+  }, [liveState.status, liveState.lastError, connectionState]);
+
+  useEffect(() => {
+    if (!advancing) return;
+    // A brief visual cue, not an acknowledgement or a local game countdown.
+    const timer = window.setTimeout(() => setAdvancing(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [advancing]);
+
+  const baseline =
+    roundBaseline.current?.code === normalizedCode &&
+    roundBaseline.current.questionIndex === liveState.lastClosed?.questionIndex
+      ? roundBaseline.current
+      : undefined;
+  const resultMood = closedQuestionMood({
+    isHost,
+    results: liveState.lastClosed?.results ?? [],
+    result: myQuestionResult,
+    previousStreak: baseline?.streak,
+  });
+  const movedDown =
+    !isHost &&
+    droppedInRanking(
+      liveState.lastClosed?.ranking ?? [],
+      liveState.participantId,
+      baseline?.position,
+    );
+  const podiumMood = finalRubyMood(
+    liveState.ranking,
+    liveState.participantId,
+    isHost,
+  );
 
   useEffect(() => {
     const prev = prevStatusRef.current;
@@ -99,7 +184,13 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
   const handleStartSession = () => {
     unlockAudioContext();
+    setAdvancing(true);
     startSession();
+  };
+
+  const handleNextQuestion = () => {
+    setAdvancing(true);
+    nextQuestion();
   };
 
   const handleSubmitAnswer = (answer: boolean) => {
@@ -123,13 +214,21 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   return (
     <div className="game-container" data-testid="game-room-page">
       {connectionState === 'reconnecting' && (
-        <div className="reconnect-banner" role="status" data-testid="reconnect-banner">
+        <div
+          className="reconnect-banner"
+          role="status"
+          data-testid="reconnect-banner"
+        >
           {t('game.reconnectingBanner')}
         </div>
       )}
 
       {connectionState === 'reconnect_failed' && (
-        <div className="reconnect-banner" role="alert" data-testid="reconnect-failed-banner">
+        <div
+          className="reconnect-banner"
+          role="alert"
+          data-testid="reconnect-failed-banner"
+        >
           <span>{t('game.reconnectFailedBanner')}</span>{' '}
           <button
             type="button"
@@ -198,18 +297,29 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
       {/* WAITING LOBBY */}
       {liveState.status === 'waiting' && (
         <section className="card lobby-section" data-testid="lobby-view">
+          <RubyFeedback
+            mood={advancing ? 'cheer' : 'idle'}
+            className="ruby-feedback--lobby"
+          />
           <p className="lobby-status">
-            {isHost ? t('game.lobbyWaitingHost') : t('game.lobbyWaitingParticipant')}
+            {isHost
+              ? t('game.lobbyWaitingHost')
+              : t('game.lobbyWaitingParticipant')}
           </p>
 
           <h2 className="card__subtitle">
-            {t('game.participantsTitle', { count: liveState.participants.length })}
+            {t('game.participantsTitle', {
+              count: liveState.participants.length,
+            })}
           </h2>
 
           {liveState.participants.length === 0 ? (
             <p className="empty-state">{t('game.noParticipants')}</p>
           ) : (
-            <ul className="participant-chips" data-testid="lobby-participants-list">
+            <ul
+              className="participant-chips"
+              data-testid="lobby-participants-list"
+            >
               {liveState.participants.map((p) => (
                 <li key={p.id} className="participant-chip">
                   {p.displayName}
@@ -225,6 +335,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
                 data-testid="btn-start-session"
                 className="btn btn--primary btn--lg"
                 onClick={handleStartSession}
+                disabled={advancing || connectionState !== 'connected'}
               >
                 {t('game.startSessionBtn')}
               </button>
@@ -235,7 +346,10 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
       {/* QUESTION OPEN */}
       {liveState.status === 'question_open' && liveState.currentQuestion && (
-        <section className="card question-live-card" data-testid="question-open-view">
+        <section
+          className="card question-live-card"
+          data-testid="question-open-view"
+        >
           <div className="question-live__top">
             <span className="badge" data-testid="question-counter">
               {t('game.questionCounter', {
@@ -253,7 +367,16 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
             />
           </div>
 
-          <h2 className="question-live__statement" data-testid="question-statement">
+          <RubyQuestionCompanion
+            key={`${normalizedCode}-${liveState.currentQuestion.openedAt}`}
+            openedAt={liveState.currentQuestion.openedAt}
+            clockOffsetMs={liveState.clockOffsetMs}
+          />
+
+          <h2
+            className="question-live__statement"
+            data-testid="question-statement"
+          >
             {liveState.currentQuestion.statement}
           </h2>
 
@@ -293,10 +416,30 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
       {/* QUESTION CLOSED */}
       {liveState.status === 'question_closed' && liveState.lastClosed && (
-        <section className="card results-card" data-testid="question-closed-view">
+        <section
+          className="card results-card"
+          data-testid="question-closed-view"
+        >
+          <RubyFeedback
+            mood={advancing ? 'cheer' : resultMood}
+            celebrate={!advancing}
+            className="ruby-feedback--result"
+            messageKey={
+              advancing
+                ? undefined
+                : myQuestionResult?.correct && myQuestionResult.streak >= 2
+                  ? 'ruby.streak'
+                  : resultMood === 'surprised' && myQuestionResult?.answered
+                    ? 'ruby.streakLost'
+                    : undefined
+            }
+          />
           <h2 className="card__title">{t('game.questionClosedTitle')}</h2>
 
-          <div className="correct-answer-banner" data-testid="correct-answer-reveal">
+          <div
+            className="correct-answer-banner"
+            data-testid="correct-answer-reveal"
+          >
             {t('game.correctAnswerWas', {
               answer: liveState.lastClosed.correctAnswer
                 ? t('game.trueBtn')
@@ -307,7 +450,9 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
           {!isHost && myQuestionResult && (
             <div
               className={`personal-result ${
-                myQuestionResult.correct ? 'personal-result--right' : 'personal-result--wrong'
+                myQuestionResult.correct
+                  ? 'personal-result--right'
+                  : 'personal-result--wrong'
               }`}
               data-testid="personal-question-result"
             >
@@ -315,18 +460,29 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
                 {!myQuestionResult.answered
                   ? t('game.didNotAnswer')
                   : myQuestionResult.correct
-                    ? t('game.youAnsweredRight', { points: myQuestionResult.pointsAwarded })
+                    ? t('game.youAnsweredRight', {
+                        points: myQuestionResult.pointsAwarded,
+                      })
                     : t('game.youAnsweredWrong')}
               </div>
 
-              {myQuestionResult.answered && elapsedSecondsFormatted !== null && (
-                <div className="personal-result__meta" data-testid="response-elapsed-time">
-                  {t('game.elapsedSeconds', { seconds: elapsedSecondsFormatted })}
-                </div>
-              )}
+              {myQuestionResult.answered &&
+                elapsedSecondsFormatted !== null && (
+                  <div
+                    className="personal-result__meta"
+                    data-testid="response-elapsed-time"
+                  >
+                    {t('game.elapsedSeconds', {
+                      seconds: elapsedSecondsFormatted,
+                    })}
+                  </div>
+                )}
 
               {myQuestionResult.correct && (
-                <div className="personal-result__breakdown" data-testid="points-breakdown">
+                <div
+                  className="personal-result__breakdown"
+                  data-testid="points-breakdown"
+                >
                   {t('game.pointsBreakdown', {
                     points: myQuestionResult.pointsAwarded,
                     total: myQuestionResult.totalScore,
@@ -364,13 +520,22 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
             ))}
           </ol>
 
+          {movedDown && (
+            <RubyFeedback
+              mood="motivate"
+              className="ruby-feedback--ranking"
+              messageKey="ruby.rankDropped"
+            />
+          )}
+
           {isHost && (
             <div className="host-actions">
               <button
                 type="button"
                 data-testid="btn-next-question"
                 className="btn btn--primary btn--lg"
-                onClick={nextQuestion}
+                onClick={handleNextQuestion}
+                disabled={advancing || connectionState !== 'connected'}
               >
                 {t('game.nextQuestionBtn')}
               </button>
@@ -381,10 +546,22 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
       {/* SESSION FINISHED */}
       {liveState.status === 'finished' && (
-        <section className="card finished-card" data-testid="session-finished-view">
+        <section
+          className="card finished-card"
+          data-testid="session-finished-view"
+        >
+          <RubyFeedback
+            mood={podiumMood}
+            celebrate
+            className="ruby-feedback--finish"
+            messageKey={podiumMood === 'sad' ? 'ruby.nearPodium' : undefined}
+          />
           <h2 className="card__title">{t('game.finalRankingTitle')}</h2>
 
-          <ol className="ranking-list ranking-list--final" data-testid="final-ranking-list">
+          <ol
+            className="ranking-list ranking-list--final"
+            data-testid="final-ranking-list"
+          >
             {liveState.ranking.map((entry) => (
               <li key={entry.participantId} className="ranking-row">
                 <span className="ranking-row__pos">#{entry.position}</span>

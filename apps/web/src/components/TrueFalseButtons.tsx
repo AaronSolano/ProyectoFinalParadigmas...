@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AnswerRejectedReason } from '../api/events';
+import { Icon } from './Icon';
 
 export interface TrueFalseButtonsProps {
   questionIndex: number;
@@ -41,7 +42,11 @@ export function TrueFalseButtons({
 
   return (
     <div className="tf-section">
-      <div className="tf-grid" role="group" aria-label="Verdadero o Falso">
+      <div
+        className="tf-grid"
+        role="group"
+        aria-label={t('design.answerGroup')}
+      >
         <button
           type="button"
           data-testid="btn-answer-true"
@@ -53,7 +58,7 @@ export function TrueFalseButtons({
           onClick={() => handleChoose(true)}
         >
           <span className="tf-button__icon" aria-hidden="true">
-            ✓
+            <Icon name="check" width="28" height="28" />
           </span>
           <span className="tf-button__label">{t('game.trueBtn')}</span>
         </button>
@@ -69,20 +74,30 @@ export function TrueFalseButtons({
           onClick={() => handleChoose(false)}
         >
           <span className="tf-button__icon" aria-hidden="true">
-            ✕
+            <Icon name="close" width="28" height="28" />
           </span>
           <span className="tf-button__label">{t('game.falseBtn')}</span>
         </button>
       </div>
 
       {(submittedLocal || hasAnswered) && !rejectedReason && (
-        <p className="tf-feedback tf-feedback--ok" role="status" data-testid="answer-status">
-          {answerAccepted ? t('game.answerAccepted') : t('game.answerSubmitted')}
+        <p
+          className="tf-feedback tf-feedback--ok"
+          role="status"
+          data-testid="answer-status"
+        >
+          {answerAccepted
+            ? t('game.answerAccepted')
+            : t('game.answerSubmitted')}
         </p>
       )}
 
       {rejectedReason && (
-        <p className="tf-feedback tf-feedback--rejected" role="alert" data-testid="answer-rejected">
+        <p
+          className="tf-feedback tf-feedback--rejected"
+          role="alert"
+          data-testid="answer-rejected"
+        >
           {t(`rejection.${rejectedReason}`)}
         </p>
       )}

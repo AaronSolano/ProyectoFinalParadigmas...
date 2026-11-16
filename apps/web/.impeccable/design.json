@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-16T06:42:23.038967+00:00",
+  "title": "Design System: RubyMind",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "auth-card",
+        "value": "0 12px 45px #6848240c",
+        "purpose": "Sombra cálida exclusiva de la tarjeta de acceso."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Presión y aparición de estados y Ruby."
+      },
+      {
+        "name": "duration-press",
+        "value": "160ms",
+        "purpose": "Fondo, borde y presión de controles."
+      },
+      {
+        "name": "duration-state",
+        "value": "240ms",
+        "purpose": "Entrada de lobby, resultados y destacados."
+      },
+      {
+        "name": "ruby-entrance",
+        "value": "480ms",
+        "purpose": "Saludo y salto de celebración en resultados confirmados y final; sin bucles."
+      },
+      {
+        "name": "reduced-state",
+        "value": "120ms ease-out",
+        "purpose": "Solo opacidad para estados con movimiento reducido."
+      },
+      {
+        "name": "ruby-confetti",
+        "value": "650ms",
+        "purpose": "Ocho piezas en celebración, retrasos 0–180ms; ocultas con movimiento reducido."
+      },
+      {
+        "name": "ruby-question-cheer-window",
+        "value": "700ms",
+        "purpose": "Ventana visual desde openedAt del servidor; luego think. No retrasa reloj ni controles."
+      },
+      {
+        "name": "ruby-advance-cue",
+        "value": "900ms",
+        "purpose": "Máximo de indicación al pedir iniciar/avanzar; se limpia con cambios de estado, error o conexión. No es cuenta regresiva."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "960px"
+      },
+      {
+        "name": "mobile",
+        "value": "700px"
+      },
+      {
+        "name": "small-mobile",
+        "value": "420px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Crear cuestionario. Variante implementada de acción.",
+      "html": "<button class=\"ds-item\" type=\"button\">Crear cuestionario</button>",
+      "css": ".ds-item{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.6rem 1rem;border:1px solid transparent;border-radius:10px;cursor:pointer;font-family:Nunito,sans-serif;font-size:.9rem;font-weight:800;transition:background-color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);background:var(--primary);color:var(--bg-card);border-color:transparent;}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}@media(hover:hover) and (pointer:fine){.ds-item:hover:not(:disabled){background:var(--primary-hover);}}.ds-item:active:not(:disabled){transform:scale(.97)}.ds-item:disabled{opacity:.6;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}.ds-item:active:not(:disabled){transform:none}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Unirse a sala. Variante implementada de acción.",
+      "html": "<button class=\"ds-item\" type=\"button\">Unirse a sala</button>",
+      "css": ".ds-item{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.6rem 1rem;border:1px solid transparent;border-radius:10px;cursor:pointer;font-family:Nunito,sans-serif;font-size:.9rem;font-weight:800;transition:background-color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);background:var(--sage-light);color:#31543d;border-color:transparent;}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}@media(hover:hover) and (pointer:fine){.ds-item:hover:not(:disabled){background:#d3e2d0;}}.ds-item:active:not(:disabled){transform:scale(.97)}.ds-item:disabled{opacity:.6;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}.ds-item:active:not(:disabled){transform:none}}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Volver. Variante implementada de acción.",
+      "html": "<button class=\"ds-item\" type=\"button\">Volver</button>",
+      "css": ".ds-item{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:.6rem 1rem;border:1px solid transparent;border-radius:10px;cursor:pointer;font-family:Nunito,sans-serif;font-size:.9rem;font-weight:800;transition:background-color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);background:transparent;color:var(--text-main);border-color:var(--border-color);}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}@media(hover:hover) and (pointer:fine){.ds-item:hover:not(:disabled){background:#e5dacb;}}.ds-item:active:not(:disabled){transform:scale(.97)}.ds-item:disabled{opacity:.6;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}.ds-item:active:not(:disabled){transform:none}}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Etiqueta visible, campo y ayuda.",
+      "html": "<label class=\"ds-field\">Nombre<input class=\"ds-item\" placeholder=\"Tu nombre\"/><span class=\"ds-hint\">Así aparecerás en la sala.</span></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:.45rem;color:var(--text-main);font-family:Nunito,sans-serif;font-size:.9rem;font-weight:800;}.ds-item{min-height:48px;padding:.75rem .9rem;border:1px solid #bdac97;border-radius:10px;background:var(--bg-card);color:var(--text-main);font:1rem Nunito,sans-serif;caret-color:var(--primary);transition:border-color 160ms ease}.ds-item::placeholder{color:var(--text-muted);opacity:1}.ds-item:focus{border-color:var(--focus-ring)}.ds-hint{font-size:.8rem;font-weight:400;color:var(--text-muted);line-height:1.5}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Enlace actual con fondo y foco de teclado.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Principal\"><a class=\"ds-item ds-active\" href=\"#quizzes\" aria-current=\"page\">Cuestionarios</a><a class=\"ds-item\" href=\"#join\">Unirse a sala</a></nav>",
+      "css": ".ds-nav{display:flex;flex-wrap:wrap;gap:.45rem}.ds-item{padding:.6rem .8rem;color:var(--text-muted);text-decoration:none;font:750 .9rem Nunito,sans-serif;border-radius:9px}.ds-active{color:var(--primary);background:#f7e9db}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}@media(hover:hover) and (pointer:fine){.ds-item:hover{color:var(--primary);background:#f7e9db}}"
+    },
+    {
+      "name": "Participant Chip",
+      "kind": "chip",
+      "refersTo": "participant-chip",
+      "description": "Participante de lobby; presentación sin acción.",
+      "html": "<span class=\"ds-chip\">María</span>",
+      "css": ".ds-chip{display:inline-block;padding:.55rem 1rem;border-radius:9px;background:var(--sage-light);color:#31543c;font:750 1rem Nunito,sans-serif;overflow-wrap:anywhere;max-width:100%}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Contenedor ordinario sin sombra.",
+      "html": "<article class=\"ds-card\"><h2 class=\"ds-title\">Mis cuestionarios</h2><p class=\"ds-description\">Prepara preguntas de verdadero o falso.</p></article>",
+      "css": ".ds-card{background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-color);border-radius:16px;padding:1.5rem;min-width:0;font:1rem/1.6 Nunito,sans-serif}.ds-title{margin:0 0 .8rem;font-size:1.65rem;font-weight:850;line-height:1.2;letter-spacing:-.025em}.ds-description{margin:0;color:var(--text-muted);font-size:.95rem;max-width:62ch}@media(max-width:700px){.ds-card{padding:1.25rem}}"
+    },
+    {
+      "name": "Verdadero Answer",
+      "kind": "button",
+      "refersTo": "answer-true",
+      "description": "Respuesta de juego con etiqueta e icono.",
+      "html": "<button class=\"ds-item\" type=\"button\" aria-pressed=\"false\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12l4 4L19 6\"/></svg>Verdadero</button>",
+      "css": ".ds-item{display:flex;align-items:center;justify-content:center;gap:.8rem;width:100%;min-height:92px;padding:1.25rem;border:3px solid transparent;border-radius:14px;color:#fff;background:var(--true-bg);font:850 1.3rem Nunito,sans-serif;cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),background-color 160ms ease}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}.ds-item[aria-pressed=\"true\"]{border-color:#fff;outline:3px solid var(--focus-ring);outline-offset:2px}.ds-item:disabled{cursor:not-allowed;opacity:.65}.ds-item[aria-pressed=\"true\"]:disabled{opacity:1}.ds-item:active:not(:disabled){transform:scale(.97)}@media(hover:hover) and (pointer:fine){.ds-item:hover:not(:disabled){background:var(--true-hover)}}@media(max-width:700px){.ds-item{min-height:78px;font-size:1.1rem;padding:.9rem .5rem;gap:.5rem}}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}.ds-item:active:not(:disabled){transform:none}}"
+    },
+    {
+      "name": "Falso Answer",
+      "kind": "button",
+      "refersTo": "answer-false",
+      "description": "Respuesta de juego con etiqueta e icono.",
+      "html": "<button class=\"ds-item\" type=\"button\" aria-pressed=\"false\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg>Falso</button>",
+      "css": ".ds-item{display:flex;align-items:center;justify-content:center;gap:.8rem;width:100%;min-height:92px;padding:1.25rem;border:3px solid transparent;border-radius:14px;color:#fff;background:var(--false-bg);font:850 1.3rem Nunito,sans-serif;cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),background-color 160ms ease}.ds-item:focus-visible{outline:3px solid var(--focus-ring);outline-offset:4px;}.ds-item[aria-pressed=\"true\"]{border-color:#fff;outline:3px solid var(--focus-ring);outline-offset:2px}.ds-item:disabled{cursor:not-allowed;opacity:.65}.ds-item[aria-pressed=\"true\"]:disabled{opacity:1}.ds-item:active:not(:disabled){transform:scale(.97)}@media(hover:hover) and (pointer:fine){.ds-item:hover:not(:disabled){background:var(--false-hover)}}@media(max-width:700px){.ds-item{min-height:78px;font-size:1.1rem;padding:.9rem .5rem;gap:.5rem}}@media(prefers-reduced-motion:reduce){.ds-item{transition:none}.ds-item:active:not(:disabled){transform:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Una herramienta de evaluación clara con Ruby como compañera.",
+    "overview": "RubyMind es una herramienta educativa de evaluación en vivo con una interfaz cálida y clara. La identidad confirmada combina crema, canela y marrón con verde y azul funcionales, tipografía Nunito y Ruby, una heeler canela basada en las referencias del usuario.\n\nLas pantallas son de operación: preparar, entrar, responder y consultar resultados. La jerarquía mantiene la pregunta y las respuestas por delante de la mascota. Ruby acompaña bienvenida, espera, pregunta y resultados con nueve estados. Durante la pregunta se presenta pequeña (64px), sin tapar el enunciado ni bloquear respuestas o retrasar el reloj.",
+    "keyCharacteristics": [
+      "Crema y marrón como base de lectura; canela para la acción principal.",
+      "Superficies claras, bordes suaves y profundidad contenida.",
+      "Controles grandes y estados identificables por texto e iconos además de color.",
+      "Movimiento breve, sin animación continua durante las preguntas."
+    ],
+    "rules": [],
+    "dos": [
+      "Do mantener las acciones principales en canela y el texto de lectura en marrón.",
+      "Do conservar etiquetas, iconos y foco visible junto a los estados de color.",
+      "Do priorizar enunciado, respuestas y tiempo durante una pregunta.",
+      "Do usar las nueve poses del sprite local de Ruby y respetar movimiento reducido.",
+      "Do basar las reacciones de resultados en el cierre del servidor y las comparaciones en historia observada.",
+      "Do mantener los textos y controles legibles en español e inglés."
+    ],
+    "donts": [
+      "Don't usar a Ruby para culpabilizar por una respuesta incorrecta.",
+      "Don't añadir movimiento continuo ni animar clasificación, cifras o enunciados durante una pregunta.",
+      "Don't comunicar selección, error o acierto solamente mediante color.",
+      "Don't sustituir la mascota o la paleta confirmadas por otra identidad."
+    ]
+  }
+}

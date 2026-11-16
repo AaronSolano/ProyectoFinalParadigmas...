@@ -1,7 +1,7 @@
 export const en = {
   translation: {
     app: {
-      title: 'ProfeLink Kahoot',
+      title: 'RubyMind',
       subtitle: 'Live True / False Assessments',
       nav: {
         quizzes: 'My Quizzes',
@@ -15,6 +15,53 @@ export const en = {
         es: 'Español',
         en: 'English',
       },
+    },
+    ruby: {
+      welcome: 'Hi! Let’s learn together!',
+      idle: 'Everyone at their own pace. I’m watching for new arrivals.',
+      cheer: 'Let’s go! Another chance to learn.',
+      think: 'Think it through. You’ve got this!',
+      celebrate: 'Super! That effort deserves a celebration.',
+      empathy: 'Almost! Making mistakes is part of learning.',
+      surprised: 'Oh! So close! On to the next one.',
+      motivate: 'Try again! There’s still plenty to discover.',
+      sad: 'Oh no! That was tricky. Let’s go over it together.',
+      streak: 'Super! You’re building a great streak.',
+      streakLost: 'Oh! The streak ended, but what you learned stays with you.',
+      rankDropped:
+        'Try again! You moved down; the next question is another opportunity.',
+      nearPodium: 'Oh no! The podium was so close. Your effort counts.',
+      helloName: 'Hi, {{name}}! Ruby is ready to join you.',
+    },
+    design: {
+      skip: 'Skip to content',
+      navigation: 'Main navigation',
+      footer: 'Learning, one question at a time.',
+      welcomeTitle: 'Curiosity is',
+      welcomeAccent: 'a team sport.',
+      welcomeDescription:
+        'Create questions, bring your group together, and turn what they know into a live game.',
+      rubyHello: 'Hi! I’m Ruby. Let’s learn together!',
+      welcomeNote: 'True or false. Always something to discover.',
+      loginDescription: 'Good to see you. Your next game starts here.',
+      registerDescription:
+        'Create your account and start learning with your group.',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
+      joinDescription:
+        'Your group and Ruby are waiting. Enter the code you were given to join.',
+      codeHint: '6 characters. Find it on your host’s screen.',
+      libraryDescription: 'A good question can start a great game.',
+      yourLibrary: 'Your library',
+      loadingQuizzes: 'Loading your quizzes…',
+      loadingQuestions: 'Loading questions…',
+      retry: 'Try again',
+      emptyHint: 'Use the form to create your first quiz.',
+      questionsDescription:
+        'Prepare what your group will discover in the next game.',
+      answerGroup: 'Choose true or false',
+      timerProgress: 'Question time remaining',
+      dismissNotice: 'Dismiss notice',
     },
     auth: {
       loginTitle: 'Log in',
@@ -63,7 +110,8 @@ export const en = {
       imageLabel: 'Supporting image (PNG, JPEG or WebP, max 2 MiB)',
       uploadImageBtn: 'Upload image',
       removeImageBtn: 'Remove image',
-      imageInvalidType: 'Unsupported image format. Please use PNG, JPEG, or WebP.',
+      imageInvalidType:
+        'Unsupported image format. Please use PNG, JPEG, or WebP.',
       imageTooLarge: 'The image exceeds the maximum size of 2 MiB.',
     },
     join: {
@@ -73,12 +121,14 @@ export const en = {
       displayNameLabel: 'In-game name (optional)',
       joinBtn: 'Join room',
       joining: 'Joining...',
-      invalidCodeFormat: 'Code must be 6 valid characters (excluding 0, O, 1, and I).',
+      invalidCodeFormat:
+        'Code must be 6 valid characters (excluding 0, O, 1, and I).',
     },
     game: {
       roomCode: 'Room code',
       lobbyWaitingHost: 'Waiting for participants to join...',
-      lobbyWaitingParticipant: 'Connected to lobby. Waiting for the host to start the game...',
+      lobbyWaitingParticipant:
+        'Connected to lobby. Waiting for the host to start the game...',
       participantsTitle: 'Participants in room ({{count}})',
       noParticipants: 'No participants in the room yet.',
       startSessionBtn: 'Start game',
@@ -99,7 +149,8 @@ export const en = {
       didNotAnswer: 'Did not answer in time (0 pts)',
       elapsedSeconds: 'Response time: {{seconds}} s',
       streakBadge: '🔥 {{streak}}-answer streak',
-      pointsBreakdown: 'Speed bonus: +{{points}} pts · Total score: {{total}} pts',
+      pointsBreakdown:
+        'Speed bonus: +{{points}} pts · Total score: {{total}} pts',
       soundOnBtn: '🔊 Sound on',
       soundMutedBtn: '🔇 Muted',
       answeredCount: '{{answered}} of {{total}} participants answered',
@@ -117,11 +168,13 @@ export const en = {
       already_answered: 'You have already answered this question.',
       late: 'Your answer arrived too late according to the server clock.',
       closed: 'The question was already closed.',
-      not_in_session: 'You are not registered as an active participant in this room.',
+      not_in_session:
+        'You are not registered as an active participant in this room.',
       invalid_state: 'There is no open question right now.',
     },
     errors: {
-      VALIDATION_ERROR: 'The submitted data is invalid. Please check the fields.',
+      VALIDATION_ERROR:
+        'The submitted data is invalid. Please check the fields.',
       EMAIL_TAKEN: 'An account is already registered with that email address.',
       INVALID_CREDENTIALS: 'Invalid email or password.',
       UNAUTHORIZED: 'Your session expired, please log in again.',
@@ -129,7 +182,8 @@ export const en = {
       FORBIDDEN: 'You do not have permission to perform this action.',
       NOT_FOUND: 'The requested resource was not found.',
       ROOM_NOT_FOUND: 'No room was found with that code.',
-      ROOM_CLOSED: 'The room has already started or finished and is closed to new participants.',
+      ROOM_CLOSED:
+        'The room has already started or finished and is closed to new participants.',
       ROOM_NOT_FINISHED: 'The room has not finished yet.',
       QUIZ_EMPTY: 'The quiz has no questions and cannot start a room.',
       IMAGE_TOO_LARGE: 'The image exceeds the 2 MiB limit.',
@@ -137,7 +191,8 @@ export const en = {
       INVALID_STATE: 'This action is not valid in the current game state.',
       INVALID_PAYLOAD: 'Invalid payload sent to the live channel.',
       INTERNAL_ERROR: 'An internal server error occurred.',
-      NETWORK_ERROR: 'Could not connect to the server. Please check your connection.',
+      NETWORK_ERROR:
+        'Could not connect to the server. Please check your connection.',
     },
   },
 };

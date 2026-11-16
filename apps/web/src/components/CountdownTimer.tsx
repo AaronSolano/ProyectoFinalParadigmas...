@@ -50,7 +50,10 @@ export function computeProgressPercent(
         ? closesAtMs - openedAtMs
         : 20_000;
   const estimatedServerNowMs = nowMs + clockOffsetMs;
-  const remainingMs = Math.max(0, Math.min(totalMs, closesAtMs - estimatedServerNowMs));
+  const remainingMs = Math.max(
+    0,
+    Math.min(totalMs, closesAtMs - estimatedServerNowMs),
+  );
   return Math.round((remainingMs / totalMs) * 100);
 }
 
@@ -67,7 +70,13 @@ export function CountdownTimer({
     computeRemainingSeconds(closesAt, clockOffsetMs, nowProvider()),
   );
   const [progressPct, setProgressPct] = useState<number>(() =>
-    computeProgressPercent(closesAt, openedAt, durationSeconds, clockOffsetMs, nowProvider()),
+    computeProgressPercent(
+      closesAt,
+      openedAt,
+      durationSeconds,
+      clockOffsetMs,
+      nowProvider(),
+    ),
   );
   const lastTickSecondRef = useRef<number | null>(null);
 
@@ -76,7 +85,13 @@ export function CountdownTimer({
     const update = () => {
       const now = nowProvider();
       const secs = computeRemainingSeconds(closesAt, clockOffsetMs, now);
-      const pct = computeProgressPercent(closesAt, openedAt, durationSeconds, clockOffsetMs, now);
+      const pct = computeProgressPercent(
+        closesAt,
+        openedAt,
+        durationSeconds,
+        clockOffsetMs,
+        now,
+      );
       setSecondsLeft(secs);
       setProgressPct(pct);
       if (enableTickSound && secs > 0 && lastTickSecondRef.current !== secs) {
@@ -89,7 +104,14 @@ export function CountdownTimer({
     update();
     const timer = window.setInterval(update, 200);
     return () => window.clearInterval(timer);
-  }, [closesAt, openedAt, durationSeconds, clockOffsetMs, nowProvider, enableTickSound]);
+  }, [
+    closesAt,
+    openedAt,
+    durationSeconds,
+    clockOffsetMs,
+    nowProvider,
+    enableTickSound,
+  ]);
 
   if (!closesAt) {
     return null;
@@ -111,7 +133,13 @@ export function CountdownTimer({
           aria-hidden="true"
           data-testid="countdown-ring"
         >
-          <circle className="countdown-ring__track" cx="18" cy="18" r={radius} strokeWidth="4" />
+          <circle
+            className="countdown-ring__track"
+            cx="18"
+            cy="18"
+            r={radius}
+            strokeWidth="4"
+          />
           <circle
             className={`countdown-ring__fill ${isUrgent ? 'countdown-ring__fill--urgent' : ''}`}
             cx="18"
@@ -126,16 +154,19 @@ export function CountdownTimer({
         <div
           className={`countdown-badge ${isUrgent ? 'countdown-badge--urgent' : ''}`}
           role="timer"
-          aria-live="polite"
+          aria-live="off"
           data-testid="countdown-timer"
         >
-          {secondsLeft > 0 ? t('game.timeRemaining', { seconds: secondsLeft }) : t('game.timeUp')}
+          {secondsLeft > 0
+            ? t('game.timeRemaining', { seconds: secondsLeft })
+            : t('game.timeUp')}
         </div>
       </div>
 
       <div
         className={`countdown-progress ${isUrgent ? 'countdown-progress--urgent' : ''}`}
         role="progressbar"
+        aria-label={t('design.timerProgress')}
         aria-valuemin={0}
         aria-valuemax={durationSeconds}
         aria-valuenow={secondsLeft}

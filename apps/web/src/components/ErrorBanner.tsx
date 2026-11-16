@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ApiProblemError } from '../api/client';
+import { Icon } from './Icon';
 
 interface ErrorBannerProps {
   error: unknown;
@@ -51,9 +52,9 @@ export function ErrorBanner({ error, onDismiss }: ErrorBannerProps) {
           type="button"
           className="btn btn--ghost btn--sm"
           onClick={onDismiss}
-          aria-label="Cerrar aviso"
+          aria-label={t('design.dismissNotice')}
         >
-          ×
+          <Icon name="close" />
         </button>
       )}
     </div>

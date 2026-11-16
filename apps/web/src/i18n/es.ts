@@ -1,7 +1,7 @@
 export const es = {
   translation: {
     app: {
-      title: 'ProfeLink Kahoot',
+      title: 'RubyMind',
       subtitle: 'Evaluaciones en vivo Verdadero / Falso',
       nav: {
         quizzes: 'Mis cuestionarios',
@@ -15,6 +15,52 @@ export const es = {
         es: 'Español',
         en: 'English',
       },
+    },
+    ruby: {
+      welcome: '¡Hola! ¿Aprendemos juntos?',
+      idle: 'Todos a su ritmo. Estoy pendiente de quién llega.',
+      cheer: '¡Vamos! Una nueva oportunidad para aprender.',
+      think: 'Piensa tu respuesta. ¡Tú puedes!',
+      celebrate: '¡Súper! Ese esfuerzo merece celebrarse.',
+      empathy: '¡Casi! Equivocarse también es aprender.',
+      surprised: '¡Uy! ¡Qué cerca! Vamos con la siguiente.',
+      motivate: '¡Inténtalo de nuevo! Aún hay mucho por descubrir.',
+      sad: '¡Oh no! Esta estuvo difícil. La repasamos juntos.',
+      streak: '¡Súper! Vas construyendo una gran racha.',
+      streakLost: '¡Uy! Se cortó la racha, pero lo aprendido sigue contigo.',
+      rankDropped:
+        '¡Inténtalo de nuevo! Bajaste posiciones; la próxima pregunta es otra oportunidad.',
+      nearPodium: '¡Oh no! El podio quedó cerquita. Tu esfuerzo cuenta.',
+      helloName: '¡Hola, {{name}}! Ruby está lista para acompañarte.',
+    },
+    design: {
+      skip: 'Saltar al contenido',
+      navigation: 'Navegación principal',
+      footer: 'Aprender, una pregunta a la vez.',
+      welcomeTitle: 'La curiosidad',
+      welcomeAccent: 'se juega en equipo.',
+      welcomeDescription:
+        'Crea preguntas, reúne a tu grupo y convierte lo que saben en una partida en vivo.',
+      rubyHello: '¡Hola! Soy Ruby. ¿Aprendemos juntos?',
+      welcomeNote: 'Verdadero o falso. Siempre algo por descubrir.',
+      loginDescription: 'Qué bueno verte. Tu próxima partida empieza aquí.',
+      registerDescription: 'Crea tu cuenta y empieza a aprender con tu grupo.',
+      showPassword: 'Mostrar contraseña',
+      hidePassword: 'Ocultar contraseña',
+      joinDescription:
+        'Tu grupo y Ruby te esperan. Escribe el código que te compartieron para entrar.',
+      codeHint: '6 caracteres. Lo encontrarás en la pantalla del anfitrión.',
+      libraryDescription: 'Una buena pregunta puede empezar una gran partida.',
+      yourLibrary: 'Tu biblioteca',
+      loadingQuizzes: 'Cargando tus cuestionarios…',
+      loadingQuestions: 'Cargando las preguntas…',
+      retry: 'Volver a intentar',
+      emptyHint: 'Usa el formulario para crear tu primer cuestionario.',
+      questionsDescription:
+        'Prepara lo que tu grupo descubrirá en la próxima partida.',
+      answerGroup: 'Elige verdadero o falso',
+      timerProgress: 'Tiempo restante de la pregunta',
+      dismissNotice: 'Cerrar aviso',
     },
     auth: {
       loginTitle: 'Iniciar sesión',
@@ -51,7 +97,8 @@ export const es = {
     questions: {
       backToQuizzes: 'Volver a mis cuestionarios',
       title: 'Preguntas del cuestionario',
-      empty: 'Este cuestionario aún no tiene preguntas. Agrega al menos una para crear una sala.',
+      empty:
+        'Este cuestionario aún no tiene preguntas. Agrega al menos una para crear una sala.',
       addTitle: 'Agregar pregunta Verdadero / Falso',
       editTitle: 'Editar pregunta',
       statementLabel: 'Enunciado de la pregunta (máx. 500 caracteres)',
@@ -73,12 +120,14 @@ export const es = {
       displayNameLabel: 'Nombre en la partida (opcional)',
       joinBtn: 'Unirme a la sala',
       joining: 'Uniéndose...',
-      invalidCodeFormat: 'El código debe tener 6 caracteres válidos (sin 0, O, 1 ni I).',
+      invalidCodeFormat:
+        'El código debe tener 6 caracteres válidos (sin 0, O, 1 ni I).',
     },
     game: {
       roomCode: 'Código de sala',
       lobbyWaitingHost: 'Esperando a que los participantes se unan...',
-      lobbyWaitingParticipant: 'Conectado al lobby. Esperando a que el anfitrión inicie la partida...',
+      lobbyWaitingParticipant:
+        'Conectado al lobby. Esperando a que el anfitrión inicie la partida...',
       participantsTitle: 'Participantes en sala ({{count}})',
       noParticipants: 'Aún no hay participantes en la sala.',
       startSessionBtn: 'Iniciar partida',
@@ -90,7 +139,8 @@ export const es = {
       timeUp: 'Tiempo agotado',
       trueBtn: 'Verdadero',
       falseBtn: 'Falso',
-      answerSubmitted: 'Respuesta enviada. Esperando el cierre de la pregunta...',
+      answerSubmitted:
+        'Respuesta enviada. Esperando el cierre de la pregunta...',
       answerAccepted: 'Respuesta registrada en el servidor.',
       questionClosedTitle: 'Pregunta cerrada',
       correctAnswerWas: 'Respuesta correcta: {{answer}}',
@@ -99,7 +149,8 @@ export const es = {
       didNotAnswer: 'No enviaste respuesta a tiempo (0 pts)',
       elapsedSeconds: 'Tiempo de respuesta: {{seconds}} s',
       streakBadge: '🔥 Racha de {{streak}} aciertos',
-      pointsBreakdown: 'Velocidad: +{{points}} pts · Total acumulado: {{total}} pts',
+      pointsBreakdown:
+        'Velocidad: +{{points}} pts · Total acumulado: {{total}} pts',
       soundOnBtn: '🔊 Sonido activo',
       soundMutedBtn: '🔇 Silenciado',
       answeredCount: 'Respondieron {{answered}} de {{total}} participantes',
@@ -117,7 +168,8 @@ export const es = {
       already_answered: 'Ya habías respondido esta pregunta.',
       late: 'Tu respuesta llegó fuera de tiempo según el reloj del servidor.',
       closed: 'La pregunta ya estaba cerrada.',
-      not_in_session: 'No estás registrado como participante activo de esta sala.',
+      not_in_session:
+        'No estás registrado como participante activo de esta sala.',
       invalid_state: 'No hay una pregunta abierta en este momento.',
     },
     errors: {
@@ -129,15 +181,20 @@ export const es = {
       FORBIDDEN: 'No tienes permiso para realizar esta acción.',
       NOT_FOUND: 'El recurso solicitado no existe.',
       ROOM_NOT_FOUND: 'No se encontró ninguna sala con ese código.',
-      ROOM_CLOSED: 'La sala ya inició o terminó y no admite nuevos participantes.',
+      ROOM_CLOSED:
+        'La sala ya inició o terminó y no admite nuevos participantes.',
       ROOM_NOT_FINISHED: 'La sala aún no ha terminado.',
-      QUIZ_EMPTY: 'El cuestionario no tiene preguntas y no puede iniciar una sala.',
+      QUIZ_EMPTY:
+        'El cuestionario no tiene preguntas y no puede iniciar una sala.',
       IMAGE_TOO_LARGE: 'La imagen supera el máximo permitido de 2 MiB.',
-      IMAGE_UNSUPPORTED: 'Formato de imagen no permitido. Usa PNG, JPEG o WebP.',
-      INVALID_STATE: 'La acción no es válida en el estado actual de la partida.',
+      IMAGE_UNSUPPORTED:
+        'Formato de imagen no permitido. Usa PNG, JPEG o WebP.',
+      INVALID_STATE:
+        'La acción no es válida en el estado actual de la partida.',
       INVALID_PAYLOAD: 'Los datos enviados al canal en vivo son inválidos.',
       INTERNAL_ERROR: 'Ocurrió un error interno en el servidor.',
-      NETWORK_ERROR: 'No se pudo conectar con el servidor. Verifica tu conexión.',
+      NETWORK_ERROR:
+        'No se pudo conectar con el servidor. Verifica tu conexión.',
     },
   },
 };

@@ -321,6 +321,7 @@ paths:
                       statement: TCP es un protocolo orientado a conexion.
                       options: [Verdadero, Falso]
                       correctOption: 0
+                      explanation: null
                       imageUrl: null
                       position: 1
                       createdAt: '2026-11-10T14:05:00.000Z'
@@ -350,6 +351,7 @@ paths:
                   statement: TCP es un protocolo orientado a conexion.
                   options: [Verdadero, Falso]
                   correctOption: 0
+                  explanation: null
       responses:
         '201':
           description: Pregunta creada.
@@ -365,6 +367,7 @@ paths:
                     statement: TCP es un protocolo orientado a conexion.
                     options: [Verdadero, Falso]
                     correctOption: 0
+                    explanation: null
                     imageUrl: null
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -402,6 +405,7 @@ paths:
                     statement: TCP es un protocolo orientado a conexion.
                     options: [Verdadero, Falso]
                     correctOption: 0
+                    explanation: null
                     imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -431,6 +435,7 @@ paths:
                   statement: UDP es un protocolo orientado a conexion.
                   options: [Verdadero, Falso]
                   correctOption: 1
+                  explanation: null
                   position: 2
       responses:
         '200':
@@ -447,6 +452,7 @@ paths:
                     statement: UDP es un protocolo orientado a conexion.
                     options: [Verdadero, Falso]
                     correctOption: 1
+                    explanation: null
                     imageUrl: null
                     position: 2
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -517,6 +523,7 @@ paths:
                     statement: TCP es un protocolo orientado a conexion.
                     options: [Verdadero, Falso]
                     correctOption: 0
+                    explanation: null
                     imageUrl: http://localhost:3002/api/v1/images/9b2f1c4e-2d6a-4a53-8f0e-1a7d5c3b9e10.png
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -553,6 +560,7 @@ paths:
                     statement: TCP es un protocolo orientado a conexion.
                     options: [Verdadero, Falso]
                     correctOption: 0
+                    explanation: null
                     imageUrl: null
                     position: 1
                     createdAt: '2026-11-10T14:05:00.000Z'
@@ -1113,7 +1121,7 @@ components:
         Pregunta de opcion multiple (2 a 4 opciones, una sola correcta). Verdadero/Falso es una pregunta
         de 2 opciones. Incluye `correctOption`, por lo que solo se devuelve al propietario del
         cuestionario (o a quien consulte la biblioteca compartida); nunca a participantes.
-      required: [id, quizId, statement, options, correctOption, imageUrl, position, createdAt, updatedAt]
+      required: [id, quizId, statement, options, correctOption, explanation, imageUrl, position, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1139,6 +1147,10 @@ components:
           minimum: 0
           maximum: 3
           description: Indice (base 0) de la opcion correcta dentro de `options`.
+        explanation:
+          type: [string, 'null']
+          maxLength: 300
+          description: Explicacion breve y opcional de la respuesta. Si existe, se muestra a los participantes al cerrar la pregunta; si es `null`, no se muestra nada.
         imageUrl:
           type: [string, 'null']
           description: URL publica y absoluta de la imagen (se construye con `PUBLIC_API_URL`; ver `GET /images/{filename}`), accesible desde otros dispositivos, o `null` si no tiene.
@@ -1176,6 +1188,10 @@ components:
           minimum: 0
           maximum: 3
           description: Indice (base 0) de la opcion correcta; debe ser menor que el numero de opciones.
+        explanation:
+          type: [string, 'null']
+          maxLength: 300
+          description: Explicacion breve y opcional de la respuesta (maximo 300 caracteres). Omitirla o enviar `null` o texto vacio la deja sin explicacion.
         position:
           type: integer
           minimum: 1

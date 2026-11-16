@@ -105,7 +105,7 @@ export async function runLiveE2ESuite() {
     headers: { Authorization: `Bearer ${hostToken}` },
   });
   assert.equal(quizzesRes.status, 200);
-  const demoQuiz = quizzesRes.body[0];
+  const demoQuiz = quizzesRes.body.find((q) => q.title === 'Programación y paradigmas') ?? quizzesRes.body[0];
   assert.ok(demoQuiz?.id, 'Debe existir el cuestionario demo');
 
   // --- CASO 2.1: Acceso y permisos ---

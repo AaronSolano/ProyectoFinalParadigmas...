@@ -89,6 +89,7 @@ export async function createApp(
     config.publicUrl,
     gameClock,
     gameMetrics,
+    config.autoAdvanceSeconds * 1000,
   );
   const images =
     storage ??

@@ -48,6 +48,8 @@ export interface QuestionOpenedEvent {
 export interface QuestionClosedEvent {
   questionIndex: number;
   correctOption: number;
+  explanation: string | null;
+  nextQuestionAt: string | null;
   results: LiveQuestionResult[];
   ranking: LiveRankingEntry[];
 }

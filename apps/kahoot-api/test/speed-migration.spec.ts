@@ -120,6 +120,7 @@ suite("migración de velocidad sobre datos de la versión anterior", () => {
       "SpeedScoring1794780003000",
       "MultipleChoice1794780004000",
       "QuizLibrary1794780005000",
+      "QuestionExplanation1794780006000",
     ]);
     expect(await db.runMigrations()).toEqual([]);
     const rows = await db.query(
@@ -174,6 +175,7 @@ suite("migración de velocidad sobre datos de la versión anterior", () => {
     await expect(
       db.query("UPDATE answers SET points=-1"),
     ).rejects.toMatchObject({ code: "23514" });
+    await db.undoLastMigration(); // QuestionExplanation
     await db.undoLastMigration(); // QuizLibrary
     await db.undoLastMigration(); // MultipleChoice
     await expect(db.undoLastMigration()).rejects.toMatchObject({

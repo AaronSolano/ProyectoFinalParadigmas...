@@ -19,6 +19,7 @@ export function questionView(q: Question, publicUrl: string) {
     statement: q.statement,
     options: q.options,
     correctOption: q.correctOption,
+    explanation: q.explanation,
     imageUrl: q.imageFilename
       ? `${publicUrl}/api/v1/images/${q.imageFilename}`
       : null,

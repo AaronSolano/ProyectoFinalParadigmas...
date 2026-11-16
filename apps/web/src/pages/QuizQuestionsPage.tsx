@@ -32,6 +32,7 @@ export function QuizQuestionsPage() {
   const [statement, setStatement] = useState('');
   const [options, setOptions] = useState<string[]>(['', '']);
   const [correctOption, setCorrectOption] = useState<number>(0);
+  const [explanation, setExplanation] = useState('');
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [error, setError] = useState<unknown>(null);
 
@@ -53,8 +54,10 @@ export function QuizQuestionsPage() {
         statement: statement.trim(),
         options: options.map((o) => o.trim()),
         correctOption,
+        explanation: explanation.trim() || null,
       }),
     onSuccess: () => {
+      setExplanation('');
       setStatement('');
       setOptions(['', '']);
       setCorrectOption(0);
@@ -71,9 +74,11 @@ export function QuizQuestionsPage() {
         statement: statement.trim(),
         options: options.map((o) => o.trim()),
         correctOption,
+        explanation: explanation.trim() || null,
       }),
     onSuccess: () => {
       setEditingQuestion(null);
+      setExplanation('');
       setStatement('');
       setOptions(['', '']);
       setCorrectOption(0);
@@ -149,10 +154,12 @@ export function QuizQuestionsPage() {
     setStatement(q.statement);
     setOptions(q.options);
     setCorrectOption(q.correctOption);
+    setExplanation(q.explanation ?? '');
   };
 
   const cancelEditQuestion = () => {
     setEditingQuestion(null);
+    setExplanation('');
     setStatement('');
     setOptions(['', '']);
     setCorrectOption(0);
@@ -224,6 +231,22 @@ export function QuizQuestionsPage() {
                 value={statement}
                 onChange={(e) => setStatement(e.target.value)}
               />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="question-explanation-input">
+                {t('questions.explanationLabel')}
+              </label>
+              <textarea
+                id="question-explanation-input"
+                data-testid="input-question-explanation"
+                maxLength={300}
+                rows={2}
+                value={explanation}
+                placeholder={t('questions.explanationPlaceholder')}
+                onChange={(e) => setExplanation(e.target.value)}
+              />
+              <p className="quiz-item__desc">{t('questions.explanationHint')}</p>
             </div>
 
             <fieldset className="form-field">
@@ -369,6 +392,14 @@ export function QuizQuestionsPage() {
                   </li>
                 ))}
               </ul>
+              {q.explanation && (
+                <p
+                  className="question-item__explanation"
+                  data-testid={`question-explanation-${q.id}`}
+                >
+                  {t('questions.explanationShown')}: {q.explanation}
+                </p>
+              )}
 
               {q.imageUrl && (
                 <div className="question-item__image-wrap">

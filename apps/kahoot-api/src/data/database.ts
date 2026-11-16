@@ -7,6 +7,7 @@ import { LiveGame1794780002000 } from "./live-migration";
 import { SpeedScoring1794780003000 } from "./speed-migration";
 import { MultipleChoice1794780004000 } from "./multiple-choice-migration";
 import { QuizLibrary1794780005000 } from "./library-migration";
+import { QuestionExplanation1794780006000 } from "./explanation-migration";
 import { connectionOptions, connectionUrl } from "./connection-options";
 export function database(config: Config): DataSource {
   return new DataSource({
@@ -21,6 +22,7 @@ export function database(config: Config): DataSource {
       SpeedScoring1794780003000,
       MultipleChoice1794780004000,
       QuizLibrary1794780005000,
+      QuestionExplanation1794780006000,
     ],
   });
 }

@@ -25,6 +25,9 @@ function LibraryQuestions({ quizId }: { quizId: string }) {
               </li>
             ))}
           </ul>
+          {q.explanation && (
+            <p className="question-item__explanation">{t('questions.explanationShown')}: {q.explanation}</p>
+          )}
         </li>
       ))}
     </ol>

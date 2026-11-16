@@ -26,6 +26,7 @@ export function questionFromRow(r: Row): Question {
     statement: r.statement,
     options: r.options,
     correctOption: r.correct_option,
+    explanation: r.explanation ?? null,
     imageFilename: r.image_filename,
     position: r.position,
     createdAt: r.created_at,

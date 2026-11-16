@@ -23,6 +23,7 @@ test("métricas siguen inicio, recuperación, publicación del cierre y fin sin 
         statement: "Pregunta",
         options: ["Verdadero", "Falso"],
         correctOption: 0,
+        explanation: null,
         imageFilename: null,
       },
     ],

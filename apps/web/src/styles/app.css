@@ -302,6 +302,7 @@ h1 {
   margin-bottom: 0.45rem;
 }
 .form-field input,
+.form-field select,
 .form-field textarea {
   width: 100%;
   min-height: 48px;
@@ -318,6 +319,7 @@ h1 {
   resize: vertical;
 }
 .form-field input:focus,
+.form-field select:focus,
 .form-field textarea:focus {
   border-color: var(--focus-ring);
 }
@@ -1628,3 +1630,23 @@ input[type='radio'] {
 .answer-explanation p { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
 .auto-advance-note { margin: 0.5rem 0; text-align: center; font-weight: 700; opacity: 0.85; }
 .question-item__explanation { margin: 0.5rem 0 0; font-style: italic; overflow-wrap: anywhere; }
+
+/* Room sharing, filters and keyboard-accessible preferences. */
+.settings { position: relative; }
+.settings .lang-selector { position: static; }
+.settings .lang-selector select { max-width: none; width: 100%; }
+.settings__trigger { min-width: 44px; min-height: 44px; }
+.settings__panel { position: absolute; z-index: 40; inset-inline-end: 0; top: calc(100% + 0.5rem); width: min(18rem, calc(100vw - 2rem)); padding: 1.25rem; background: var(--bg-card, #fffdfa); border: 1px solid var(--border-color, #d9cdbd); border-radius: 12px; }
+.settings__panel:not([hidden]) { display: grid; gap: 1rem; }
+.room-qr { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; margin-block: 1.5rem; }
+.room-qr svg { width: min(100%, 18rem); height: auto; background: #fff; }
+.room-qr a { overflow-wrap: anywhere; max-width: 100%; }
+.room-qr p { margin: 0; }
+.quiz-filters { display: grid; gap: 0.75rem; margin-block: 1rem 1.5rem; }
+.quiz-filters p { margin: 0; }
+.quiz-filters .btn { justify-self: start; }
+@media (min-width: 700px) { .quiz-filters { grid-template-columns: minmax(0, 1fr) auto; align-items: end; } }
+
+@media (max-width: 700px) {
+  .settings__panel { position: fixed; inset-inline: 1rem; top: var(--settings-top, 10rem); width: auto; max-height: calc(100dvh - var(--settings-top, 10rem) - 1rem); overflow-y: auto; }
+}

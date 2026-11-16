@@ -109,8 +109,8 @@ describe('opciones múltiples y biblioteca', () => {
 
     renderAt('/library', <LibraryPage />, '/library');
 
-    expect(await screen.findByText('Cultura general')).toBeInTheDocument();
-    expect(screen.getByText('Tecnología')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Cultura general' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Tecnología' })).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: /ver preguntas/i })[0]!);
     const list = await screen.findByTestId('library-questions-quiz-1');

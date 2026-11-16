@@ -3,6 +3,8 @@ import type { components as KahootComponents } from './generated/kahoot-api';
 import { getAppEnv } from '../config/env';
 import { getStoredToken, notifySessionExpired } from '../auth/storage';
 
+export type Guest = AuthComponents['schemas']['GuestResponse']['guest'];
+export type SessionProfile = Profile | (Guest & { guest: true });
 export type Profile = AuthComponents['schemas']['Profile'];
 export type RegisterRequest = AuthComponents['schemas']['RegisterRequest'];
 export type LoginRequest = AuthComponents['schemas']['LoginRequest'];
@@ -116,6 +118,11 @@ async function requestJson<T>(
 }
 
 export const authApi = {
+  guest(displayName: string): Promise<AuthComponents['schemas']['GuestResponse']> {
+    return requestJson(getAppEnv().authApiUrl, '/auth/guest', {
+      method: 'POST', body: JSON.stringify({ displayName }),
+    }, false);
+  },
   register(input: RegisterRequest): Promise<AuthResponse> {
     const { authApiUrl } = getAppEnv();
     return requestJson<AuthResponse>(

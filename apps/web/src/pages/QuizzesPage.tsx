@@ -1,9 +1,14 @@
+import { QuizFilters, matchesQuiz } from '../components/QuizFilters';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { kahootApi, type Quiz } from '../api/client';
 import { ErrorBanner } from '../components/ErrorBanner';
+import {
+  AutoAdvanceField,
+  DEFAULT_AUTO_ADVANCE_SECONDS,
+} from '../components/AutoAdvanceField';
 import { RubyMascot } from '../components/RubyMascot';
 import { Icon } from '../components/Icon';
 
@@ -12,11 +17,15 @@ export function QuizzesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const [search, setSearch] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [hostingQuiz, setHostingQuiz] = useState<Quiz | null>(null);
   const [questionTimeSeconds, setQuestionTimeSeconds] = useState<number>(20);
+  const [autoAdvanceSeconds, setAutoAdvanceSeconds] = useState<number>(
+    DEFAULT_AUTO_ADVANCE_SECONDS,
+  );
   const [error, setError] = useState<unknown>(null);
 
   const quizzesQuery = useQuery({
@@ -68,13 +77,16 @@ export function QuizzesPage() {
     mutationFn: ({
       quizId,
       timeSeconds,
+      advanceSeconds,
     }: {
       quizId: string;
       timeSeconds: number;
+      advanceSeconds: number;
     }) =>
       kahootApi.createSession({
         quizId,
         questionTimeSeconds: timeSeconds,
+        autoAdvanceSeconds: advanceSeconds,
       }),
     onSuccess: (session) => {
       setHostingQuiz(null);
@@ -120,8 +132,12 @@ export function QuizzesPage() {
     createSessionMutation.mutate({
       quizId: hostingQuiz.id,
       timeSeconds: clamped,
+      advanceSeconds: autoAdvanceSeconds,
     });
   };
+
+  const filteredQuizzes =
+    quizzesQuery.data?.filter((quiz) => matchesQuiz(quiz, search)) ?? [];
 
   return (
     <div className="page-stack library-page">
@@ -231,6 +247,11 @@ export function QuizzesPage() {
                     }
                   />
                 </div>
+                <AutoAdvanceField
+                  id="auto-advance-input"
+                  value={autoAdvanceSeconds}
+                  onChange={setAutoAdvanceSeconds}
+                />
                 <div className="button-row">
                   <button
                     type="submit"
@@ -258,6 +279,11 @@ export function QuizzesPage() {
             {t('design.yourLibrary')}
             <span className="badge">{quizzesQuery.data?.length ?? 0}</span>
           </h2>
+          <QuizFilters
+            search={search}
+            onSearch={setSearch}
+            count={filteredQuizzes.length}
+          />
           {quizzesQuery.isPending && (
             <p className="loading-state" role="status">
               {t('design.loadingQuizzes')}
@@ -280,7 +306,7 @@ export function QuizzesPage() {
             </div>
           )}
 
-          {quizzesQuery.data?.map((quiz) => (
+          {filteredQuizzes.map((quiz) => (
             <article
               key={quiz.id}
               className="card quiz-item"

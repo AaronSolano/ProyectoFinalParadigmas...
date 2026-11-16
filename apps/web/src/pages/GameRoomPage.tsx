@@ -1,3 +1,5 @@
+import { RoomQr } from '../components/RoomQr';
+import { useSoundMuted } from '../audio/useSoundMuted';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -5,7 +7,6 @@ import { useAuth } from '../auth/AuthContext';
 import { getAppEnv } from '../config/env';
 import { useGameSocket } from '../realtime/useGameSocket';
 import {
-  isSoundMuted,
   playLobbySound,
   playPodiumFanfare,
   playQuestionOpenSound,
@@ -53,7 +54,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
   const normalizedCode = code.trim().toUpperCase();
   const { enableDebugControls } = getAppEnv();
-  const [muted, setMuted] = useState<boolean>(() => isSoundMuted());
+  const muted = useSoundMuted();
   const prevStatusRef = useRef<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const [nextInSeconds, setNextInSeconds] = useState<number | null>(null);
@@ -78,7 +79,9 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
   } = useGameSocket(normalizedCode, token, roleHint === 'host');
 
   const nextQuestionAt =
-    liveState.status === 'question_closed' ? (liveState.lastClosed?.nextQuestionAt ?? null) : null;
+    liveState.status === 'question_closed'
+      ? (liveState.lastClosed?.nextQuestionAt ?? null)
+      : null;
   useEffect(() => {
     if (!nextQuestionAt) {
       setNextInSeconds(null);
@@ -87,7 +90,10 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
     const target = new Date(nextQuestionAt).getTime();
     const tick = () =>
       setNextInSeconds(
-        Math.max(0, Math.ceil((target - (Date.now() + liveState.clockOffsetMs)) / 1000)),
+        Math.max(
+          0,
+          Math.ceil((target - (Date.now() + liveState.clockOffsetMs)) / 1000),
+        ),
       );
     tick();
     const timer = window.setInterval(tick, 250);
@@ -196,8 +202,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
 
   const handleToggleSound = () => {
     unlockAudioContext();
-    const nextMuted = toggleSoundMuted();
-    setMuted(nextMuted);
+    toggleSoundMuted();
   };
 
   const handleStartSession = () => {
@@ -315,6 +320,7 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
       {/* WAITING LOBBY */}
       {liveState.status === 'waiting' && (
         <section className="card lobby-section" data-testid="lobby-view">
+          {isHost && <RoomQr code={normalizedCode} />}
           <RubyFeedback
             mood={advancing ? 'cheer' : 'idle'}
             className="ruby-feedback--lobby"
@@ -468,14 +474,21 @@ export function GameRoomPage({ roleHint }: GameRoomPageProps) {
           </div>
 
           {liveState.lastClosed.explanation && (
-            <div className="answer-explanation" data-testid="answer-explanation">
+            <div
+              className="answer-explanation"
+              data-testid="answer-explanation"
+            >
               <strong>{t('game.explanationTitle')}</strong>
               <p>{liveState.lastClosed.explanation}</p>
             </div>
           )}
 
           {nextInSeconds !== null && (
-            <p className="auto-advance-note" role="status" data-testid="auto-advance-countdown">
+            <p
+              className="auto-advance-note"
+              role="status"
+              data-testid="auto-advance-countdown"
+            >
               {t('game.nextIn', { seconds: nextInSeconds })}
             </p>
           )}

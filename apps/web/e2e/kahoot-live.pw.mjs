@@ -203,8 +203,8 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
       await hostPage.getByRole('link', { name: /biblioteca|library/i }).click();
       await expect(hostPage).toHaveURL(/\/library$/);
       await expect(hostPage.locator('[data-testid^="library-card-"]')).toHaveCount(10);
-      await expect(hostPage.getByText('Cultura general')).toBeVisible();
-      await expect(hostPage.getByText('Tecnología')).toBeVisible();
+      await expect(hostPage.getByRole('heading', { name: /Cultura general|General knowledge/ })).toBeVisible();
+      await expect(hostPage.getByRole('heading', { name: /Tecnología|Technology/ })).toBeVisible();
 
       await hostPage.locator('[data-testid^="btn-host-library-"]').first().click();
       await hostPage.locator('[data-testid="input-question-time"]').fill('10');
@@ -323,6 +323,84 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
     }
   });
 
+  test('invitado entra desde QR, reconecta y termina una partida sin cuenta', async ({ browser }) => {
+    const host = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const guest = await browser.newContext({ viewport: { width: 360, height: 740 } });
+    const h = await host.newPage(); const p = await guest.newPage();
+    let cleanup = async () => undefined;
+    try {
+      const loginResponse = await fetch(`${AUTH_API_URL}/api/v1/auth/login`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+      });
+      expect(loginResponse.status).toBe(200);
+      const { accessToken } = await loginResponse.json();
+      const headers = { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` };
+      const post = async (path, body) => {
+        const res = await fetch(`${KAHOOT_API_URL}/api/v1${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+        expect(res.status).toBe(201); return res.json();
+      };
+      const quiz = await post('/quizzes', { title: `Invitados ${Date.now()}` });
+      cleanup = () => fetch(`${KAHOOT_API_URL}/api/v1/quizzes/${quiz.id}`, { method: 'DELETE', headers });
+      await post(`/quizzes/${quiz.id}/questions`, { statement: '¿Cuánto es dos más dos?', options: ['Cuatro', 'Cinco'], correctOption: 0, explanation: 'Dos más dos son cuatro.' });
+      const session = await post('/sessions', { quizId: quiz.id, questionTimeSeconds: 120, autoAdvanceSeconds: 0 });
+      await loginInPage(h, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
+      await h.goto(`${WEB_URL}/host/${session.code}`);
+      await expect(h.getByTestId('room-qr')).toBeVisible();
+      const link = await h.getByTestId('room-join-link').getAttribute('href');
+      expect(link).toBe(`${WEB_URL}/join?code=${session.code}`);
+      await p.goto(link);
+      await expect(p.getByTestId('input-room-code')).toHaveValue(session.code);
+      await p.getByTestId('btn-settings').click();
+      const panel = await p.locator('#settings-panel').boundingBox();
+      expect(panel.x).toBeGreaterThanOrEqual(0);
+      expect(panel.x + panel.width).toBeLessThanOrEqual(360);
+      await p.keyboard.press('Escape');
+      await p.getByTestId('input-join-display-name').fill('Invitado Ruby');
+      await p.getByTestId('btn-join-room').click();
+      await expect(p.getByTestId('lobby-view')).toBeVisible();
+      await expect(p.getByRole('link', { name: 'Mis cuestionarios' })).toHaveCount(0);
+      await expect(h.getByTestId('lobby-participants-list')).toContainText('Invitado Ruby');
+      await p.getByTestId('btn-settings').focus();
+      await p.keyboard.press('Enter');
+      await expect(p.getByTestId('language-selector')).toBeFocused();
+      await p.getByTestId('settings-sound').click();
+      await expect(p.getByTestId('btn-toggle-sound')).toHaveAttribute('aria-pressed', 'true');
+      await p.keyboard.press('Escape');
+      await p.getByTestId('btn-toggle-sound').click();
+      await p.getByTestId('btn-settings').click();
+      await expect(p.getByTestId('settings-sound')).toHaveAttribute('aria-pressed', 'true');
+      await p.keyboard.press('Escape');
+      await h.getByTestId('btn-start-session').click();
+      await expect(p.getByTestId('question-open-view')).toBeVisible();
+      await expect(p.getByTestId('correct-answer-reveal')).toHaveCount(0);
+      await expect(p.getByTestId('answer-explanation')).toHaveCount(0);
+      await p.getByTestId('btn-answer-0').click();
+      await expect(p.getByTestId('btn-answer-0')).toBeDisabled();
+      await p.reload();
+      await expect(p.getByTestId('question-open-view')).toBeVisible();
+      await expect(p.getByTestId('btn-answer-0')).toBeDisabled();
+      await h.getByTestId('btn-close-question').click();
+      await expect(p.getByTestId('answer-explanation')).toContainText('Dos más dos son cuatro.');
+      await expect(p.getByTestId('auto-advance-countdown')).toHaveCount(0);
+      await h.getByTestId('btn-next-question').click();
+      await expect(p.getByTestId('final-ranking-list')).toBeVisible();
+      await expect(p.getByTestId('final-ranking-list')).toContainText('Invitado Ruby');
+      await p.goto(`${WEB_URL}/library`);
+      await expect(p).toHaveURL(/\/join$/);
+      await p.getByTestId('btn-settings').click();
+      await p.getByTestId('language-selector').selectOption('en');
+      await expect(p.getByRole('heading', { name: 'Settings' })).toBeVisible();
+      await p.getByTestId('settings-sound').click();
+      await p.keyboard.press('Escape');
+      await expect(p.getByTestId('btn-settings')).toBeFocused();
+      await p.reload();
+      await p.getByTestId('btn-settings').click();
+      await expect(p.getByTestId('language-selector')).toHaveValue('en');
+      await expect(p.getByTestId('settings-sound')).toHaveAttribute('aria-pressed', 'false');
+    } finally { await cleanup(); await host.close(); await guest.close(); }
+  });
+
   test('2.5 Persistencia tras reiniciar contenedores de API', async ({ page }) => {
     execFileSync('docker', ['compose', 'restart', 'auth-api', 'kahoot-api'], {
       stdio: 'inherit',
@@ -333,6 +411,15 @@ test.describe('Fase 7 — Suite E2E con Playwright contra Docker Compose', () =>
         .poll(async () => (await fetch(url).catch(() => null))?.status, { timeout: 60000 })
         .toBe(200);
     }
+    // Verificar también el acceso por el mismo proxy que utiliza el navegador.
+    // El puerto publicado puede responder health antes de que se restablezca la conexión de Nginx.
+    const login = await (await fetch(`${AUTH_API_URL}/api/v1/auth/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+    })).json();
+    await expect.poll(async () => (await fetch(`${WEB_URL}/api/v1/quizzes`, {
+      headers: { authorization: `Bearer ${login.accessToken}` },
+    }).catch(() => null))?.status, { timeout: 60000 }).toBe(200);
     await loginInPage(page, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
     await expect(page.getByText('Programación y paradigmas')).toBeVisible();
   });

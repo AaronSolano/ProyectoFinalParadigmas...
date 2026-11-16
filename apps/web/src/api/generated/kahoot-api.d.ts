@@ -555,6 +555,8 @@ export interface components {
             status: components["schemas"]["SessionStatus"];
             /** @description Tiempo limite por pregunta, en segundos. */
             questionTimeSeconds: number;
+            /** @description Segundos tras cerrar una pregunta para pasar sola a la siguiente; `0` lo desactiva (solo avanza el anfitrion). */
+            autoAdvanceSeconds: number;
             participantCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -574,6 +576,11 @@ export interface components {
              * @default 20
              */
             questionTimeSeconds: number;
+            /**
+             * @description Segundos tras cerrar una pregunta para pasar sola a la siguiente; `0` lo desactiva. Lo elige quien crea la sala.
+             * @default 5
+             */
+            autoAdvanceSeconds: number;
         };
         JoinInput: {
             /** @description Nombre a mostrar en la sala. Si se omite se usa el nombre del perfil. */

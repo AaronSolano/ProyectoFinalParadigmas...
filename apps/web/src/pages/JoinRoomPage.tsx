@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../auth/AuthContext';
 import { kahootApi } from '../api/client';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { RubyMascot } from '../components/RubyMascot';
@@ -20,7 +21,12 @@ export function JoinRoomPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const [code, setCode] = useState('');
+  const { isAuthenticated, joinAsGuest } = useAuth();
+  const [params] = useSearchParams();
+  const [code, setCode] = useState(() => {
+    const initial = normalizeRoomCode(params.get('code') ?? '');
+    return isValidRoomCode(initial) ? initial : '';
+  });
   const [displayName, setDisplayName] = useState('');
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<unknown>(null);
@@ -35,9 +41,17 @@ export function JoinRoomPage() {
       return;
     }
 
+    if (
+      !isAuthenticated &&
+      (displayName.trim().length < 2 || displayName.trim().length > 40)
+    ) {
+      setError(t('features.invalidName'));
+      return;
+    }
     setJoining(true);
     try {
       const trimmedName = displayName.trim();
+      if (!isAuthenticated) await joinAsGuest(trimmedName);
       await kahootApi.joinSession(
         normalized,
         trimmedName ? { displayName: trimmedName } : undefined,
@@ -95,12 +109,14 @@ export function JoinRoomPage() {
 
         <div className="form-field">
           <label htmlFor="join-display-name">
-            {t('join.displayNameLabel')}
+            {t(isAuthenticated ? 'join.displayNameLabel' : 'features.nickname')}
           </label>
           <input
             id="join-display-name"
             data-testid="input-join-display-name"
             type="text"
+            required={!isAuthenticated}
+            minLength={isAuthenticated ? undefined : 2}
             maxLength={40}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}

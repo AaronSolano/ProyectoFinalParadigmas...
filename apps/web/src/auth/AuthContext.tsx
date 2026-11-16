@@ -1,7 +1,15 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
 import {
   authApi,
   type Profile,
+  type SessionProfile,
   type LoginRequest,
   type RegisterRequest,
 } from '../api/client';
@@ -17,8 +25,10 @@ import {
 
 interface AuthContextValue {
   token: string | null;
-  profile: Profile | null;
+  profile: SessionProfile | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
+  joinAsGuest: (displayName: string) => Promise<void>;
   sessionExpired: boolean;
   clearSessionExpired: () => void;
   login: (input: LoginRequest) => Promise<Profile>;
@@ -30,8 +40,12 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getStoredToken());
-  const [profile, setProfile] = useState<Profile | null>(() => getStoredProfile());
-  const [sessionExpired, setSessionExpired] = useState<boolean>(() => hasSessionExpiredNotice());
+  const [profile, setProfile] = useState<SessionProfile | null>(() =>
+    getStoredProfile(),
+  );
+  const [sessionExpired, setSessionExpired] = useState<boolean>(() =>
+    hasSessionExpiredNotice(),
+  );
 
   useEffect(() => {
     return onUnauthorizedSession(() => {
@@ -64,6 +78,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.profile;
   }, []);
 
+  const joinAsGuest = useCallback(async (displayName: string) => {
+    const res = await authApi.guest(displayName.trim());
+    const identity = { ...res.guest, guest: true as const };
+    saveAuthSession(res.accessToken, identity);
+    setToken(res.accessToken);
+    setProfile(identity);
+    setSessionExpired(false);
+  }, []);
+
   const logout = useCallback(() => {
     clearAuthSession();
     setToken(null);
@@ -76,13 +99,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       token,
       profile,
       isAuthenticated: Boolean(token && profile),
+      isGuest: Boolean(profile && 'guest' in profile && profile.guest),
+      joinAsGuest,
       sessionExpired,
       clearSessionExpired,
       login,
       register,
       logout,
     }),
-    [token, profile, sessionExpired, clearSessionExpired, login, register, logout],
+    [
+      token,
+      profile,
+      joinAsGuest,
+      sessionExpired,
+      clearSessionExpired,
+      login,
+      register,
+      logout,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

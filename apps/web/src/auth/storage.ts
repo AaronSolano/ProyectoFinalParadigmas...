@@ -1,11 +1,11 @@
-import type { Profile } from '../api/client';
+import type { SessionProfile } from '../api/client';
 
 const TOKEN_KEY = 'profelink_auth_token';
 const PROFILE_KEY = 'profelink_auth_profile';
 const SESSION_EXPIRED_KEY = 'profelink_session_expired';
 
 let memoryToken: string | null = null;
-let memoryProfile: Profile | null = null;
+let memoryProfile: SessionProfile | null = null;
 let memorySessionExpired = false;
 
 type UnauthorizedListener = () => void;
@@ -27,14 +27,14 @@ export function getStoredToken(): string | null {
   return null;
 }
 
-export function getStoredProfile(): Profile | null {
+export function getStoredProfile(): SessionProfile | null {
   if (memoryProfile) {
     return memoryProfile;
   }
   try {
     const raw = window.sessionStorage.getItem(PROFILE_KEY);
     if (raw) {
-      memoryProfile = JSON.parse(raw) as Profile;
+      memoryProfile = JSON.parse(raw) as SessionProfile;
       return memoryProfile;
     }
   } catch {
@@ -67,7 +67,7 @@ export function clearSessionExpiredNotice(): void {
   }
 }
 
-export function saveAuthSession(token: string, profile: Profile): void {
+export function saveAuthSession(token: string, profile: SessionProfile): void {
   memoryToken = token;
   memoryProfile = profile;
   try {
@@ -91,7 +91,9 @@ export function clearAuthSession(): void {
   clearSessionExpiredNotice();
 }
 
-export function onUnauthorizedSession(listener: UnauthorizedListener): () => void {
+export function onUnauthorizedSession(
+  listener: UnauthorizedListener,
+): () => void {
   unauthorizedListeners.add(listener);
   return () => {
     unauthorizedListeners.delete(listener);

@@ -45,6 +45,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrar como invitado (sin cuenta)
+         * @description Emite un token efímero para una persona que solo quiere unirse a una sala con un apodo, sin
+         *     registrarse ni iniciar sesión. No se guarda ningún perfil ni correo. El token lleva el claim
+         *     `guest: true` y **solo sirve para unirse a salas y jugar**: `kahoot-api` responde 403 si se usa
+         *     para crear cuestionarios, abrir salas o consultar la biblioteca. Vigencia por defecto: 6 horas
+         *     (`JWT_GUEST_EXPIRES_IN`).
+         */
+        post: operations["createGuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -174,6 +198,26 @@ export interface components {
              */
             expiresIn: number;
             profile: components["schemas"]["Profile"];
+        };
+        GuestRequest: {
+            /** @description Apodo con el que aparece en la sala. */
+            displayName: string;
+        };
+        GuestResponse: {
+            /** @description JWT RS256 con el claim `guest` en `true` (sin correo). */
+            accessToken: string;
+            /** @constant */
+            tokenType: "Bearer";
+            /**
+             * @description Vigencia del token en segundos.
+             * @example 21600
+             */
+            expiresIn: number;
+            guest: {
+                /** Format: uuid */
+                id: string;
+                displayName: string;
+            };
         };
         HealthStatus: {
             /** @enum {string} */
@@ -310,6 +354,31 @@ export interface operations {
             };
             400: components["responses"]["ValidationError"];
             409: components["responses"]["EmailTaken"];
+        };
+    };
+    createGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuestRequest"];
+            };
+        };
+        responses: {
+            /** @description Invitado creado. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GuestResponse"];
+                };
+            };
+            400: components["responses"]["ValidationError"];
         };
     };
     login: {

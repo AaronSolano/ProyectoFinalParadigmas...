@@ -155,6 +155,7 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
         }),
       );
 
+    saveAuthSession('account-token', { id: 'user', displayName: 'Ana', email: 'ana@example.com', createdAt: new Date().toISOString() });
     renderWithProviders(<JoinRoomPage />, ['/join']);
 
     const input = screen.getByTestId('input-room-code');
@@ -375,6 +376,7 @@ describe('@rubymind/web — Fase 5 unit & component suite', () => {
       createdAt: '2026-11-15T14:00:00.000Z',
     });
 
+    vi.stubEnv('VITE_ENABLE_DEBUG_CONTROLS', 'false');
     const firstRender = renderWithProviders(
       <Routes>
         <Route path="/host/:code" element={<GameRoomPage roleHint="host" />} />

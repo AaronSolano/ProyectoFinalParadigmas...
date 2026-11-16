@@ -1,8 +1,15 @@
 import React, { useEffect } from 'react';
-import { Link, NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useParams,
+} from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './auth/AuthContext';
-import { LanguageSelector } from './components/LanguageSelector';
+import { SettingsPanel } from './components/SettingsPanel';
 import { AuthPage } from './pages/AuthPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { QuizzesPage } from './pages/QuizzesPage';
@@ -12,16 +19,27 @@ import { GameRoomPage } from './pages/GameRoomPage';
 import { Icon } from './components/Icon';
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isGuest } = useAuth();
+  if (isGuest) return <Navigate to="/join" replace />;
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   return children;
 }
 
+function PlayerRoute() {
+  const { isAuthenticated } = useAuth();
+  const { code = '' } = useParams();
+  return isAuthenticated ? (
+    <GameRoomPage roleHint="participant" />
+  ) : (
+    <Navigate to={`/join?code=${encodeURIComponent(code)}`} replace />
+  );
+}
+
 export function App() {
   const { t, i18n } = useTranslation();
-  const { isAuthenticated, profile, logout } = useAuth();
+  const { isAuthenticated, isGuest, profile, logout } = useAuth();
 
   useEffect(() => {
     document.documentElement.lang = i18n.resolvedLanguage ?? 'es';
@@ -36,7 +54,7 @@ export function App() {
       <header className="top-nav">
         <div className="top-nav__brand">
           <Link
-            to={isAuthenticated ? '/quizzes' : '/login'}
+            to={isGuest ? '/join' : isAuthenticated ? '/quizzes' : '/login'}
             className="brand-link"
           >
             <span className="brand-mark">
@@ -50,12 +68,16 @@ export function App() {
         <nav className="top-nav__links" aria-label={t('design.navigation')}>
           {isAuthenticated ? (
             <>
-              <NavLink to="/quizzes" className="nav-link">
-                {t('app.nav.quizzes')}
-              </NavLink>
-              <NavLink to="/library" className="nav-link">
-                {t('app.nav.library')}
-              </NavLink>
+              {!isGuest && (
+                <>
+                  <NavLink to="/quizzes" className="nav-link">
+                    {t('app.nav.quizzes')}
+                  </NavLink>
+                  <NavLink to="/library" className="nav-link">
+                    {t('app.nav.library')}
+                  </NavLink>
+                </>
+              )}
               <NavLink to="/join" className="nav-link">
                 {t('app.nav.join')}
               </NavLink>
@@ -75,6 +97,9 @@ export function App() {
             </>
           ) : (
             <>
+              <NavLink to="/join" className="nav-link">
+                {t('features.joinLink')}
+              </NavLink>
               <NavLink to="/login" className="nav-link">
                 {t('app.nav.login')}
               </NavLink>
@@ -83,7 +108,7 @@ export function App() {
               </NavLink>
             </>
           )}
-          <LanguageSelector />
+          <SettingsPanel />
         </nav>
       </header>
 
@@ -92,7 +117,10 @@ export function App() {
           <Route
             path="/"
             element={
-              <Navigate to={isAuthenticated ? '/quizzes' : '/login'} replace />
+              <Navigate
+                to={isGuest ? '/join' : isAuthenticated ? '/quizzes' : '/login'}
+                replace
+              />
             }
           />
           <Route
@@ -127,14 +155,7 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/join"
-            element={
-              <ProtectedRoute>
-                <JoinRoomPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/join" element={<JoinRoomPage />} />
           <Route
             path="/host/:code"
             element={
@@ -143,14 +164,7 @@ export function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/play/:code"
-            element={
-              <ProtectedRoute>
-                <GameRoomPage roleHint="participant" />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/play/:code" element={<PlayerRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

@@ -1,9 +1,18 @@
+import {
+  QuizFilters,
+  matchesQuiz,
+  categoryLabel,
+} from '../components/QuizFilters';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { kahootApi, type Question, type Quiz } from '../api/client';
 import { ErrorBanner } from '../components/ErrorBanner';
+import {
+  AutoAdvanceField,
+  DEFAULT_AUTO_ADVANCE_SECONDS,
+} from '../components/AutoAdvanceField';
 
 function LibraryQuestions({ quizId }: { quizId: string }) {
   const { t } = useTranslation();
@@ -11,22 +20,33 @@ function LibraryQuestions({ quizId }: { quizId: string }) {
     queryKey: ['library-questions', quizId],
     queryFn: () => kahootApi.listLibraryQuestions(quizId),
   });
-  if (query.isLoading) return <p className="empty-state">{t('library.loading')}</p>;
+  if (query.isLoading)
+    return <p className="empty-state">{t('library.loading')}</p>;
   return (
-    <ol className="library-questions" data-testid={`library-questions-${quizId}`}>
+    <ol
+      className="library-questions"
+      data-testid={`library-questions-${quizId}`}
+    >
       {query.data?.map((q: Question) => (
         <li key={q.id}>
           <p className="question-item__statement">{q.statement}</p>
           <ul className="library-options">
             {q.options.map((option, index) => (
-              <li key={index} className={index === q.correctOption ? 'library-option--correct' : ''}>
+              <li
+                key={index}
+                className={
+                  index === q.correctOption ? 'library-option--correct' : ''
+                }
+              >
                 {option}
                 {index === q.correctOption ? ' ✓' : ''}
               </li>
             ))}
           </ul>
           {q.explanation && (
-            <p className="question-item__explanation">{t('questions.explanationShown')}: {q.explanation}</p>
+            <p className="question-item__explanation">
+              {t('questions.explanationShown')}: {q.explanation}
+            </p>
           )}
         </li>
       ))}
@@ -38,10 +58,15 @@ export function LibraryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [hostingQuiz, setHostingQuiz] = useState<Quiz | null>(null);
   const [questionTimeSeconds, setQuestionTimeSeconds] = useState<number>(20);
+  const [autoAdvanceSeconds, setAutoAdvanceSeconds] = useState<number>(
+    DEFAULT_AUTO_ADVANCE_SECONDS,
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const libraryQuery = useQuery({
@@ -60,8 +85,20 @@ export function LibraryPage() {
   });
 
   const hostMutation = useMutation({
-    mutationFn: ({ quizId, timeSeconds }: { quizId: string; timeSeconds: number }) =>
-      kahootApi.createSession({ quizId, questionTimeSeconds: timeSeconds }),
+    mutationFn: ({
+      quizId,
+      timeSeconds,
+      advanceSeconds,
+    }: {
+      quizId: string;
+      timeSeconds: number;
+      advanceSeconds: number;
+    }) =>
+      kahootApi.createSession({
+        quizId,
+        questionTimeSeconds: timeSeconds,
+        autoAdvanceSeconds: advanceSeconds,
+      }),
     onSuccess: (session) => {
       setHostingQuiz(null);
       setError(null);
@@ -73,10 +110,22 @@ export function LibraryPage() {
   const handleCreateRoom = (event: React.FormEvent) => {
     event.preventDefault();
     if (!hostingQuiz) return;
-    const clamped = Math.min(120, Math.max(5, Number(questionTimeSeconds) || 20));
-    hostMutation.mutate({ quizId: hostingQuiz.id, timeSeconds: clamped });
+    const clamped = Math.min(
+      120,
+      Math.max(5, Number(questionTimeSeconds) || 20),
+    );
+    hostMutation.mutate({
+      quizId: hostingQuiz.id,
+      timeSeconds: clamped,
+      advanceSeconds: autoAdvanceSeconds,
+    });
   };
 
+  const filteredQuizzes = (libraryQuery.data ?? []).filter(
+    (quiz) =>
+      matchesQuiz(quiz, search) &&
+      (!categoryFilter || quiz.category === categoryFilter),
+  );
   const categories = Array.from(
     new Set((libraryQuery.data ?? []).map((quiz) => quiz.category ?? '')),
   );
@@ -88,22 +137,34 @@ export function LibraryPage() {
       </div>
       <p className="quiz-item__desc">{t('library.subtitle')}</p>
 
-      <ErrorBanner error={error ?? libraryQuery.error} onDismiss={() => setError(null)} />
+      <ErrorBanner
+        error={error ?? libraryQuery.error}
+        onDismiss={() => setError(null)}
+      />
 
       {copiedId && (
-        <p className="tf-feedback tf-feedback--ok" role="status" data-testid="library-copied">
+        <p
+          className="tf-feedback tf-feedback--ok"
+          role="status"
+          data-testid="library-copied"
+        >
           {t('library.copied', { title: copiedId })}
         </p>
       )}
 
       {hostingQuiz && (
-        <section className="card card--highlight" aria-labelledby="library-host-heading">
+        <section
+          className="card card--highlight"
+          aria-labelledby="library-host-heading"
+        >
           <h2 id="library-host-heading" className="card__subtitle">
             {t('quizzes.hostRoomBtn')}: {hostingQuiz.title}
           </h2>
           <form onSubmit={handleCreateRoom} className="form-stack">
             <div className="form-field">
-              <label htmlFor="library-question-time">{t('quizzes.questionTimeLabel')}</label>
+              <label htmlFor="library-question-time">
+                {t('quizzes.questionTimeLabel')}
+              </label>
               <input
                 id="library-question-time"
                 data-testid="input-question-time"
@@ -115,6 +176,11 @@ export function LibraryPage() {
                 onChange={(e) => setQuestionTimeSeconds(Number(e.target.value))}
               />
             </div>
+            <AutoAdvanceField
+              id="library-auto-advance"
+              value={autoAdvanceSeconds}
+              onChange={setAutoAdvanceSeconds}
+            />
             <div className="button-row">
               <button
                 type="submit"
@@ -124,7 +190,11 @@ export function LibraryPage() {
               >
                 {t('quizzes.startHostBtn')}
               </button>
-              <button type="button" className="btn btn--ghost" onClick={() => setHostingQuiz(null)}>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => setHostingQuiz(null)}
+              >
                 {t('quizzes.cancelBtn')}
               </button>
             </div>
@@ -132,49 +202,81 @@ export function LibraryPage() {
         </section>
       )}
 
-      {categories.map((category) => (
-        <section key={category} className="quiz-list" aria-label={category}>
-          <h2 className="card__subtitle">{category}</h2>
-          {libraryQuery.data
-            ?.filter((quiz) => (quiz.category ?? '') === category)
-            .map((quiz) => (
-              <article key={quiz.id} className="card quiz-item" data-testid={`library-card-${quiz.id}`}>
-                <div className="quiz-item__info">
-                  <h3 className="quiz-item__title">{quiz.title}</h3>
-                  {quiz.description && <p className="quiz-item__desc">{quiz.description}</p>}
-                  <p className="quiz-item__desc">{t('library.questionCount', { count: quiz.questionCount })}</p>
-                </div>
-                <div className="button-row">
-                  <button
-                    type="button"
-                    data-testid={`btn-host-library-${quiz.id}`}
-                    className="btn btn--primary"
-                    onClick={() => setHostingQuiz(quiz)}
-                  >
-                    {t('quizzes.hostRoomBtn')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--secondary"
-                    onClick={() => setExpanded(expanded === quiz.id ? null : quiz.id)}
-                  >
-                    {expanded === quiz.id ? t('library.hideBtn') : t('library.previewBtn')}
-                  </button>
-                  <button
-                    type="button"
-                    data-testid={`btn-copy-library-${quiz.id}`}
-                    className="btn btn--ghost"
-                    disabled={copyMutation.isPending}
-                    onClick={() => copyMutation.mutate(quiz.id)}
-                  >
-                    {t('library.copyBtn')}
-                  </button>
-                </div>
-                {expanded === quiz.id && <LibraryQuestions quizId={quiz.id} />}
-              </article>
-            ))}
-        </section>
-      ))}
+      <QuizFilters
+        search={search}
+        onSearch={setSearch}
+        count={filteredQuizzes.length}
+        category={categoryFilter}
+        onCategory={setCategoryFilter}
+        categories={categories.filter(Boolean)}
+      />
+      {categories
+        .filter((category) =>
+          filteredQuizzes.some((quiz) => (quiz.category ?? '') === category),
+        )
+        .map((category) => (
+          <section
+            key={category}
+            className="quiz-list"
+            aria-label={categoryLabel(category, t)}
+          >
+            <h2 className="card__subtitle">{categoryLabel(category, t)}</h2>
+            {filteredQuizzes
+              ?.filter((quiz) => (quiz.category ?? '') === category)
+              .map((quiz) => (
+                <article
+                  key={quiz.id}
+                  className="card quiz-item"
+                  data-testid={`library-card-${quiz.id}`}
+                >
+                  <div className="quiz-item__info">
+                    <h3 className="quiz-item__title">{quiz.title}</h3>
+                    {quiz.description && (
+                      <p className="quiz-item__desc">{quiz.description}</p>
+                    )}
+                    <p className="quiz-item__desc">
+                      {t('library.questionCount', {
+                        count: quiz.questionCount,
+                      })}
+                    </p>
+                  </div>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      data-testid={`btn-host-library-${quiz.id}`}
+                      className="btn btn--primary"
+                      onClick={() => setHostingQuiz(quiz)}
+                    >
+                      {t('quizzes.hostRoomBtn')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--secondary"
+                      onClick={() =>
+                        setExpanded(expanded === quiz.id ? null : quiz.id)
+                      }
+                    >
+                      {expanded === quiz.id
+                        ? t('library.hideBtn')
+                        : t('library.previewBtn')}
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`btn-copy-library-${quiz.id}`}
+                      className="btn btn--ghost"
+                      disabled={copyMutation.isPending}
+                      onClick={() => copyMutation.mutate(quiz.id)}
+                    >
+                      {t('library.copyBtn')}
+                    </button>
+                  </div>
+                  {expanded === quiz.id && (
+                    <LibraryQuestions quizId={quiz.id} />
+                  )}
+                </article>
+              ))}
+          </section>
+        ))}
     </div>
   );
 }

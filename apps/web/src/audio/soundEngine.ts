@@ -8,6 +8,7 @@ export interface ToneStep {
   delayMs?: number;
 }
 
+let memoryMuted = false;
 let sharedAudioCtx: AudioContext | null = null;
 let audioFactoryOverride: (() => AudioContext | null) | null = null;
 
@@ -20,16 +21,18 @@ export function isSoundMuted(): boolean {
   try {
     return window.localStorage.getItem(AUDIO_MUTED_STORAGE_KEY) === 'true';
   } catch {
-    return false;
+    return memoryMuted;
   }
 }
 
 export function setSoundMuted(muted: boolean): boolean {
+  memoryMuted = muted;
   try {
     window.localStorage.setItem(AUDIO_MUTED_STORAGE_KEY, muted ? 'true' : 'false');
   } catch {
     // Ignore storage errors in restricted environments
   }
+  window.dispatchEvent(new Event('sound-preference-change'));
   return muted;
 }
 
